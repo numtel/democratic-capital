@@ -18,21 +18,29 @@ contract DemocraticToken {
   mapping(address => RegisteredAccount) public registered;
 
   struct EmissionEpoch {
+    // Day number when epoch begins
     uint epochBegins;
+    // How many tokens per day per registered user
     uint amount;
+    // How many days before uncollected emissions expire
+    uint expiryDayCount;
   }
 
   EmissionEpoch[] public emissions;
+  uint public epochCount = 1;
 
   event Transfer(address indexed from, address indexed to, uint value);
   event Approval(address indexed owner, address indexed spender, uint value);
 
-  constructor(address _verifications, uint dailyEmission) {
+  constructor(address _verifications, uint dailyEmission, uint expiryDayCount) {
     require(_verifications != address(0),
       "Verifications contract must not be zero address");
     verifications = IVerification(_verifications);
 
-    emissions.push(EmissionEpoch(_daystamp(block.timestamp), dailyEmission));
+    emissions.push(EmissionEpoch(
+      _daystamp(block.timestamp),
+      dailyEmission,
+      expiryDayCount));
   }
 
   function registerAccount() external onlyVerified {
@@ -43,21 +51,25 @@ contract DemocraticToken {
     delete registered[msg.sender];
   }
 
-  // TODO only allow collecting emissions from most recent 2 weeks?
-  // Otherwise, somebody could register, let emissions collect for months/years
-  //  and then sell their fat stack? Is this a problem?
-  // Or maybe have an argument that sets the max limit so that if somebody does
-  //  wait a long time, they can still perform the transaction without hitting
-  //  the gas limit?
-  function collectEmissions() external onlyVerified onlyRegistered {
-    uint currentDay = _daystamp(block.timestamp);
-    uint collectFromDay = registered[msg.sender].lastFeeCollected;
+  function availableEmissions(address toCheck) external view returns(uint) {
+    return _availableEmissions(toCheck, _daystamp(block.timestamp));
+  }
+
+  function availableEmissions(address toCheck, uint onDay) external view returns(uint) {
+    return _availableEmissions(toCheck, onDay);
+  }
+
+  function _availableEmissions(address toCheck, uint onDay) internal view returns(uint) {
+    uint collectBeginDay = registered[toCheck].lastFeeCollected;
 
     uint toCollect = 0;
-    uint i = currentDay;
+    uint i = onDay;
     uint epochIndex = emissions.length - 1;
     uint epochBegins = emissions[epochIndex].epochBegins;
-    while(i > collectFromDay) {
+    // The latest expiryDayCount always remains through all past epochs
+    uint expiryDayCount = emissions[epochIndex].expiryDayCount;
+    while(i > collectBeginDay
+        && (expiryDayCount > 0 ? i + expiryDayCount > onDay : true)) {
       while(epochBegins > i) {
         if(epochIndex == 0) {
           // First epoch reached
@@ -74,7 +86,12 @@ contract DemocraticToken {
       toCollect += emissions[epochIndex].amount;
       i--;
     }
+    return toCollect;
+  }
 
+  function collectEmissions() external onlyVerified onlyRegistered {
+    uint currentDay = _daystamp(block.timestamp);
+    uint toCollect = _availableEmissions(msg.sender, currentDay);
     _mint(msg.sender, toCollect);
     registered[msg.sender].lastFeeCollected = currentDay;
     // TODO emit FeeCollected event
@@ -83,12 +100,26 @@ contract DemocraticToken {
   // TODO permission control on this
   // TODO put timestamp in proposal not at transaction time
   // TODO method to remove epochs set too far in future?
-  function newEmissionEpoch(uint beginDay, uint dailyEmission) external {
+  function newEmissionEpoch(
+    uint beginDay,
+    uint dailyEmission,
+    uint expiryDayCount
+  ) external {
     require(emissions[emissions.length - 1].epochBegins < beginDay,
       "Epoch must start after current last epoch");
-    emissions.push(EmissionEpoch(beginDay, dailyEmission));
+    emissions.push(EmissionEpoch(beginDay, dailyEmission, expiryDayCount));
+    epochCount++;
   }
 
+  function proposeEmissionEpoch(
+    uint beginDay,
+    uint dailyEmission,
+    uint expiryDayCount
+  ) external onlyVerified onlyRegistered {
+    // TODO write this function
+  }
+
+  // TODO remove this function
   function propose() external onlyVerified {
     emit Transfer(address(0), msg.sender, 0);
   }
@@ -112,6 +143,11 @@ contract DemocraticToken {
     balanceOf[recipient] += amount;
     emit Transfer(sender, recipient, amount);
     return true;
+  }
+
+  function daystamp(uint timestamp) external view returns(uint) {
+    if(timestamp == 0) timestamp = block.timestamp;
+    return _daystamp(timestamp);
   }
 
   function _daystamp(uint timestamp) internal pure returns(uint) {

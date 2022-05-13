@@ -6,7 +6,8 @@ const web3 = new Web3(ganache.provider({ logging: { quiet: true } }));
 web3.eth.handleRevert = true;
 
 const BUILD_DIR = 'build/';
-const SECONDS_PER_YEAR = 60 * 60 * 24 * 365;
+const SECONDS_PER_DAY = 60 * 60 * 24;
+const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 const GAS_AMOUNT = 20000000;
 const INITIAL_EMISSION = 10;
 const BURN_ACCOUNT = '0x0000000000000000000000000000000000000000';
@@ -46,7 +47,8 @@ const cases = fs.readdirSync(__dirname)
       else resolve(accounts);
     });
   });
-  const currentTimestamp = () => Math.floor(Date.now() / 1000);
+  const currentTimestamp = (returnDay) =>
+    Math.floor(Date.now() / (1000 * (returnDay ? 86400 : 1)));
 
   const contracts = {};
   // DemocraticToken must come after MockVerification since it uses the deployed
@@ -58,7 +60,7 @@ const cases = fs.readdirSync(__dirname)
     contracts[contractName] = await contract.deploy({
       data: bytecode,
       arguments: contractName === 'DemocraticToken'
-        ? [ contracts.MockVerification.options.address, INITIAL_EMISSION ]
+        ? [ contracts.MockVerification.options.address, INITIAL_EMISSION, 0 ]
         : [],
     // No owner on these contracts, so account used doesn't matter
     }).send({ from: accounts[0], gas: GAS_AMOUNT });
@@ -80,7 +82,8 @@ const cases = fs.readdirSync(__dirname)
         await theseCases[caseName]({
           // Supply test context as options object in first argument to case
           web3, accounts, contracts, currentTimestamp, increaseTime,
-          SECONDS_PER_YEAR, GAS_AMOUNT, INITIAL_EMISSION, BURN_ACCOUNT,
+          SECONDS_PER_YEAR, SECONDS_PER_DAY, GAS_AMOUNT, INITIAL_EMISSION,
+          BURN_ACCOUNT,
         });
       } catch(error) {
         console.error(error);

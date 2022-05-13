@@ -1,4 +1,5 @@
 const assert = require('assert');
+const helpers = require('./helpers');
 
 exports.verificationRequired = async function({
   accounts, contracts, currentTimestamp, SECONDS_PER_YEAR, GAS_AMOUNT
@@ -8,7 +9,7 @@ exports.verificationRequired = async function({
     await contracts.DemocraticToken.methods.propose()
       .send({ from: accounts[0], gas: GAS_AMOUNT });
   } catch(error) { hadError = true; }
-  assert.equal(hadError, true, 'Should fail before verification');
+  assert.strictEqual(hadError, true, 'Should fail before verification');
 
   await contracts.MockVerification.methods.setStatus(
       accounts[0], currentTimestamp() + SECONDS_PER_YEAR)
@@ -27,43 +28,51 @@ exports.verificationRequired = async function({
     await contracts.DemocraticToken.methods.propose()
       .send({ from: accounts[0], gas: GAS_AMOUNT });
   } catch(error) { hadError = true; }
-  assert.equal(hadError, true, 'Should fail without verification');
+  assert.strictEqual(hadError, true, 'Should fail without verification');
 };
 
-exports.collectAfter3Days = async function({
-  accounts, contracts, currentTimestamp, SECONDS_PER_YEAR, GAS_AMOUNT,
-  web3, INITIAL_EMISSION, increaseTime, BURN_ACCOUNT,
+exports.collectAfter3Days = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION, increaseTime, SECONDS_PER_DAY,
 }) {
-  await contracts.MockVerification.methods.setStatus(
-      accounts[0], currentTimestamp() + SECONDS_PER_YEAR)
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
-
-  await contracts.DemocraticToken.methods.registerAccount()
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
-
-  const startBalance =
-    await contracts.DemocraticToken.methods.balanceOf(accounts[0]).call();
-  assert.equal(Number(startBalance), 0, 'Balance should initialize to 0');
-
   // Go forward 2 days because day 0 gives first emission
-  await increaseTime(86400 * 2);
+  await increaseTime(SECONDS_PER_DAY * 2);
+  await send.collectEmissions();
 
-  await contracts.DemocraticToken.methods.collectEmissions()
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
+  const endBalance = Number(await call.balanceOf(account));
+  assert.strictEqual(endBalance, INITIAL_EMISSION * 3, 'Balance should have updated');
+});
 
-  const endBalance =
-    await contracts.DemocraticToken.methods.balanceOf(accounts[0]).call();
-  assert.equal(Number(endBalance), INITIAL_EMISSION * 3, 'Balance should have updated');
+exports.collectAfter6Days3Epochs = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay,
+}) {
+  // Configure the upcoming epochs
+  await send.newEmissionEpoch(curDay, INITIAL_EMISSION * 2, 0);
+  await send.newEmissionEpoch(curDay + 3, INITIAL_EMISSION * 3, 0);
+  await send.newEmissionEpoch(curDay + 5, INITIAL_EMISSION * 4, 0);
 
-  // Reset balance
-  await contracts.DemocraticToken.methods.transfer(BURN_ACCOUNT, endBalance)
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
+  // Go forward 5 days because day 0 gives first emission
+  await increaseTime(SECONDS_PER_DAY * 5);
+  await send.collectEmissions();
 
-  // Reset verification
-  await contracts.MockVerification.methods.setStatus(accounts[0], 0)
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
+  const endBalance = await call.balanceOf(account);
+  // 1 day @ 4x, 2 days @ 3x , 3 days @ 2x
+  assert.strictEqual(Number(endBalance), INITIAL_EMISSION * 16, 'Balance should have updated');
+});
 
-  // Reset registrations
-  await contracts.DemocraticToken.methods.unregisterAccount()
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
-};
+exports.collectAfter10Days7DayExpiry = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay,
+}) {
+  await send.newEmissionEpoch(curDay + 5, INITIAL_EMISSION * 2, 7);
+
+  await increaseTime(SECONDS_PER_DAY * 9);
+  await send.collectEmissions();
+
+  const endBalance = Number(await call.balanceOf(account));
+  // 5 days @ 2x, 2 days @ 1x, even though 10 passed
+  assert.strictEqual(endBalance, INITIAL_EMISSION * 12, 'Balance should have updated');
+});
