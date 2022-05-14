@@ -11,6 +11,7 @@ contract DemocraticToken {
   IVerification public verifications;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
+
   struct RegisteredAccount {
     uint lastFeeCollected;
   }
@@ -65,14 +66,10 @@ contract DemocraticToken {
   }
 
   function availableEmissions(address toCheck) external view returns(uint) {
-    return _availableEmissions(toCheck, _daystamp(block.timestamp));
+    return availableEmissions(toCheck, _daystamp(block.timestamp));
   }
 
-  function availableEmissions(address toCheck, uint onDay) external view returns(uint) {
-    return _availableEmissions(toCheck, onDay);
-  }
-
-  function _availableEmissions(address toCheck, uint onDay) internal view returns(uint) {
+  function availableEmissions(address toCheck, uint onDay) public view returns(uint) {
     uint collectBeginDay = registered[toCheck].lastFeeCollected;
 
     uint toCollect = 0;
@@ -104,7 +101,7 @@ contract DemocraticToken {
 
   function collectEmissions() external onlyVerified onlyRegistered {
     uint currentDay = _daystamp(block.timestamp);
-    uint toCollect = _availableEmissions(msg.sender, currentDay);
+    uint toCollect = availableEmissions(msg.sender, currentDay);
     _mint(msg.sender, toCollect);
     registered[msg.sender].lastFeeCollected = currentDay;
     // TODO emit FeeCollected event
@@ -193,6 +190,11 @@ contract DemocraticToken {
 
   modifier onlyRegistered() {
     require(registered[msg.sender].lastFeeCollected > 0, "Must be registered");
+    _;
+  }
+
+  modifier notBanned() {
+    // TODO write banning elections
     _;
   }
 }
