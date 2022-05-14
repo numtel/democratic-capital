@@ -10,37 +10,50 @@ contract DemocraticToken {
   uint8 public decimals = 18;
   IVerification public verifications;
 
-  uint public SECONDS_PER_DAY = 60 * 60 * 24;
+  uint constant SECONDS_PER_DAY = 60 * 60 * 24;
   struct RegisteredAccount {
     uint lastFeeCollected;
   }
 
   mapping(address => RegisteredAccount) public registered;
 
-  struct EmissionEpoch {
+  event Test(uint out);
+
+  struct Epoch {
     // Day number when epoch begins
-    uint epochBegins;
+    uint beginDay;
     // How many tokens per day per registered user
-    uint amount;
+    uint dailyEmission;
     // How many days before uncollected emissions expire
-    uint expiryDayCount;
+    uint16 expiryDayCount;
+    uint16 minimumElectionDays;
+    uint16 epochElectionThreshold;
+
   }
 
-  EmissionEpoch[] public emissions;
+  struct EpochProposal {
+    Epoch newEpoch;
+    uint electionEndDay;
+
+  }
+
+  Epoch[] public epochs;
   uint public epochCount = 1;
 
   event Transfer(address indexed from, address indexed to, uint value);
   event Approval(address indexed owner, address indexed spender, uint value);
 
-  constructor(address _verifications, uint dailyEmission, uint expiryDayCount) {
+  constructor(
+    address _verifications,
+    Epoch memory initialEpoch
+  ) {
     require(_verifications != address(0),
       "Verifications contract must not be zero address");
     verifications = IVerification(_verifications);
 
-    emissions.push(EmissionEpoch(
-      _daystamp(block.timestamp),
-      dailyEmission,
-      expiryDayCount));
+    // Initial epoch always starts from current day
+    initialEpoch.beginDay = _daystamp(block.timestamp);
+    epochs.push(initialEpoch);
   }
 
   function registerAccount() external onlyVerified {
@@ -64,10 +77,10 @@ contract DemocraticToken {
 
     uint toCollect = 0;
     uint i = onDay;
-    uint epochIndex = emissions.length - 1;
-    uint epochBegins = emissions[epochIndex].epochBegins;
+    uint epochIndex = epochs.length - 1;
+    uint epochBegins = epochs[epochIndex].beginDay;
     // The latest expiryDayCount always remains through all past epochs
-    uint expiryDayCount = emissions[epochIndex].expiryDayCount;
+    uint16 expiryDayCount = epochs[epochIndex].expiryDayCount;
     while(i > collectBeginDay
         && (expiryDayCount > 0 ? i + expiryDayCount > onDay : true)) {
       while(epochBegins > i) {
@@ -77,13 +90,13 @@ contract DemocraticToken {
           break;
         }
         epochIndex--;
-        epochBegins = emissions[epochIndex].epochBegins;
+        epochBegins = epochs[epochIndex].beginDay;
       }
       if(epochBegins == 0) {
         // Went all the way past the start
         break;
       }
-      toCollect += emissions[epochIndex].amount;
+      toCollect += epochs[epochIndex].dailyEmission;
       i--;
     }
     return toCollect;
@@ -98,24 +111,37 @@ contract DemocraticToken {
   }
 
   // TODO permission control on this
-  // TODO put timestamp in proposal not at transaction time
-  // TODO method to remove epochs set too far in future?
-  function newEmissionEpoch(
-    uint beginDay,
-    uint dailyEmission,
-    uint expiryDayCount
-  ) external {
-    require(emissions[emissions.length - 1].epochBegins < beginDay,
-      "Epoch must start after current last epoch");
-    emissions.push(EmissionEpoch(beginDay, dailyEmission, expiryDayCount));
+  function newEpoch(Epoch calldata epochToInsert) public {
+    uint currentDay = _daystamp(block.timestamp);
+    uint thisEpoch = epochs.length - 1;
+    require(epochToInsert.beginDay > currentDay, "Epoch must start in future");
+    if(epochs[thisEpoch].beginDay >= epochToInsert.beginDay) {
+      // This new epoch is not at the end
+      for(; thisEpoch >= 0; thisEpoch--) {
+        if(epochs[thisEpoch].beginDay == epochToInsert.beginDay) {
+          // Overwrite this existing epoch, it begins on same day
+          epochs[thisEpoch] = epochToInsert;
+          return;
+        } else if(epochs[thisEpoch].beginDay < epochToInsert.beginDay) {
+          break;
+        }
+      }
+      // Copy last epoch onto end
+      epochs.push(epochs[epochs.length - 1]);
+      // Move other epochs down the line (no insertAfter array method in solidity)
+      uint updateEpoch;
+      for(updateEpoch = epochs.length - 2; updateEpoch > thisEpoch; updateEpoch--) {
+        epochs[updateEpoch] = epochs[updateEpoch - 1];
+      }
+      epochs[thisEpoch + 1] = epochToInsert;
+    } else {
+      // This is a new epoch at the end
+      epochs.push(epochToInsert);
+    }
     epochCount++;
   }
 
-  function proposeEmissionEpoch(
-    uint beginDay,
-    uint dailyEmission,
-    uint expiryDayCount
-  ) external onlyVerified onlyRegistered {
+  function proposeEpoch(EpochProposal calldata proposal) external onlyVerified onlyRegistered {
     // TODO write this function
   }
 
@@ -174,4 +200,5 @@ contract DemocraticToken {
 interface IVerification {
   function addressActive(address toCheck) external view returns (bool);
   function addressExpiration(address toCheck) external view returns (uint);
+  function addressIdHash(address toCheck) external view returns(bytes32);
 }

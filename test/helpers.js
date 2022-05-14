@@ -4,6 +4,7 @@ exports.thisRegisteredUser = function(account, handler) {
     const {
       accounts, contracts, currentTimestamp, SECONDS_PER_YEAR, GAS_AMOUNT,
       web3, INITIAL_EMISSION, BURN_ACCOUNT, increaseTime, SECONDS_PER_DAY,
+      INITIAL_EPOCH,
     } = options;
 
     // Allow specifying account index as number or full hex value as string
@@ -39,30 +40,32 @@ exports.thisRegisteredUser = function(account, handler) {
         console.log('Current day: ', curDay);
         const epochCount = await call.epochCount();
         for(let e = epochCount - 1; e>0; e--) {
-          const epoch = await call.emissions(e);
+          const epoch = await call.epochs(e);
           console.log(Object.keys(epoch).reduce((out, cur) => {
             if(isNaN(cur)) out[cur] = Number(epoch[cur]);
             return out;
           }, {}));
-          if(epoch.epochBegins < curDay) break;
+          if(epoch.beginDay < curDay) break;
         }
         console.log(available);
       }
       return available;
     };
+    const Epoch = options.Epoch = function() {
+      if(arguments.length >=1 && typeof arguments[0] === 'number')
+        arguments[0] += curDay;
+      return Array.from(arguments).concat(INITIAL_EPOCH.slice(arguments.length));
+    }
 
-    // Go to next day a new epoch can definitely start
-    await increaseTime(SECONDS_PER_DAY);
-
-    // Reset emissions to initial value
-    await send.newEmissionEpoch(curDay - 1, INITIAL_EMISSION, 0);
+    // Reset epoch to initial value
+    await send.newEpoch(Epoch(-1));
 
     // Go to next day so test case can always set a new epoch at the start
-    await increaseTime(SECONDS_PER_DAY);
+    await increaseTime(SECONDS_PER_DAY * 2);
 
     // Set as passport verified
     await contracts.MockVerification.methods.setStatus(
-        accounts[0], currentTimestamp() + SECONDS_PER_YEAR)
+        account, currentTimestamp() + SECONDS_PER_YEAR)
       .send({ from: account, gas: GAS_AMOUNT });
     await send.registerAccount();
 

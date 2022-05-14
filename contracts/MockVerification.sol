@@ -15,4 +15,7 @@ contract MockVerification {
   function addressExpiration(address toCheck) external view returns (uint) {
     return expirations[toCheck];
   }
+  function addressIdHash(address toCheck) external view returns(bytes32) {
+    return keccak256(abi.encode(toCheck, expirations[toCheck]));
+  }
 }
