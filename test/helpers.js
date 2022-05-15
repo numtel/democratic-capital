@@ -34,7 +34,7 @@ exports.thisRegisteredUser = function(account, handler) {
     const call = options.call = callFrom(account);
     const curDay = options.curDay = Math.floor(
       (await web3.eth.getBlock(await web3.eth.getBlockNumber()))
-        .timestamp / SECONDS_PER_DAY) + 2;
+        .timestamp / SECONDS_PER_DAY) + 4;
     options.emissionDetails = async function(dayCount, debug) {
       const available = []
       for(let i = 0; i<dayCount; i++) {
@@ -74,14 +74,24 @@ exports.thisRegisteredUser = function(account, handler) {
       registered.push(address);
     }
 
+    // Set as passport verified
+    await register(account);
+
     // Reset epoch to initial value
-    await send.newEpoch(Epoch(-1));
+    const proposalIndex = (await send.proposeEpoch(
+      Epoch(-1),
+      curDay - 3,
+      curDay - 3)).events.NewEpochProposal.returnValues.index;
+    await increaseTime(SECONDS_PER_DAY);
+    await send.voteOnEpochProposal(proposalIndex, true, 0);
+    await increaseTime(SECONDS_PER_DAY);
+    await send.processEpochElectionResult(proposalIndex);
 
     // Go to next day so test case can always set a new epoch at the start
     await increaseTime(SECONDS_PER_DAY * 2);
-
-    // Set as passport verified
-    await register(account);
+    // Reset accrued emissions
+    await send.unregisterAccount();
+    await send.registerAccount();
 
     // Call test case
     await handler.call(this, options);

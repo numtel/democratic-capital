@@ -47,32 +47,54 @@ async function({
 exports.collectAfter7Days3Epochs = helpers.thisRegisteredUser(0,
 async function({
   send, call, account, contracts, web3, INITIAL_EMISSION,
-  increaseTime, SECONDS_PER_DAY, curDay, Epoch,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, emissionDetails,
 }) {
   // Configure the upcoming epochs
-  // TODO convert to proposals
-  await send.newEpoch(Epoch(1, INITIAL_EMISSION * 2));
-  await send.newEpoch(Epoch(4, INITIAL_EMISSION * 3));
-  await send.newEpoch(Epoch(6, INITIAL_EMISSION * 4));
+  const proposal1Index = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION * 2),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  const proposal2Index = (await send.proposeEpoch(
+    Epoch(4, INITIAL_EMISSION * 3),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  const proposal3Index = (await send.proposeEpoch(
+    Epoch(6, INITIAL_EMISSION * 4),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  await increaseTime(SECONDS_PER_DAY);
+  await send.voteOnEpochProposal(proposal1Index, true, 0);
+  await send.voteOnEpochProposal(proposal2Index, true, 0);
+  await send.voteOnEpochProposal(proposal3Index, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processEpochElectionResult(proposal1Index);
+  await send.processEpochElectionResult(proposal2Index);
+  await send.processEpochElectionResult(proposal3Index);
 
   // Go forward 6 days because day 0 gives first emission
-  await increaseTime(SECONDS_PER_DAY * 6);
+  await increaseTime(SECONDS_PER_DAY * 4);
   await send.collectEmissions();
 
   const endBalance = Number(await call.balanceOf(account));
-  // 1 day @ 4x, 2 days @ 3x, 3 days @ 2x, 1 day @ 1x
-  assert.strictEqual(endBalance, INITIAL_EMISSION * 17, 'Balance should update');
+  // 1 day @ 4x, 2 days @ 3x, 1 day @ 2x, 3 days @ 1x
+  assert.strictEqual(endBalance, INITIAL_EMISSION * 15, 'Balance should update');
 });
 
 exports.collectAfter10Days7DayExpiry = helpers.thisRegisteredUser(0,
 async function({
   send, call, account, contracts, web3, INITIAL_EMISSION,
-  increaseTime, SECONDS_PER_DAY, curDay, Epoch,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, emissionDetails,
 }) {
-  // TODO convert to proposal
-  await send.newEpoch(Epoch(5, INITIAL_EMISSION * 2, 7));
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(5, INITIAL_EMISSION * 2, 7),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  await increaseTime(SECONDS_PER_DAY);
+  await send.voteOnEpochProposal(proposalIndex, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processEpochElectionResult(proposalIndex);
 
-  await increaseTime(SECONDS_PER_DAY * 9);
+  await increaseTime(SECONDS_PER_DAY * 7);
   await send.collectEmissions();
 
   const endBalance = Number(await call.balanceOf(account));
@@ -83,22 +105,43 @@ async function({
 exports.allowEpochOverwriteAndBeforeLast = helpers.thisRegisteredUser(0,
 async function({
   send, call, account, contracts, web3, INITIAL_EMISSION,
-  increaseTime, SECONDS_PER_DAY, curDay, Epoch,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, emissionDetails,
 }) {
-  // TODO convert to proposals
-  await send.newEpoch(Epoch(1, INITIAL_EMISSION * 2));
-  await send.newEpoch(Epoch(3, INITIAL_EMISSION * 4));
+  const proposal1Index = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION * 2),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  const proposal2Index = (await send.proposeEpoch(
+    Epoch(5, INITIAL_EMISSION * 4),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
   // Insert before last epoch
-  await send.newEpoch(Epoch(2, INITIAL_EMISSION * 5));
+  const proposal3Index = (await send.proposeEpoch(
+    Epoch(4, INITIAL_EMISSION * 5),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
   // Overwrite existing epoch
-  await send.newEpoch(Epoch(1, INITIAL_EMISSION * 3));
+  const proposal4Index = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION * 3),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  await increaseTime(SECONDS_PER_DAY);
+  await send.voteOnEpochProposal(proposal1Index, true, 0);
+  await send.voteOnEpochProposal(proposal2Index, true, 0);
+  await send.voteOnEpochProposal(proposal3Index, true, 0);
+  await send.voteOnEpochProposal(proposal4Index, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processEpochElectionResult(proposal1Index);
+  await send.processEpochElectionResult(proposal2Index);
+  await send.processEpochElectionResult(proposal3Index);
+  await send.processEpochElectionResult(proposal4Index);
 
   await increaseTime(SECONDS_PER_DAY * 3);
   await send.collectEmissions();
 
   const endBalance = Number(await call.balanceOf(account));
-  // 1@1x + 1@3x + 1@5x + 1@4x
-  assert.strictEqual(endBalance, INITIAL_EMISSION * 13, 'Balance should update');
+  // 3@1x + 1@3x + 1@5x + 1@4x
+  assert.strictEqual(endBalance, INITIAL_EMISSION * 15, 'Balance should update');
 });
 
 exports.epochElectionPasses = helpers.thisRegisteredUser(0,

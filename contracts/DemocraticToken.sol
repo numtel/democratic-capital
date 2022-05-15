@@ -187,11 +187,9 @@ contract DemocraticToken {
     uint toCollect = availableEmissions(msg.sender, currentDay);
     _mint(msg.sender, toCollect);
     registered[msg.sender].lastFeeCollected = currentDay;
-    // TODO emit EmissionsCollected event
   }
 
-  // TODO permission control on this
-  function newEpoch(Epoch memory epochToInsert) public {
+  function newEpoch(Epoch memory epochToInsert) internal {
     uint currentDay = daystamp();
     uint thisEpoch = epochs.length - 1;
     require(epochToInsert.beginDay > currentDay, "Epoch must start in future");
