@@ -100,6 +100,7 @@ contract DemocraticToken {
   }
 
   function unregisterAccount() external onlyRegistered {
+    // This will not delete the epochProposalVoted mapping, which is fine
     delete registered[msg.sender];
     updateRegisteredCount(true);
     emit Unregistered(msg.sender);
@@ -314,7 +315,7 @@ contract DemocraticToken {
     require(epochProposalIndex < epochProposalCount, "Invalid index specified");
     uint currentDay = daystamp();
     EpochProposal storage proposal = epochProposals[epochProposalIndex];
-    require(proposal.hasBeenProcessed == false, "Election has been processed already");
+    require(!proposal.hasBeenProcessed, "Election has been processed already");
     require(currentDay > proposal.electionEndDay, "Election has not finished");
     (bool participationMet, bool supportThresholdMet) = epochElectionTabulation(proposal);
     require(participationMet, "Minimum participation not met");
@@ -354,12 +355,12 @@ contract DemocraticToken {
     return _daystamp(block.timestamp);
   }
 
-  function daystamp(uint timestamp) public pure returns(uint) {
+  function daystamp(uint timestamp) external pure returns(uint) {
     return _daystamp(timestamp);
   }
 
   function _daystamp(uint timestamp) internal pure returns(uint) {
-    return timestamp / 86400;
+    return timestamp / SECONDS_PER_DAY;
   }
 
   function _mint(address account, uint amount) internal {
