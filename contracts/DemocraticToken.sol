@@ -14,6 +14,8 @@ contract DemocraticToken {
 
   struct RegisteredAccount {
     uint lastFeeCollected;
+    uint registrationDay;
+    mapping(uint => bool) epochProposalVoted;
   }
 
   mapping(address => RegisteredAccount) public registered;
@@ -27,22 +29,43 @@ contract DemocraticToken {
     uint dailyEmission;
     // How many days before uncollected emissions expire
     uint16 expiryDayCount;
-    uint16 minimumElectionDays;
+    uint16 epochElectionMinDays;
     uint16 epochElectionThreshold;
-
+    uint16 epochElectionMinParticipation;
   }
+
+  struct Day {
+    // Must have registered before start of election in order to vote
+    uint registeredCount;
+    uint previousDay;
+    uint dayNumber;
+  }
+  mapping(uint => Day) public dayStats;
+  uint latestDay;
 
   struct EpochProposal {
     Epoch newEpoch;
+    uint electionStartDay;
     uint electionEndDay;
-
+    address proposer;
+    uint epochProposalIndex;
+    uint votesSupporting;
+    uint votesAgainst;
+    // Number of people who have voted so far
+    uint voterCount;
+    // Set on first vote
+    uint registeredCount;
   }
 
   Epoch[] public epochs;
+  // Initial epoch pushed to array in constructor
   uint public epochCount = 1;
+  EpochProposal[] public epochProposals;
+  uint public epochProposalCount = 0;
 
   event Transfer(address indexed from, address indexed to, uint value);
   event Approval(address indexed owner, address indexed spender, uint value);
+  event NewEpochProposal(uint index, address indexed from);
 
   constructor(
     address _verifications,
@@ -52,21 +75,74 @@ contract DemocraticToken {
       "Verifications contract must not be zero address");
     verifications = IVerification(_verifications);
 
+    uint currentDay = daystamp();
+
     // Initial epoch always starts from current day
-    initialEpoch.beginDay = _daystamp(block.timestamp);
+    initialEpoch.beginDay = currentDay;
     epochs.push(initialEpoch);
+
+    dayStats[currentDay] = Day(0, 0, currentDay);
+    latestDay = currentDay;
   }
 
+  // TODO registrations happen by election?
   function registerAccount() external onlyVerified {
-    registered[msg.sender].lastFeeCollected = _daystamp(block.timestamp) - 1;
+    uint currentDay = daystamp();
+    registered[msg.sender].lastFeeCollected = currentDay - 1;
+    registered[msg.sender].registrationDay = currentDay;
+    updateRegisteredCount(false);
   }
 
   function unregisterAccount() external onlyRegistered {
     delete registered[msg.sender];
+    updateRegisteredCount(true);
+  }
+
+  function updateRegisteredCount(bool decrement) internal {
+    uint currentDay = daystamp();
+    if(dayStats[currentDay].dayNumber > 0) {
+      // A record already exists for today
+      if(decrement) {
+        dayStats[currentDay].registeredCount--;
+      } else {
+        dayStats[currentDay].registeredCount++;
+      }
+    } else {
+      // Need to create a new record for today
+      if(decrement) {
+        dayStats[currentDay].registeredCount = dayStats[latestDay].registeredCount - 1;
+      } else {
+        dayStats[currentDay].registeredCount = dayStats[latestDay].registeredCount + 1;
+      }
+      dayStats[currentDay].previousDay = latestDay;
+      dayStats[currentDay].dayNumber = currentDay;
+      latestDay = currentDay;
+    }
+  }
+
+  function epochOnDay(uint dayNumber) public view returns(Epoch memory epoch) {
+    uint thisEpoch = epochs.length - 1;
+    for(; thisEpoch >= 0; thisEpoch--) {
+      if(epochs[thisEpoch].beginDay <= dayNumber) {
+        return epochs[thisEpoch];
+      }
+    }
+    return epochs[0];
+  }
+
+  function statsOfDay(uint dayNumber) public view returns(Day memory stats) {
+    uint thisDayNumber = latestDay;
+    Day memory thisDay = dayStats[thisDayNumber];
+    // If no registrations or unregistrations happen, there will be no record
+    // so return the last day before or on the dayNumber
+    while(thisDay.previousDay > dayNumber) {
+      thisDay = dayStats[thisDay.previousDay];
+    }
+    return thisDay;
   }
 
   function availableEmissions(address toCheck) external view returns(uint) {
-    return availableEmissions(toCheck, _daystamp(block.timestamp));
+    return availableEmissions(toCheck, daystamp());
   }
 
   function availableEmissions(address toCheck, uint onDay) public view returns(uint) {
@@ -100,16 +176,16 @@ contract DemocraticToken {
   }
 
   function collectEmissions() external onlyVerified onlyRegistered {
-    uint currentDay = _daystamp(block.timestamp);
+    uint currentDay = daystamp();
     uint toCollect = availableEmissions(msg.sender, currentDay);
     _mint(msg.sender, toCollect);
     registered[msg.sender].lastFeeCollected = currentDay;
-    // TODO emit FeeCollected event
+    // TODO emit EmissionsCollected event
   }
 
   // TODO permission control on this
-  function newEpoch(Epoch calldata epochToInsert) public {
-    uint currentDay = _daystamp(block.timestamp);
+  function newEpoch(Epoch memory epochToInsert) public {
+    uint currentDay = daystamp();
     uint thisEpoch = epochs.length - 1;
     require(epochToInsert.beginDay > currentDay, "Epoch must start in future");
     if(epochs[thisEpoch].beginDay >= epochToInsert.beginDay) {
@@ -138,8 +214,95 @@ contract DemocraticToken {
     epochCount++;
   }
 
-  function proposeEpoch(EpochProposal calldata proposal) external onlyVerified onlyRegistered {
-    // TODO write this function
+  function proposeEpoch(
+    Epoch memory proposedEpoch, uint electionStartDay, uint electionEndDay
+  ) external onlyVerified onlyRegistered {
+    uint currentDay = daystamp();
+    Epoch memory currentEpoch = epochOnDay(currentDay);
+    require(electionStartDay >= currentDay, "Election cannot start in past");
+    require(electionEndDay - electionStartDay >= currentEpoch.epochElectionMinDays,
+      "Election must meet minimum duration");
+    // +2 because electionEndDay is inclusive, and at least one day in between
+    //  because the election result must be processed before the new epoch begins
+    require(proposedEpoch.beginDay >= electionEndDay + 2, "Epoch must start at least 2 days after election end");
+
+    epochProposals.push(EpochProposal(
+      proposedEpoch,
+      electionStartDay,
+      electionEndDay,
+      msg.sender,
+      epochProposals.length,
+      0, 0, 0, 0
+    ));
+    epochProposalCount++;
+    emit NewEpochProposal(epochProposalCount - 1, msg.sender);
+  }
+
+  function voteOnEpochProposal(
+    uint epochProposalIndex, bool inSupport
+  ) external onlyVerified onlyRegistered {
+    require(epochProposalIndex < epochProposalCount, "Invalid index specified");
+    uint currentDay = daystamp();
+    EpochProposal storage proposal = epochProposals[epochProposalIndex];
+    RegisteredAccount storage voter = registered[msg.sender];
+    require(voter.epochProposalVoted[epochProposalIndex] == false,
+      "Can only vote once per election");
+    require(voter.registrationDay < proposal.electionStartDay,
+      "Must have registered before election start");
+    require(currentDay >= proposal.electionStartDay,
+      "Election has not begun");
+    require(currentDay <= proposal.electionEndDay,
+      "Election has finished");
+    // The registeredCount value is not known when the proposal is created,
+    //  therefore fill it on first vote
+    if(proposal.registeredCount == 0) {
+      // Fetch number of possible voters in this election
+      Day memory stats = statsOfDay(proposal.electionStartDay - 1);
+      proposal.registeredCount = stats.registeredCount;
+    }
+    // TODO implement quadratic voting with exponent as epoch property
+    if(inSupport) {
+      proposal.votesSupporting++;
+    } else {
+      proposal.votesAgainst++;
+    }
+    proposal.voterCount++;
+    voter.epochProposalVoted[epochProposalIndex] = true;
+  }
+
+  function epochElectionTabulation(uint epochProposalIndex) external view
+    returns(bool participationMet, bool supportThresholdMet)
+  {
+    require(epochProposalIndex < epochProposalCount, "Invalid index specified");
+    EpochProposal memory proposal = epochProposals[epochProposalIndex];
+    return epochElectionTabulation(proposal);
+  }
+
+  function epochElectionTabulation(EpochProposal memory proposal) public view
+    returns(bool participationMet, bool supportThresholdMet)
+  {
+    Epoch memory proposalEpoch = epochOnDay(proposal.electionStartDay);
+    participationMet = (proposal.voterCount * type(uint16).max) >=
+      (proposal.registeredCount * proposalEpoch.epochElectionMinParticipation);
+    supportThresholdMet =
+        (proposal.votesSupporting * type(uint16).max)
+        / (proposal.votesSupporting + proposal.votesAgainst)
+      >= proposalEpoch.epochElectionThreshold;
+  }
+
+  // Somebody must invoke this function after the election ends but before the
+  //  resulting epoch is set to begin
+  function processEpochElectionResult(
+    uint epochProposalIndex
+  ) external onlyVerified onlyRegistered {
+    require(epochProposalIndex < epochProposalCount, "Invalid index specified");
+    uint currentDay = daystamp();
+    EpochProposal memory proposal = epochProposals[epochProposalIndex];
+    require(currentDay > proposal.electionEndDay, "Election has not finished");
+    (bool participationMet, bool supportThresholdMet) = epochElectionTabulation(proposal);
+    require(participationMet, "Minimum participation not met");
+    require(supportThresholdMet, "Minimum support threshold not met");
+    newEpoch(proposal.newEpoch);
   }
 
   // TODO remove this function
@@ -168,8 +331,11 @@ contract DemocraticToken {
     return true;
   }
 
-  function daystamp(uint timestamp) external view returns(uint) {
-    if(timestamp == 0) timestamp = block.timestamp;
+  function daystamp() public view returns(uint) {
+    return _daystamp(block.timestamp);
+  }
+
+  function daystamp(uint timestamp) public pure returns(uint) {
     return _daystamp(timestamp);
   }
 

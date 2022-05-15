@@ -50,6 +50,7 @@ async function({
   increaseTime, SECONDS_PER_DAY, curDay, Epoch,
 }) {
   // Configure the upcoming epochs
+  // TODO convert to proposals
   await send.newEpoch(Epoch(1, INITIAL_EMISSION * 2));
   await send.newEpoch(Epoch(4, INITIAL_EMISSION * 3));
   await send.newEpoch(Epoch(6, INITIAL_EMISSION * 4));
@@ -68,6 +69,7 @@ async function({
   send, call, account, contracts, web3, INITIAL_EMISSION,
   increaseTime, SECONDS_PER_DAY, curDay, Epoch,
 }) {
+  // TODO convert to proposal
   await send.newEpoch(Epoch(5, INITIAL_EMISSION * 2, 7));
 
   await increaseTime(SECONDS_PER_DAY * 9);
@@ -83,6 +85,7 @@ async function({
   send, call, account, contracts, web3, INITIAL_EMISSION,
   increaseTime, SECONDS_PER_DAY, curDay, Epoch,
 }) {
+  // TODO convert to proposals
   await send.newEpoch(Epoch(1, INITIAL_EMISSION * 2));
   await send.newEpoch(Epoch(3, INITIAL_EMISSION * 4));
   // Insert before last epoch
@@ -97,3 +100,43 @@ async function({
   // 1@1x + 1@3x + 1@5x + 1@4x
   assert.strictEqual(endBalance, INITIAL_EMISSION * 13, 'Balance should update');
 });
+
+exports.epochElectionPasses = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch,
+  emissionDetails,
+}) {
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION * 2),
+    curDay + 1,
+    curDay + 1)).events.NewEpochProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.voteOnEpochProposal(proposalIndex, true);
+
+  let hadError;
+  try {
+    await send.voteOnEpochProposal(proposalIndex, true);
+  } catch(error) {
+    hadError = true;
+  }
+  assert.ok(hadError, 'Cannot vote twice in same election');
+
+  // Skip forward to end election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processEpochElectionResult(proposalIndex);
+  // Skip forward 2 days to enter new epoch
+  await increaseTime(SECONDS_PER_DAY*2);
+
+  await send.collectEmissions();
+
+  const endBalance = Number(await call.balanceOf(account));
+  // 3@1x + 2@2x
+  assert.strictEqual(endBalance, INITIAL_EMISSION * 7, 'Balance should update');
+});
+
+// TODO epochElectionFailsThreshold
+// TODO epochElectionFailsParticipation
+// TODO epochElectionMaintainsRegisteredCount
+// TODO epochElectionPassesMajorityThreshold
