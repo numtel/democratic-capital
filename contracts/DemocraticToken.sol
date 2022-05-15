@@ -7,7 +7,7 @@ contract DemocraticToken {
   mapping(address => mapping(address => uint)) public allowance;
   string public name = "Democratic Token";
   string public symbol = "DEMO";
-  uint8 public decimals = 18;
+  uint8 public decimals = 4;
   IVerification public verifications;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
@@ -15,7 +15,7 @@ contract DemocraticToken {
   struct RegisteredAccount {
     uint lastFeeCollected;
     uint registrationDay;
-    mapping(uint => bool) epochProposalVoted;
+    mapping(uint => uint) epochProposalVoted;
   }
 
   mapping(address => RegisteredAccount) public registered;
@@ -48,6 +48,7 @@ contract DemocraticToken {
     uint electionStartDay;
     uint electionEndDay;
     address proposer;
+    bool hasBeenProcessed;
     uint epochProposalIndex;
     uint votesSupporting;
     uint votesAgainst;
@@ -66,6 +67,10 @@ contract DemocraticToken {
   event Transfer(address indexed from, address indexed to, uint value);
   event Approval(address indexed owner, address indexed spender, uint value);
   event NewEpochProposal(uint index, address indexed from);
+  event EpochProposalProcessed(uint index, EpochProposal proposal);
+  event NewEpoch(uint index, Epoch epochInserted);
+  event Registration(address indexed account);
+  event Unregistered(address indexed account);
 
   constructor(
     address _verifications,
@@ -91,11 +96,13 @@ contract DemocraticToken {
     registered[msg.sender].lastFeeCollected = currentDay - 1;
     registered[msg.sender].registrationDay = currentDay;
     updateRegisteredCount(false);
+    emit Registration(msg.sender);
   }
 
   function unregisterAccount() external onlyRegistered {
     delete registered[msg.sender];
     updateRegisteredCount(true);
+    emit Unregistered(msg.sender);
   }
 
   function updateRegisteredCount(bool decrement) internal {
@@ -194,6 +201,7 @@ contract DemocraticToken {
         if(epochs[thisEpoch].beginDay == epochToInsert.beginDay) {
           // Overwrite this existing epoch, it begins on same day
           epochs[thisEpoch] = epochToInsert;
+          emit NewEpoch(thisEpoch, epochToInsert);
           return;
         } else if(epochs[thisEpoch].beginDay < epochToInsert.beginDay) {
           break;
@@ -207,9 +215,11 @@ contract DemocraticToken {
         epochs[updateEpoch] = epochs[updateEpoch - 1];
       }
       epochs[thisEpoch + 1] = epochToInsert;
+      emit NewEpoch(thisEpoch + 1, epochToInsert);
     } else {
       // This is a new epoch at the end
       epochs.push(epochToInsert);
+      emit NewEpoch(epochs.length - 1, epochToInsert);
     }
     epochCount++;
   }
@@ -231,6 +241,7 @@ contract DemocraticToken {
       electionStartDay,
       electionEndDay,
       msg.sender,
+      false,
       epochProposals.length,
       0, 0, 0, 0
     ));
@@ -239,13 +250,13 @@ contract DemocraticToken {
   }
 
   function voteOnEpochProposal(
-    uint epochProposalIndex, bool inSupport
+    uint epochProposalIndex, bool inSupport, uint quadraticPayment
   ) external onlyVerified onlyRegistered {
     require(epochProposalIndex < epochProposalCount, "Invalid index specified");
     uint currentDay = daystamp();
     EpochProposal storage proposal = epochProposals[epochProposalIndex];
     RegisteredAccount storage voter = registered[msg.sender];
-    require(voter.epochProposalVoted[epochProposalIndex] == false,
+    require(voter.epochProposalVoted[epochProposalIndex] == 0,
       "Can only vote once per election");
     require(voter.registrationDay < proposal.electionStartDay,
       "Must have registered before election start");
@@ -253,6 +264,8 @@ contract DemocraticToken {
       "Election has not begun");
     require(currentDay <= proposal.electionEndDay,
       "Election has finished");
+    require(balanceOf[msg.sender] >= quadraticPayment,
+      "Insufficient balance");
     // The registeredCount value is not known when the proposal is created,
     //  therefore fill it on first vote
     if(proposal.registeredCount == 0) {
@@ -260,14 +273,19 @@ contract DemocraticToken {
       Day memory stats = statsOfDay(proposal.electionStartDay - 1);
       proposal.registeredCount = stats.registeredCount;
     }
-    // TODO implement quadratic voting with exponent as epoch property
+    uint votePower = sqrt(1 + (quadraticPayment / (10**decimals)));
+    if(quadraticPayment > 0) {
+      balanceOf[msg.sender] -= quadraticPayment;
+      emit Transfer(msg.sender, address(0), quadraticPayment);
+    }
     if(inSupport) {
-      proposal.votesSupporting++;
+      proposal.votesSupporting += votePower;
+      voter.epochProposalVoted[epochProposalIndex] = 1;
     } else {
-      proposal.votesAgainst++;
+      proposal.votesAgainst += votePower;
+      voter.epochProposalVoted[epochProposalIndex] = 2;
     }
     proposal.voterCount++;
-    voter.epochProposalVoted[epochProposalIndex] = true;
   }
 
   function epochElectionTabulation(uint epochProposalIndex) external view
@@ -297,12 +315,15 @@ contract DemocraticToken {
   ) external onlyVerified onlyRegistered {
     require(epochProposalIndex < epochProposalCount, "Invalid index specified");
     uint currentDay = daystamp();
-    EpochProposal memory proposal = epochProposals[epochProposalIndex];
+    EpochProposal storage proposal = epochProposals[epochProposalIndex];
+    require(proposal.hasBeenProcessed == false, "Election has been processed already");
     require(currentDay > proposal.electionEndDay, "Election has not finished");
     (bool participationMet, bool supportThresholdMet) = epochElectionTabulation(proposal);
     require(participationMet, "Minimum participation not met");
     require(supportThresholdMet, "Minimum support threshold not met");
+    proposal.hasBeenProcessed = true;
     newEpoch(proposal.newEpoch);
+    emit EpochProposalProcessed(epochProposalIndex, proposal);
   }
 
   // TODO remove this function
@@ -362,6 +383,21 @@ contract DemocraticToken {
   modifier notBanned() {
     // TODO write banning elections
     _;
+  }
+
+  // From: https://github.com/Uniswap/v2-core/blob/v1.0.1/contracts/libraries/Math.sol
+  // babylonian method (https://en.wikipedia.org/wiki/Methods_of_computing_square_roots#Babylonian_method)
+  function sqrt(uint y) internal pure returns (uint z) {
+    if (y > 3) {
+      z = y;
+      uint x = y / 2 + 1;
+      while (x < z) {
+        z = x;
+        x = (y / x + x) / 2;
+      }
+    } else if (y != 0) {
+      z = 1;
+    }
   }
 }
 

@@ -104,20 +104,24 @@ async function({
 exports.epochElectionPasses = helpers.thisRegisteredUser(0,
 async function({
   send, call, account, contracts, web3, INITIAL_EMISSION,
-  increaseTime, SECONDS_PER_DAY, curDay, Epoch,
-  emissionDetails,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
 }) {
+  // Propose epoch with threshold slightly above majority
+  //  in order to test quadratic voting
+  // 0xcccc would be absolute minimum threshold for
+  //  4 support, 1 against: 0.8 * 0xffff
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(3, INITIAL_EMISSION * 2),
+    Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0x8fff, 0xffff),
     curDay + 1,
     curDay + 1)).events.NewEpochProposal.returnValues.index;
   // Skip forward to start election
   await increaseTime(SECONDS_PER_DAY);
-  await send.voteOnEpochProposal(proposalIndex, true);
+  await send.voteOnEpochProposal(proposalIndex, true, 0);
 
   let hadError;
   try {
-    await send.voteOnEpochProposal(proposalIndex, true);
+    await send.voteOnEpochProposal(proposalIndex, true, 0);
   } catch(error) {
     hadError = true;
   }
@@ -126,14 +130,56 @@ async function({
   // Skip forward to end election
   await increaseTime(SECONDS_PER_DAY);
   await send.processEpochElectionResult(proposalIndex);
-  // Skip forward 2 days to enter new epoch
+
+  let cantProcessElectionTwice;
+  try {
+    await send.processEpochElectionResult(proposalIndex);
+  } catch(error) {
+    cantProcessElectionTwice = true;
+  }
+  assert.ok(cantProcessElectionTwice, 'Cannot process election results twice');
+
+  // Register a competing voter
+  await register(accounts[1]);
+  // Skip forward to enter the new epoch
+  await increaseTime(SECONDS_PER_DAY);
+
+  // Propose another epoch and vote with 2 different accounts
+  // One pays to quadruple their vote: sqrt(15+1)
+  // The other does not pay
+  const proposal2Index = (await send.proposeEpoch(
+    Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
+    curDay + 4,
+    curDay + 4)).events.NewEpochProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  const QUAD_VOTE = 15 * Math.pow(10, DECIMALS);
+  let failsBeforeCollectingEmissions;
+  try {
+    await send.voteOnEpochProposal(proposal2Index, true, QUAD_VOTE);
+  } catch(error) {
+    failsBeforeCollectingEmissions = true;
+  }
+  assert.ok(failsBeforeCollectingEmissions, "Balance required");
+  await send.collectEmissions();
+  await send.voteOnEpochProposal(proposal2Index, true, QUAD_VOTE);
+  await sendFrom(accounts[1]).voteOnEpochProposal(proposal2Index, false, 0);
+
   await increaseTime(SECONDS_PER_DAY*2);
 
   await send.collectEmissions();
 
   const endBalance = Number(await call.balanceOf(account));
-  // 3@1x + 2@2x
-  assert.strictEqual(endBalance, INITIAL_EMISSION * 7, 'Balance should update');
+  // 3@1x + 4@2x - QUAD_VOTE
+  assert.strictEqual(endBalance, INITIAL_EMISSION * 11 - QUAD_VOTE, 'Balance should update');
+
+  const events = (await send.processEpochElectionResult(proposal2Index)).events;
+  assert.strictEqual(
+    Number(events.EpochProposalProcessed.returnValues.proposal.votesSupporting),
+    Math.sqrt((QUAD_VOTE / Math.pow(10, DECIMALS)) + 1),
+    'Quadratic vote not counted correctly');
+  // Move far enough forward so next test is past the second epoch
+  await increaseTime(SECONDS_PER_DAY*3);
 });
 
 // TODO epochElectionFailsThreshold

@@ -12,22 +12,26 @@ exports.thisRegisteredUser = function(account, handler) {
 
     // Add extra options to help test case
     options.account = account;
-    const send = options.send = Object.keys(contracts.DemocraticToken.methods)
-      .reduce((out, cur) => {
-        const method = contracts.DemocraticToken.methods[cur];
-        out[cur] = function() {
-          return method.apply(null, arguments).send({ from: account, gas: GAS_AMOUNT });
-        }
-        return out;
-      }, {});
-    const call = options.call = Object.keys(contracts.DemocraticToken.methods)
-      .reduce((out, cur) => {
-        const method = contracts.DemocraticToken.methods[cur];
-        out[cur] = function() {
-          return method.apply(null, arguments).call({ from: account });
-        }
-        return out;
-      }, {});
+    const sendFrom = options.sendFrom = (address) =>
+      Object.keys(contracts.DemocraticToken.methods)
+        .reduce((out, cur) => {
+          const method = contracts.DemocraticToken.methods[cur];
+          out[cur] = function() {
+            return method.apply(null, arguments).send({ from: address, gas: GAS_AMOUNT });
+          }
+          return out;
+        }, {});
+    const send = options.send = sendFrom(account);
+    const callFrom = options.callFrom = (address) =>
+      Object.keys(contracts.DemocraticToken.methods)
+        .reduce((out, cur) => {
+          const method = contracts.DemocraticToken.methods[cur];
+          out[cur] = function() {
+            return method.apply(null, arguments).call({ from: address });
+          }
+          return out;
+        }, {});
+    const call = options.call = callFrom(account);
     const curDay = options.curDay = Math.floor(
       (await web3.eth.getBlock(await web3.eth.getBlockNumber()))
         .timestamp / SECONDS_PER_DAY) + 2;
@@ -56,6 +60,19 @@ exports.thisRegisteredUser = function(account, handler) {
         arguments[0] += curDay;
       return Array.from(arguments).concat(INITIAL_EPOCH.slice(arguments.length));
     }
+    const registered = [];
+    const register = options.register = async function(address) {
+      await contracts.MockVerification.methods.setStatus(
+          address, currentTimestamp() + SECONDS_PER_YEAR)
+        .send({ from: address, gas: GAS_AMOUNT });
+      await contracts.DemocraticToken.methods.registerAccount()
+        .send({ from: address, gas: GAS_AMOUNT });
+      // Reset balance
+      const startBalance = await call.balanceOf(address);
+      await contracts.DemocraticToken.methods.transfer(BURN_ACCOUNT, startBalance)
+        .send({ from: address, gas: GAS_AMOUNT });
+      registered.push(address);
+    }
 
     // Reset epoch to initial value
     await send.newEpoch(Epoch(-1));
@@ -64,28 +81,23 @@ exports.thisRegisteredUser = function(account, handler) {
     await increaseTime(SECONDS_PER_DAY * 2);
 
     // Set as passport verified
-    await contracts.MockVerification.methods.setStatus(
-        account, currentTimestamp() + SECONDS_PER_YEAR)
-      .send({ from: account, gas: GAS_AMOUNT });
-    await send.registerAccount();
-
-    // Reset balance
-    const startBalance = await call.balanceOf(account);
-    await send.transfer(BURN_ACCOUNT, startBalance);
+    await register(account);
 
     // Call test case
     await handler.call(this, options);
 
-    // Reset balance
-    const endBalance = await call.balanceOf(account);
-    await send.transfer(BURN_ACCOUNT, endBalance);
-
-    // Reset verification
-    await contracts.MockVerification.methods.setStatus(account, 0)
-      .send({ from: account, gas: GAS_AMOUNT });
-
-    // Reset registrations
-    await send.unregisterAccount();
+    for(let address of registered) {
+      // Reset balance
+      const endBalance = await call.balanceOf(account);
+      await contracts.DemocraticToken.methods.transfer(BURN_ACCOUNT, endBalance)
+        .send({ from: address, gas: GAS_AMOUNT });
+      // Reset verification
+      await contracts.MockVerification.methods.setStatus(account, 0)
+        .send({ from: address, gas: GAS_AMOUNT });
+      // Reset registration
+      await contracts.DemocraticToken.methods.unregisterAccount()
+        .send({ from: address, gas: GAS_AMOUNT });
+    }
   });
 }
 

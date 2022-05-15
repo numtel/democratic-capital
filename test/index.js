@@ -8,8 +8,9 @@ web3.eth.handleRevert = true;
 const BUILD_DIR = 'build/';
 const SECONDS_PER_DAY = 60 * 60 * 24;
 const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
+const DECIMALS = 4;
 const GAS_AMOUNT = 20000000;
-const INITIAL_EMISSION = 10;
+const INITIAL_EMISSION = 100000;
 const INITIAL_EPOCH = [0, INITIAL_EMISSION, 0, 0, 0xffff, 0xffff];
 const BURN_ACCOUNT = '0x0000000000000000000000000000000000000000';
 
@@ -84,7 +85,7 @@ const cases = fs.readdirSync(__dirname)
           // Supply test context as options object in first argument to case
           web3, accounts, contracts, currentTimestamp, increaseTime,
           SECONDS_PER_YEAR, SECONDS_PER_DAY, GAS_AMOUNT, INITIAL_EMISSION,
-          BURN_ACCOUNT, INITIAL_EPOCH,
+          BURN_ACCOUNT, INITIAL_EPOCH, DECIMALS,
         });
       } catch(error) {
         console.error(error);
