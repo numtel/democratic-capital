@@ -366,12 +366,17 @@ contract DemocraticToken {
   {
     Epoch memory proposalEpoch = epochOnDay(proposal.electionStartDay);
     // TODO different participation and threshold for different proposal resources
-    participationMet = (proposal.voterCount * type(uint16).max) >=
-      (proposal.registeredCount * proposalEpoch.epochElectionMinParticipation);
-    supportThresholdMet =
-        (proposal.votesSupporting * type(uint16).max)
-        / (proposal.votesSupporting + proposal.votesAgainst)
-      >= proposalEpoch.epochElectionThreshold;
+    if(proposal.voterCount == 0) {
+      participationMet = false;
+      supportThresholdMet = false;
+    } else {
+      participationMet = (proposal.voterCount * type(uint16).max) >=
+        (proposal.registeredCount * proposalEpoch.epochElectionMinParticipation);
+      supportThresholdMet =
+          (proposal.votesSupporting * type(uint16).max)
+          / (proposal.votesSupporting + proposal.votesAgainst)
+        >= proposalEpoch.epochElectionThreshold;
+    }
   }
 
   // Somebody must invoke this function after the election ends but before the
