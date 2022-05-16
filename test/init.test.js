@@ -225,6 +225,29 @@ async function({
   await increaseTime(SECONDS_PER_DAY*3);
 });
 
-// TODO epochElectionFailsThreshold
-// TODO epochElectionFailsParticipation
-// TODO epochElectionMaintainsRegisteredCount
+exports.mintElectionPasses = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION, BURN_ADDRESS,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  const MINT_AMOUNT = 30 * Math.pow(10, DECIMALS);
+  const MINT_RECIP = accounts[1];
+  await register(MINT_RECIP);
+  const proposalIndex = (await send.proposeMint([MINT_AMOUNT, MINT_RECIP], curDay+1, curDay+1)).events.NewProposal.returnValues.index;
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+  await sendFrom(MINT_RECIP).vote(proposalIndex, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  const events = (await send.processElectionResult(proposalIndex)).events;
+  assert.strictEqual(events.Transfer.returnValues.from,
+    '0x0000000000000000000000000000000000000000', 'From should be mint value');
+  assert.strictEqual(events.Transfer.returnValues.to, MINT_RECIP);
+  assert.strictEqual(Number(events.Transfer.returnValues.value), MINT_AMOUNT);
+  const endBalance = Number(await call.balanceOf(MINT_RECIP));
+  assert.strictEqual(endBalance, MINT_AMOUNT, 'Balance should update');
+});
+
+// TODO electionFailsThreshold
+// TODO electionFailsParticipation
+// TODO electionMaintainsRegisteredCount

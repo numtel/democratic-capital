@@ -40,6 +40,11 @@ contract DemocraticToken {
     uint16 epochElectionMinParticipation;
   }
 
+  struct Mint {
+    uint amount;
+    address recipient;
+  }
+
   struct Day {
     // Must have registered before start of election in order to vote
     // Number of users registered at end of this day (or currently if latest day)
@@ -53,8 +58,8 @@ contract DemocraticToken {
   uint latestDay;
 
   struct Proposal {
-    // 0 epoch
-    uint resourceType;
+    // 0: epoch, 1: mint
+    uint8 resourceType;
     uint resourceIndex;
     uint electionStartDay;
     uint electionEndDay;
@@ -74,6 +79,8 @@ contract DemocraticToken {
   uint public epochCount = 1;
   Epoch[] public pendingEpochs;
   uint public pendingEpochCount = 0;
+  Mint[] public pendingMints;
+  uint public pendingMintCount = 0;
   Proposal[] public proposals;
   uint public proposalCount = 0;
 
@@ -239,19 +246,37 @@ contract DemocraticToken {
   function proposeEpoch(
     Epoch memory proposedEpoch, uint electionStartDay, uint electionEndDay
   ) external onlyVerified onlyRegistered {
+    // +2 because electionEndDay is inclusive, and at least one day in between
+    //  because the election result must be processed before the new epoch begins
+    require(proposedEpoch.beginDay >= electionEndDay + 2,
+      "Epoch must start at least 2 days after election end");
+
+    pendingEpochs.push(proposedEpoch);
+    newProposal(0, pendingEpochs.length - 1, electionStartDay, electionEndDay);
+  }
+
+  function proposeMint(
+    Mint memory proposedMint, uint electionStartDay, uint electionEndDay
+  ) external onlyVerified onlyRegistered {
+    pendingMints.push(proposedMint);
+    newProposal(1, pendingMints.length - 1, electionStartDay, electionEndDay);
+  }
+
+  function newProposal(
+    uint8 resourceType,
+    uint resourceIndex,
+    uint electionStartDay,
+    uint electionEndDay
+  ) internal {
     uint currentDay = daystamp();
     Epoch memory currentEpoch = epochOnDay(currentDay);
     require(electionStartDay >= currentDay, "Election cannot start in past");
     require(electionEndDay - electionStartDay >= currentEpoch.epochElectionMinDays,
       "Election must meet minimum duration");
-    // +2 because electionEndDay is inclusive, and at least one day in between
-    //  because the election result must be processed before the new epoch begins
-    require(proposedEpoch.beginDay >= electionEndDay + 2, "Epoch must start at least 2 days after election end");
-
-    pendingEpochs.push(proposedEpoch);
 
     proposals.push(Proposal(
-      0, pendingEpochs.length - 1,
+      resourceType,
+      resourceIndex,
       electionStartDay,
       electionEndDay,
       msg.sender,
@@ -337,6 +362,11 @@ contract DemocraticToken {
     proposal.hasBeenProcessed = true;
     if(proposal.resourceType == 0) {
       newEpoch(pendingEpochs[proposal.resourceIndex]);
+    } else if(proposal.resourceType == 1) {
+      _mint(
+        pendingMints[proposal.resourceIndex].recipient,
+        pendingMints[proposal.resourceIndex].amount
+      );
     }
     emit ProposalProcessed(proposalIndex, proposal);
   }
