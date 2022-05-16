@@ -115,6 +115,7 @@ contract DemocraticToken {
   event AccountBanned(address indexed account, uint banExpirationDay, bytes32 idHash);
   event CustomTxSent(address to, bytes data, bytes returned);
   event RegistrationPending(uint proposalIndex, address indexed account);
+  event Vote(uint proposalIndex, address indexed voter, bool inSupport, uint votePower);
 
   constructor(
     address _verifications,
@@ -202,7 +203,7 @@ contract DemocraticToken {
     Day memory thisDay = dayStats[thisDayNumber];
     // If no registrations or unregistrations happen, there will be no record
     // so return the last day before or on the dayNumber
-    while(thisDay.previousDay > dayNumber) {
+    while(thisDay.dayNumber > dayNumber) {
       thisDay = dayStats[thisDay.previousDay];
     }
     return thisDay;
@@ -400,6 +401,7 @@ contract DemocraticToken {
       voter.proposalVoted[proposalIndex] = 2;
     }
     proposal.voterCount++;
+    emit Vote(proposalIndex, msg.sender, inSupport, votePower);
   }
 
   function electionTabulation(uint proposalIndex) external view

@@ -376,9 +376,162 @@ async function({
     .send({ from: ELECT_ACCT, gas: GAS_AMOUNT });
 
   await sendFrom(ELECT_ACCT).unregisterAccount();
+
+  // Reset contract so new user registrations do not require election
+  const proposal2Index = (await send.proposeEpoch(
+    Epoch(8),
+    curDay + 6,
+    curDay + 6)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposal2Index, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processElectionResult(proposal2Index);
+  await increaseTime(SECONDS_PER_DAY);
+});
+
+exports.electionFailsThreshold = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  // Propose epoch with threshold of majority
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0x8000, 0xffff),
+    curDay + 1,
+    curDay + 1)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+
+  // Skip forward to end election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processElectionResult(proposalIndex);
+
+  // Register a competing voter
+  await register(accounts[1]);
+  // Skip forward to enter the new epoch
+  await increaseTime(SECONDS_PER_DAY);
+
+  // Propose another epoch and vote with 2 different accounts
+  const proposal2Index = (await send.proposeEpoch(
+    Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
+    curDay + 4,
+    curDay + 4)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposal2Index, true, 0);
+  await sendFrom(accounts[1]).vote(proposal2Index, false, 0);
+
+  await increaseTime(SECONDS_PER_DAY*2);
+
+  let failsProcessing;
+  try {
+    await send.processElectionResult(proposal2Index);
+  } catch(error) {
+    assert.strictEqual(error.reason, 'MT');
+    failsProcessing = true;
+  }
+  assert.ok(failsProcessing, "Should not have processed election");
+});
+
+exports.electionFailsParticipation = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  // Propose epoch with minimum participation of majority
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0xffff, 0x8000),
+    curDay + 1,
+    curDay + 1)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+
+  // Skip forward to end election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processElectionResult(proposalIndex);
+
+  // Register a competing voter
+  await register(accounts[1]);
+  // Skip forward to enter the new epoch
+  await increaseTime(SECONDS_PER_DAY);
+
+  // Propose another epoch and vote with 2 different accounts
+  const proposal2Index = (await send.proposeEpoch(
+    Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
+    curDay + 4,
+    curDay + 4)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  // Only submit 1 vote from 2 available voters
+  await send.vote(proposal2Index, true, 0);
+
+  await increaseTime(SECONDS_PER_DAY*2);
+
+  let failsProcessing;
+  try {
+    await send.processElectionResult(proposal2Index);
+  } catch(error) {
+    assert.strictEqual(error.reason, 'MP');
+    failsProcessing = true;
+  }
+  assert.ok(failsProcessing, "Should not have processed election");
+});
+
+exports.electionMaintainsRegisteredCount = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(4, INITIAL_EMISSION * 2, 0, 0, 0xffff, 0xffff),
+    curDay + 1,
+    curDay + 1)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await register(accounts[1]);
+  await register(accounts[2]);
+  await register(accounts[3]);
+  await send.vote(proposalIndex, true, 0);
+
+  // Skip forward to end election
+  await increaseTime(SECONDS_PER_DAY);
+  // This should still work even though more accounts registered
+  await send.processElectionResult(proposalIndex);
+});
+
+exports.electionCannotProcessBeforeEnd = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(4, INITIAL_EMISSION * 2, 0, 0, 0xffff, 0xffff),
+    curDay + 1,
+    curDay + 2)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+
+  // Election still not finished
+  await increaseTime(SECONDS_PER_DAY);
+  let failedProcess;
+  try {
+    await send.processElectionResult(proposalIndex);
+  } catch(error) {
+    assert.strictEqual(error.reason, 'EF');
+    failedProcess = true;
+  }
+  // Skip forward to end election
+  await increaseTime(SECONDS_PER_DAY);
+  // Election is now finished
+  await send.processElectionResult(proposalIndex);
 });
 
 // TODO check verified/registered permissions in all functions that require them
-// TODO electionFailsThreshold
-// TODO electionFailsParticipation
-// TODO electionMaintainsRegisteredCount
