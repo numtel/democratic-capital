@@ -248,6 +248,36 @@ async function({
   assert.strictEqual(endBalance, MINT_AMOUNT, 'Balance should update');
 });
 
+exports.banElectionPasses = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION, BURN_ADDRESS,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  const BAN_END = curDay + 3;
+  const BAN_RECIP = accounts[1];
+  await register(BAN_RECIP);
+  const proposalIndex = (await send.proposeBan(BAN_RECIP, BAN_END, curDay+1, curDay+1)).events.NewProposal.returnValues.index;
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+  // Who would vote to ban themselves? A test user!
+  await sendFrom(BAN_RECIP).vote(proposalIndex, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  const events = (await send.processElectionResult(proposalIndex)).events;
+  assert.strictEqual(events.Unregistered.returnValues.account, BAN_RECIP);
+
+  let registrationFailed;
+  try {
+    await sendFrom(BAN_RECIP).registerAccount();
+  } catch(error) {
+    registrationFailed = true;
+  }
+  assert.ok(registrationFailed, "Can't register while banned");
+  await increaseTime(SECONDS_PER_DAY);
+  // Registration will work now after ban expired
+  await sendFrom(BAN_RECIP).registerAccount();
+});
+
 // TODO electionFailsThreshold
 // TODO electionFailsParticipation
 // TODO electionMaintainsRegisteredCount

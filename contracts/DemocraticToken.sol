@@ -45,6 +45,12 @@ contract DemocraticToken {
     address recipient;
   }
 
+  struct Ban {
+    address toBan;
+    uint banExpirationDay;
+    bytes32 idHash;
+  }
+
   struct Day {
     // Must have registered before start of election in order to vote
     // Number of users registered at end of this day (or currently if latest day)
@@ -58,7 +64,7 @@ contract DemocraticToken {
   uint latestDay;
 
   struct Proposal {
-    // 0: epoch, 1: mint
+    // 0: epoch, 1: mint, 2: ban
     uint8 resourceType;
     uint resourceIndex;
     uint electionStartDay;
@@ -81,6 +87,9 @@ contract DemocraticToken {
   uint public pendingEpochCount = 0;
   Mint[] public pendingMints;
   uint public pendingMintCount = 0;
+  Ban[] public pendingBans;
+  uint public pendingBanCount = 0;
+  mapping(bytes32 => uint) activeBans;
   Proposal[] public proposals;
   uint public proposalCount = 0;
 
@@ -91,6 +100,7 @@ contract DemocraticToken {
   event NewEpoch(uint index, Epoch epochInserted);
   event Registration(address indexed account);
   event Unregistered(address indexed account);
+  event AccountBanned(address indexed account, uint banExpirationDay, bytes32 idHash);
 
   constructor(
     address _verifications,
@@ -113,6 +123,8 @@ contract DemocraticToken {
   // TODO registrations happen by election?
   function registerAccount() external onlyVerified {
     uint currentDay = daystamp();
+    bytes32 idHash = verifications.addressIdHash(msg.sender);
+    require(activeBans[idHash] <= currentDay, "Account banned");
     registered[msg.sender].lastFeeCollected = currentDay - 1;
     registered[msg.sender].registrationDay = currentDay;
     updateRegisteredCount(false);
@@ -252,6 +264,7 @@ contract DemocraticToken {
       "Epoch must start at least 2 days after election end");
 
     pendingEpochs.push(proposedEpoch);
+    pendingEpochCount++;
     newProposal(0, pendingEpochs.length - 1, electionStartDay, electionEndDay);
   }
 
@@ -259,7 +272,20 @@ contract DemocraticToken {
     Mint memory proposedMint, uint electionStartDay, uint electionEndDay
   ) external onlyVerified onlyRegistered {
     pendingMints.push(proposedMint);
+    pendingMintCount++;
     newProposal(1, pendingMints.length - 1, electionStartDay, electionEndDay);
+  }
+
+  function proposeBan(
+    address toBan, uint banExpirationDay, uint electionStartDay, uint electionEndDay
+  ) external onlyVerified onlyRegistered {
+    require(registered[toBan].registrationDay > 0, "Cannot ban if not registered");
+
+    pendingBans.push(Ban(
+      toBan, banExpirationDay, verifications.addressIdHash(toBan)
+    ));
+    pendingBanCount++;
+    newProposal(2, pendingBans.length - 1, electionStartDay, electionEndDay);
   }
 
   function newProposal(
@@ -367,6 +393,17 @@ contract DemocraticToken {
         pendingMints[proposal.resourceIndex].recipient,
         pendingMints[proposal.resourceIndex].amount
       );
+    } else if(proposal.resourceType == 2) {
+      delete registered[pendingBans[proposal.resourceIndex].toBan];
+      updateRegisteredCount(true);
+      emit Unregistered(pendingBans[proposal.resourceIndex].toBan);
+      emit AccountBanned(
+        pendingBans[proposal.resourceIndex].toBan,
+        pendingBans[proposal.resourceIndex].banExpirationDay,
+        pendingBans[proposal.resourceIndex].idHash
+      );
+      activeBans[pendingBans[proposal.resourceIndex].idHash] =
+        pendingBans[proposal.resourceIndex].banExpirationDay;
     }
     emit ProposalProcessed(proposalIndex, proposal);
   }
