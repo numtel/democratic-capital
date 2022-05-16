@@ -15,7 +15,8 @@ contract DemocraticToken {
   struct RegisteredAccount {
     uint lastFeeCollected;
     uint registrationDay;
-    mapping(uint => uint) epochProposalVoted;
+    // 0: no vote, 1: support, 2: against
+    mapping(uint => uint8) proposalVoted;
   }
 
   mapping(address => RegisteredAccount) public registered;
@@ -27,24 +28,34 @@ contract DemocraticToken {
     uint beginDay;
     // How many tokens per day per registered user
     uint dailyEmission;
-    // How many days before uncollected emissions expire
+    // How many days before uncollected emissions expire: 0=never expire
     uint16 expiryDayCount;
+    // Minimum number of days between election start and end: 0=1 day elections
     uint16 epochElectionMinDays;
+    // 0x0-0xffff percentage of votes that must be insupport for election to passs
     uint16 epochElectionThreshold;
+    // 0x0-0xffff percentage of users who must vote for election to pass
+    // TODO exclude inactive users from this part?
+    //  instead of all registered users, only users who have collected before expiry?
     uint16 epochElectionMinParticipation;
   }
 
   struct Day {
     // Must have registered before start of election in order to vote
+    // Number of users registered at end of this day (or currently if latest day)
     uint registeredCount;
+    // Pointer to previous record
     uint previousDay;
+    // Redundancy for easy access
     uint dayNumber;
   }
   mapping(uint => Day) public dayStats;
   uint latestDay;
 
-  struct EpochProposal {
-    Epoch newEpoch;
+  struct Proposal {
+    // 0 epoch
+    uint resourceType;
+    uint resourceIndex;
     uint electionStartDay;
     uint electionEndDay;
     address proposer;
@@ -61,13 +72,15 @@ contract DemocraticToken {
   Epoch[] public epochs;
   // Initial epoch pushed to array in constructor
   uint public epochCount = 1;
-  EpochProposal[] public epochProposals;
-  uint public epochProposalCount = 0;
+  Epoch[] public pendingEpochs;
+  uint public pendingEpochCount = 0;
+  Proposal[] public proposals;
+  uint public proposalCount = 0;
 
   event Transfer(address indexed from, address indexed to, uint value);
   event Approval(address indexed owner, address indexed spender, uint value);
-  event NewEpochProposal(uint index, address indexed from);
-  event EpochProposalProcessed(uint index, EpochProposal proposal);
+  event NewProposal(uint index, address indexed from);
+  event ProposalProcessed(uint index, Proposal proposal);
   event NewEpoch(uint index, Epoch epochInserted);
   event Registration(address indexed account);
   event Unregistered(address indexed account);
@@ -235,27 +248,29 @@ contract DemocraticToken {
     //  because the election result must be processed before the new epoch begins
     require(proposedEpoch.beginDay >= electionEndDay + 2, "Epoch must start at least 2 days after election end");
 
-    epochProposals.push(EpochProposal(
-      proposedEpoch,
+    pendingEpochs.push(proposedEpoch);
+
+    proposals.push(Proposal(
+      0, pendingEpochs.length - 1,
       electionStartDay,
       electionEndDay,
       msg.sender,
       false,
-      epochProposals.length,
+      proposals.length,
       0, 0, 0, 0
     ));
-    epochProposalCount++;
-    emit NewEpochProposal(epochProposalCount - 1, msg.sender);
+    proposalCount++;
+    emit NewProposal(proposalCount - 1, msg.sender);
   }
 
-  function voteOnEpochProposal(
-    uint epochProposalIndex, bool inSupport, uint quadraticPayment
+  function vote (
+    uint proposalIndex, bool inSupport, uint quadraticPayment
   ) external onlyVerified onlyRegistered {
-    require(epochProposalIndex < epochProposalCount, "Invalid index specified");
+    require(proposalIndex < proposalCount, "Invalid index specified");
     uint currentDay = daystamp();
-    EpochProposal storage proposal = epochProposals[epochProposalIndex];
+    Proposal storage proposal = proposals[proposalIndex];
     RegisteredAccount storage voter = registered[msg.sender];
-    require(voter.epochProposalVoted[epochProposalIndex] == 0,
+    require(voter.proposalVoted[proposalIndex] == 0,
       "Can only vote once per election");
     require(voter.registrationDay < proposal.electionStartDay,
       "Must have registered before election start");
@@ -279,26 +294,27 @@ contract DemocraticToken {
     }
     if(inSupport) {
       proposal.votesSupporting += votePower;
-      voter.epochProposalVoted[epochProposalIndex] = 1;
+      voter.proposalVoted[proposalIndex] = 1;
     } else {
       proposal.votesAgainst += votePower;
-      voter.epochProposalVoted[epochProposalIndex] = 2;
+      voter.proposalVoted[proposalIndex] = 2;
     }
     proposal.voterCount++;
   }
 
-  function epochElectionTabulation(uint epochProposalIndex) external view
+  function electionTabulation(uint proposalIndex) external view
     returns(bool participationMet, bool supportThresholdMet)
   {
-    require(epochProposalIndex < epochProposalCount, "Invalid index specified");
-    EpochProposal memory proposal = epochProposals[epochProposalIndex];
-    return epochElectionTabulation(proposal);
+    require(proposalIndex < proposalCount, "Invalid index specified");
+    Proposal memory proposal = proposals[proposalIndex];
+    return electionTabulation(proposal);
   }
 
-  function epochElectionTabulation(EpochProposal memory proposal) public view
+  function electionTabulation(Proposal memory proposal) public view
     returns(bool participationMet, bool supportThresholdMet)
   {
     Epoch memory proposalEpoch = epochOnDay(proposal.electionStartDay);
+    // TODO different participation and threshold for different proposal resources
     participationMet = (proposal.voterCount * type(uint16).max) >=
       (proposal.registeredCount * proposalEpoch.epochElectionMinParticipation);
     supportThresholdMet =
@@ -309,20 +325,20 @@ contract DemocraticToken {
 
   // Somebody must invoke this function after the election ends but before the
   //  resulting epoch is set to begin
-  function processEpochElectionResult(
-    uint epochProposalIndex
-  ) external onlyVerified onlyRegistered {
-    require(epochProposalIndex < epochProposalCount, "Invalid index specified");
+  function processElectionResult(uint proposalIndex) external onlyVerified onlyRegistered {
+    require(proposalIndex < proposalCount, "Invalid index specified");
     uint currentDay = daystamp();
-    EpochProposal storage proposal = epochProposals[epochProposalIndex];
+    Proposal storage proposal = proposals[proposalIndex];
     require(!proposal.hasBeenProcessed, "Election has been processed already");
     require(currentDay > proposal.electionEndDay, "Election has not finished");
-    (bool participationMet, bool supportThresholdMet) = epochElectionTabulation(proposal);
+    (bool participationMet, bool supportThresholdMet) = electionTabulation(proposal);
     require(participationMet, "Minimum participation not met");
     require(supportThresholdMet, "Minimum support threshold not met");
     proposal.hasBeenProcessed = true;
-    newEpoch(proposal.newEpoch);
-    emit EpochProposalProcessed(epochProposalIndex, proposal);
+    if(proposal.resourceType == 0) {
+      newEpoch(pendingEpochs[proposal.resourceIndex]);
+    }
+    emit ProposalProcessed(proposalIndex, proposal);
   }
 
   // TODO remove this function

@@ -53,23 +53,23 @@ async function({
   const proposal1Index = (await send.proposeEpoch(
     Epoch(3, INITIAL_EMISSION * 2),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   const proposal2Index = (await send.proposeEpoch(
     Epoch(4, INITIAL_EMISSION * 3),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   const proposal3Index = (await send.proposeEpoch(
     Epoch(6, INITIAL_EMISSION * 4),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
-  await send.voteOnEpochProposal(proposal1Index, true, 0);
-  await send.voteOnEpochProposal(proposal2Index, true, 0);
-  await send.voteOnEpochProposal(proposal3Index, true, 0);
+  await send.vote(proposal1Index, true, 0);
+  await send.vote(proposal2Index, true, 0);
+  await send.vote(proposal3Index, true, 0);
   await increaseTime(SECONDS_PER_DAY);
-  await send.processEpochElectionResult(proposal1Index);
-  await send.processEpochElectionResult(proposal2Index);
-  await send.processEpochElectionResult(proposal3Index);
+  await send.processElectionResult(proposal1Index);
+  await send.processElectionResult(proposal2Index);
+  await send.processElectionResult(proposal3Index);
 
   // Go forward 6 days because day 0 gives first emission
   await increaseTime(SECONDS_PER_DAY * 4);
@@ -88,11 +88,11 @@ async function({
   const proposalIndex = (await send.proposeEpoch(
     Epoch(5, INITIAL_EMISSION * 2, 7),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
-  await send.voteOnEpochProposal(proposalIndex, true, 0);
+  await send.vote(proposalIndex, true, 0);
   await increaseTime(SECONDS_PER_DAY);
-  await send.processEpochElectionResult(proposalIndex);
+  await send.processElectionResult(proposalIndex);
 
   await increaseTime(SECONDS_PER_DAY * 7);
   await send.collectEmissions();
@@ -110,31 +110,31 @@ async function({
   const proposal1Index = (await send.proposeEpoch(
     Epoch(3, INITIAL_EMISSION * 2),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   const proposal2Index = (await send.proposeEpoch(
     Epoch(5, INITIAL_EMISSION * 4),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   // Insert before last epoch
   const proposal3Index = (await send.proposeEpoch(
     Epoch(4, INITIAL_EMISSION * 5),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   // Overwrite existing epoch
   const proposal4Index = (await send.proposeEpoch(
     Epoch(3, INITIAL_EMISSION * 3),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
-  await send.voteOnEpochProposal(proposal1Index, true, 0);
-  await send.voteOnEpochProposal(proposal2Index, true, 0);
-  await send.voteOnEpochProposal(proposal3Index, true, 0);
-  await send.voteOnEpochProposal(proposal4Index, true, 0);
+  await send.vote(proposal1Index, true, 0);
+  await send.vote(proposal2Index, true, 0);
+  await send.vote(proposal3Index, true, 0);
+  await send.vote(proposal4Index, true, 0);
   await increaseTime(SECONDS_PER_DAY);
-  await send.processEpochElectionResult(proposal1Index);
-  await send.processEpochElectionResult(proposal2Index);
-  await send.processEpochElectionResult(proposal3Index);
-  await send.processEpochElectionResult(proposal4Index);
+  await send.processElectionResult(proposal1Index);
+  await send.processElectionResult(proposal2Index);
+  await send.processElectionResult(proposal3Index);
+  await send.processElectionResult(proposal4Index);
 
   await increaseTime(SECONDS_PER_DAY * 3);
   await send.collectEmissions();
@@ -157,14 +157,14 @@ async function({
   const proposalIndex = (await send.proposeEpoch(
     Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0x8fff, 0xffff),
     curDay + 1,
-    curDay + 1)).events.NewEpochProposal.returnValues.index;
+    curDay + 1)).events.NewProposal.returnValues.index;
   // Skip forward to start election
   await increaseTime(SECONDS_PER_DAY);
-  await send.voteOnEpochProposal(proposalIndex, true, 0);
+  await send.vote(proposalIndex, true, 0);
 
   let hadError;
   try {
-    await send.voteOnEpochProposal(proposalIndex, true, 0);
+    await send.vote(proposalIndex, true, 0);
   } catch(error) {
     hadError = true;
   }
@@ -172,11 +172,11 @@ async function({
 
   // Skip forward to end election
   await increaseTime(SECONDS_PER_DAY);
-  await send.processEpochElectionResult(proposalIndex);
+  await send.processElectionResult(proposalIndex);
 
   let cantProcessElectionTwice;
   try {
-    await send.processEpochElectionResult(proposalIndex);
+    await send.processElectionResult(proposalIndex);
   } catch(error) {
     cantProcessElectionTwice = true;
   }
@@ -193,20 +193,20 @@ async function({
   const proposal2Index = (await send.proposeEpoch(
     Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
     curDay + 4,
-    curDay + 4)).events.NewEpochProposal.returnValues.index;
+    curDay + 4)).events.NewProposal.returnValues.index;
   // Skip forward to start election
   await increaseTime(SECONDS_PER_DAY);
   const QUAD_VOTE = 15 * Math.pow(10, DECIMALS);
   let failsBeforeCollectingEmissions;
   try {
-    await send.voteOnEpochProposal(proposal2Index, true, QUAD_VOTE);
+    await send.vote(proposal2Index, true, QUAD_VOTE);
   } catch(error) {
     failsBeforeCollectingEmissions = true;
   }
   assert.ok(failsBeforeCollectingEmissions, "Balance required");
   await send.collectEmissions();
-  await send.voteOnEpochProposal(proposal2Index, true, QUAD_VOTE);
-  await sendFrom(accounts[1]).voteOnEpochProposal(proposal2Index, false, 0);
+  await send.vote(proposal2Index, true, QUAD_VOTE);
+  await sendFrom(accounts[1]).vote(proposal2Index, false, 0);
 
   await increaseTime(SECONDS_PER_DAY*2);
 
@@ -216,9 +216,9 @@ async function({
   // 3@1x + 4@2x - QUAD_VOTE
   assert.strictEqual(endBalance, INITIAL_EMISSION * 11 - QUAD_VOTE, 'Balance should update');
 
-  const events = (await send.processEpochElectionResult(proposal2Index)).events;
+  const events = (await send.processElectionResult(proposal2Index)).events;
   assert.strictEqual(
-    Number(events.EpochProposalProcessed.returnValues.proposal.votesSupporting),
+    Number(events.ProposalProcessed.returnValues.proposal.votesSupporting),
     Math.sqrt((QUAD_VOTE / Math.pow(10, DECIMALS)) + 1),
     'Quadratic vote not counted correctly');
   // Move far enough forward so next test is past the second epoch
@@ -228,4 +228,3 @@ async function({
 // TODO epochElectionFailsThreshold
 // TODO epochElectionFailsParticipation
 // TODO epochElectionMaintainsRegisteredCount
-// TODO epochElectionPassesMajorityThreshold

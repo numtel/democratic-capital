@@ -81,11 +81,11 @@ exports.thisRegisteredUser = function(account, handler) {
     const proposalIndex = (await send.proposeEpoch(
       Epoch(-1),
       curDay - 3,
-      curDay - 3)).events.NewEpochProposal.returnValues.index;
+      curDay - 3)).events.NewProposal.returnValues.index;
     await increaseTime(SECONDS_PER_DAY);
-    await send.voteOnEpochProposal(proposalIndex, true, 0);
+    await send.vote(proposalIndex, true, 0);
     await increaseTime(SECONDS_PER_DAY);
-    await send.processEpochElectionResult(proposalIndex);
+    await send.processElectionResult(proposalIndex);
 
     // Go to next day so test case can always set a new epoch at the start
     await increaseTime(SECONDS_PER_DAY * 2);
