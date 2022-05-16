@@ -11,7 +11,7 @@ const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 const DECIMALS = 4;
 const GAS_AMOUNT = 20000000;
 const INITIAL_EMISSION = 100000;
-const INITIAL_EPOCH = [0, INITIAL_EMISSION, 0, 0, 0xffff, 0xffff];
+const INITIAL_EPOCH = [0, INITIAL_EMISSION, 0, 0, 0xffff, 0xffff, 0];
 const BURN_ACCOUNT = '0x0000000000000000000000000000000000000000';
 
 function increaseTime(seconds) {
@@ -75,7 +75,9 @@ const cases = fs.readdirSync(__dirname)
   console.time('All Tests');
   for(let fileName of Object.keys(cases)) {
     const theseCases = cases[fileName];
+    if(process.argv.length > 2 && fileName !== process.argv[2]) continue;
     for(let caseName of Object.keys(theseCases)) {
+      if(process.argv.length > 3 && caseName !== process.argv[3]) continue;
       totalCount++;
       let failed = false;
       const caseTimerName = `  ${fileName} ${caseName}`;

@@ -327,6 +327,57 @@ async function({
   assert.strictEqual(endBalance, startBalance + TX_AMOUNT, 'Balance should update');
 });
 
+exports.registrationElectionPasses = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+  currentTimestamp, SECONDS_PER_YEAR, GAS_AMOUNT,
+}) {
+  const ELECT_ACCT = accounts[1];
+  // Create epoch with registration elections of 1 day
+  const proposalIndex = (await send.proposeEpoch(
+    Epoch(3, INITIAL_EMISSION, 0, 0, 0xffff, 0xffff, 1),
+    curDay + 1,
+    curDay + 1)).events.NewProposal.returnValues.index;
+  // Skip forward to start election
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  await send.processElectionResult(proposalIndex);
+  await increaseTime(SECONDS_PER_DAY);
+
+  await contracts.MockVerification.methods.setStatus(
+      ELECT_ACCT, currentTimestamp() + SECONDS_PER_YEAR)
+    .send({ from: ELECT_ACCT, gas: GAS_AMOUNT });
+  const regProposalIndex = (await sendFrom(ELECT_ACCT).registerAccount())
+    .events.RegistrationPending.returnValues.proposalIndex;
+
+  let hadCollectError = false;
+  try {
+    await sendFrom(ELECT_ACCT).collectEmissions();
+  } catch(error) { hadCollectError = true; }
+  assert.strictEqual(hadCollectError, true, 'Should fail without registration');
+
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(regProposalIndex, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  const registeredEvent = (await send.processElectionResult(regProposalIndex))
+    .events.Registration.returnValues.account;
+  assert.strictEqual(registeredEvent, ELECT_ACCT);
+
+  // Should now succeed since being registered
+  await sendFrom(ELECT_ACCT).collectEmissions();
+  const endBalance = Number(await call.balanceOf(ELECT_ACCT));
+  assert.strictEqual(endBalance, INITIAL_EMISSION, 'Balance should update');
+
+  // Reset verification
+  await contracts.MockVerification.methods.setStatus(ELECT_ACCT, 0)
+    .send({ from: ELECT_ACCT, gas: GAS_AMOUNT });
+
+  await sendFrom(ELECT_ACCT).unregisterAccount();
+});
+
 // TODO check verified/registered permissions in all functions that require them
 // TODO electionFailsThreshold
 // TODO electionFailsParticipation

@@ -28,12 +28,15 @@ contract DemocraticToken {
     uint16 expiryDayCount;
     // Minimum number of days between election start and end: 0=1 day elections
     uint16 epochElectionMinDays;
-    // 0x0-0xffff percentage of votes that must be insupport for election to passs
+    // 0x0-0xffff percentage of votes that must be in support for election to passs
     uint16 epochElectionThreshold;
     // 0x0-0xffff percentage of users who must vote for election to pass
     // TODO exclude inactive users from this part?
     //  instead of all registered users, only users who have collected before expiry?
     uint16 epochElectionMinParticipation;
+    // Pass 0 for registrations to happen without election
+    // Pass 1+ as number of days for new registration elections to last
+    uint16 registrationsByElection;
   }
 
   struct Mint {
@@ -52,6 +55,10 @@ contract DemocraticToken {
     bytes data;
   }
 
+  struct RegistrationElection {
+    address account;
+  }
+
   struct Day {
     // Must have registered before start of election in order to vote
     // Number of users registered at end of this day (or currently if latest day)
@@ -65,7 +72,7 @@ contract DemocraticToken {
   uint latestDay;
 
   struct Proposal {
-    // 0: epoch, 1: mint, 2: ban, 3: custom_tx
+    // 0: epoch, 1: mint, 2: ban, 3: custom_tx, 4: registration
     uint8 resourceType;
     uint resourceIndex;
     uint electionStartDay;
@@ -93,6 +100,8 @@ contract DemocraticToken {
   mapping(bytes32 => uint) activeBans;
   CustomTx[] public pendingCustomTx;
   uint public pendingCustomTxCount = 0;
+  RegistrationElection[] public pendingRegistrations;
+  uint public pendingRegistrationCount = 0;
   Proposal[] public proposals;
   uint public proposalCount = 0;
 
@@ -105,6 +114,7 @@ contract DemocraticToken {
   event Unregistered(address indexed account);
   event AccountBanned(address indexed account, uint banExpirationDay, bytes32 idHash);
   event CustomTxSent(address to, bytes data, bytes returned);
+  event RegistrationPending(uint proposalIndex, address indexed account);
 
   constructor(
     address _verifications,
@@ -123,17 +133,28 @@ contract DemocraticToken {
     latestDay = currentDay;
   }
 
-  // TODO registrations happen by election?
   function registerAccount() external {
     onlyVerified();
     uint currentDay = daystamp();
     bytes32 idHash = verifications.addressIdHash(msg.sender);
     // Account banned
     require(activeBans[idHash] <= currentDay, "AB");
-    registered[msg.sender].lastFeeCollected = currentDay - 1;
-    registered[msg.sender].registrationDay = currentDay;
-    updateRegisteredCount(false);
-    emit Registration(msg.sender);
+    Epoch memory currentEpoch = epochOnDay(currentDay);
+    if(currentEpoch.registrationsByElection > 0) {
+      // Begin election for registration
+      pendingRegistrations.push(RegistrationElection(msg.sender));
+      pendingRegistrationCount++;
+      newProposal(4, pendingRegistrations.length - 1,
+        currentDay + 1,
+        currentDay + currentEpoch.registrationsByElection);
+      emit RegistrationPending(proposals.length - 1, msg.sender);
+    } else {
+      // Election not required to register
+      registered[msg.sender].lastFeeCollected = currentDay - 1;
+      registered[msg.sender].registrationDay = currentDay;
+      updateRegisteredCount(false);
+      emit Registration(msg.sender);
+    }
   }
 
   function unregisterAccount() external {
@@ -267,6 +288,8 @@ contract DemocraticToken {
   function proposeEpoch(
     Epoch memory proposedEpoch, uint electionStartDay, uint electionEndDay
   ) external {
+    onlyVerified();
+    onlyRegistered();
     // +2 because electionEndDay is inclusive, and at least one day in between
     //  because the election result must be processed before the new epoch begins
     require(proposedEpoch.beginDay >= electionEndDay + 2, "BD");
@@ -279,6 +302,8 @@ contract DemocraticToken {
   function proposeMint(
     Mint memory proposedMint, uint electionStartDay, uint electionEndDay
   ) external {
+    onlyVerified();
+    onlyRegistered();
     pendingMints.push(proposedMint);
     pendingMintCount++;
     newProposal(1, pendingMints.length - 1, electionStartDay, electionEndDay);
@@ -287,6 +312,8 @@ contract DemocraticToken {
   function proposeCustomTx(
     CustomTx memory proposedCustomTx, uint electionStartDay, uint electionEndDay
   ) external {
+    onlyVerified();
+    onlyRegistered();
     pendingCustomTx.push(proposedCustomTx);
     pendingCustomTxCount++;
     newProposal(3, pendingCustomTx.length - 1, electionStartDay, electionEndDay);
@@ -295,6 +322,8 @@ contract DemocraticToken {
   function proposeBan(
     address toBan, uint banExpirationDay, uint electionStartDay, uint electionEndDay
   ) external {
+    onlyVerified();
+    onlyRegistered();
     // Cannot ban if not registered
     require(registered[toBan].registrationDay > 0, "NR");
 
@@ -311,8 +340,6 @@ contract DemocraticToken {
     uint electionStartDay,
     uint electionEndDay
   ) internal {
-    onlyVerified();
-    onlyRegistered();
     uint currentDay = daystamp();
     Epoch memory currentEpoch = epochOnDay(currentDay);
     // Election cannot start in past
@@ -441,6 +468,12 @@ contract DemocraticToken {
         pendingCustomTx[proposal.resourceIndex].data,
         data);
       require(success);
+    } else if(proposal.resourceType == 4) {
+      address account = pendingRegistrations[proposal.resourceIndex].account;
+      registered[account].lastFeeCollected = currentDay - 1;
+      registered[account].registrationDay = currentDay;
+      updateRegisteredCount(false);
+      emit Registration(account);
     }
     emit ProposalProcessed(proposalIndex, proposal);
   }
