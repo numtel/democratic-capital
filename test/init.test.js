@@ -1,35 +1,40 @@
 const assert = require('assert');
 const helpers = require('./helpers');
 
-exports.verificationRequired = async function({
-  accounts, contracts, currentTimestamp, SECONDS_PER_YEAR, GAS_AMOUNT
+exports.verificationRequiredToRegister = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+  currentTimestamp, SECONDS_PER_YEAR, GAS_AMOUNT,
 }) {
+  const TEST_ACCT = accounts[1];
   let hadError = false;
   try {
-    await contracts.DemocraticToken.methods.propose()
-      .send({ from: accounts[0], gas: GAS_AMOUNT });
+    await sendFrom(TEST_ACCT).registerAccount();
   } catch(error) { hadError = true; }
   assert.strictEqual(hadError, true, 'Should fail before verification');
 
   await contracts.MockVerification.methods.setStatus(
-      accounts[0], currentTimestamp() + SECONDS_PER_YEAR)
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
+      TEST_ACCT, currentTimestamp() + SECONDS_PER_YEAR)
+    .send({ from: TEST_ACCT, gas: GAS_AMOUNT });
 
-  // This will succeed now
-  await contracts.DemocraticToken.methods.propose()
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
+  // These will succeed now
+  await sendFrom(TEST_ACCT).registerAccount();
+  await sendFrom(TEST_ACCT).collectEmissions();
 
   // Reset verification
-  await contracts.MockVerification.methods.setStatus(accounts[0], 0)
-    .send({ from: accounts[0], gas: GAS_AMOUNT });
+  await contracts.MockVerification.methods.setStatus(TEST_ACCT, 0)
+    .send({ from: TEST_ACCT, gas: GAS_AMOUNT });
 
-  hadError = false;
+  let hadCollectError = false;
   try {
-    await contracts.DemocraticToken.methods.propose()
-      .send({ from: accounts[0], gas: GAS_AMOUNT });
-  } catch(error) { hadError = true; }
-  assert.strictEqual(hadError, true, 'Should fail without verification');
-};
+    await sendFrom(TEST_ACCT).collectEmissions();
+  } catch(error) { hadCollectError = true; }
+  assert.strictEqual(hadCollectError, true, 'Should fail without verification');
+
+  await sendFrom(TEST_ACCT).unregisterAccount();
+});
 
 exports.collectAfter3Days = helpers.thisRegisteredUser(0,
 async function({
@@ -266,6 +271,14 @@ async function({
   const events = (await send.processElectionResult(proposalIndex)).events;
   assert.strictEqual(events.Unregistered.returnValues.account, BAN_RECIP);
 
+  let cannotPropose;
+  try {
+    await sendFrom(BAN_RECIP).proposeMint([1, BURN_ADDRESS], curDay+4, curDay+4)
+  } catch(error) {
+    cannotPropose = true;
+  }
+  assert.ok(cannotPropose, "Can't propose while deregistered");
+
   let registrationFailed;
   try {
     await sendFrom(BAN_RECIP).registerAccount();
@@ -273,11 +286,48 @@ async function({
     registrationFailed = true;
   }
   assert.ok(registrationFailed, "Can't register while banned");
+
   await increaseTime(SECONDS_PER_DAY);
   // Registration will work now after ban expired
   await sendFrom(BAN_RECIP).registerAccount();
 });
 
+exports.customTxElectionPasses = helpers.thisRegisteredUser(0,
+async function({
+  send, call, account, contracts, web3, INITIAL_EMISSION, BURN_ADDRESS,
+  increaseTime, SECONDS_PER_DAY, curDay, Epoch, DECIMALS, GAS_AMOUNT,
+  emissionDetails, register, accounts, sendFrom, callFrom,
+}) {
+  const TX_AMOUNT = INITIAL_EMISSION;
+  const TX_DATA = web3.eth.abi.encodeFunctionCall({
+    name: 'transfer', type: 'function', inputs: [
+      {type: 'address', name: 'recipient'},
+      {type: 'uint256', name: 'amount'}
+    ]
+  }, [account, TX_AMOUNT]);
+  const proposalIndex = (await send.proposeCustomTx([
+      contracts.DemocraticToken.options.address, TX_DATA], curDay+1, curDay+1))
+    .events.NewProposal.returnValues.index;
+  await increaseTime(SECONDS_PER_DAY);
+  await send.vote(proposalIndex, true, 0);
+  await increaseTime(SECONDS_PER_DAY);
+  await send.collectEmissions();
+  // Fund contract with tokens
+  await send.transfer(contracts.DemocraticToken.options.address, TX_AMOUNT);
+  const startBalance = Number(await call.balanceOf(account));
+
+  const events = (await send.processElectionResult(proposalIndex)).events;
+  assert.strictEqual(events.CustomTxSent.returnValues.to,
+    contracts.DemocraticToken.options.address);
+  assert.strictEqual(events.CustomTxSent.returnValues.data, TX_DATA);
+  assert.strictEqual(events.CustomTxSent.returnValues.returned,
+    '0x0000000000000000000000000000000000000000000000000000000000000001');
+
+  const endBalance = Number(await call.balanceOf(account));
+  assert.strictEqual(endBalance, startBalance + TX_AMOUNT, 'Balance should update');
+});
+
+// TODO check verified/registered permissions in all functions that require them
 // TODO electionFailsThreshold
 // TODO electionFailsParticipation
 // TODO electionMaintainsRegisteredCount

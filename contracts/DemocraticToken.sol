@@ -10,8 +10,6 @@ contract DemocraticToken {
   uint8 public decimals = 4;
   IVerification public verifications;
 
-  uint constant SECONDS_PER_DAY = 60 * 60 * 24;
-
   struct RegisteredAccount {
     uint lastFeeCollected;
     uint registrationDay;
@@ -20,8 +18,6 @@ contract DemocraticToken {
   }
 
   mapping(address => RegisteredAccount) public registered;
-
-  event Test(uint out);
 
   struct Epoch {
     // Day number when epoch begins
@@ -51,6 +47,11 @@ contract DemocraticToken {
     bytes32 idHash;
   }
 
+  struct CustomTx {
+    address to;
+    bytes data;
+  }
+
   struct Day {
     // Must have registered before start of election in order to vote
     // Number of users registered at end of this day (or currently if latest day)
@@ -64,14 +65,14 @@ contract DemocraticToken {
   uint latestDay;
 
   struct Proposal {
-    // 0: epoch, 1: mint, 2: ban
+    // 0: epoch, 1: mint, 2: ban, 3: custom_tx
     uint8 resourceType;
     uint resourceIndex;
     uint electionStartDay;
     uint electionEndDay;
     address proposer;
     bool hasBeenProcessed;
-    uint epochProposalIndex;
+    uint proposalIndex;
     uint votesSupporting;
     uint votesAgainst;
     // Number of people who have voted so far
@@ -90,6 +91,8 @@ contract DemocraticToken {
   Ban[] public pendingBans;
   uint public pendingBanCount = 0;
   mapping(bytes32 => uint) activeBans;
+  CustomTx[] public pendingCustomTx;
+  uint public pendingCustomTxCount = 0;
   Proposal[] public proposals;
   uint public proposalCount = 0;
 
@@ -101,13 +104,13 @@ contract DemocraticToken {
   event Registration(address indexed account);
   event Unregistered(address indexed account);
   event AccountBanned(address indexed account, uint banExpirationDay, bytes32 idHash);
+  event CustomTxSent(address to, bytes data, bytes returned);
 
   constructor(
     address _verifications,
     Epoch memory initialEpoch
   ) {
-    require(_verifications != address(0),
-      "Verifications contract must not be zero address");
+    require(_verifications != address(0), "VZ");
     verifications = IVerification(_verifications);
 
     uint currentDay = daystamp();
@@ -121,17 +124,20 @@ contract DemocraticToken {
   }
 
   // TODO registrations happen by election?
-  function registerAccount() external onlyVerified {
+  function registerAccount() external {
+    onlyVerified();
     uint currentDay = daystamp();
     bytes32 idHash = verifications.addressIdHash(msg.sender);
-    require(activeBans[idHash] <= currentDay, "Account banned");
+    // Account banned
+    require(activeBans[idHash] <= currentDay, "AB");
     registered[msg.sender].lastFeeCollected = currentDay - 1;
     registered[msg.sender].registrationDay = currentDay;
     updateRegisteredCount(false);
     emit Registration(msg.sender);
   }
 
-  function unregisterAccount() external onlyRegistered {
+  function unregisterAccount() external {
+    onlyRegistered();
     // This will not delete the epochProposalVoted mapping, which is fine
     delete registered[msg.sender];
     updateRegisteredCount(true);
@@ -215,7 +221,9 @@ contract DemocraticToken {
     return toCollect;
   }
 
-  function collectEmissions() external onlyVerified onlyRegistered {
+  function collectEmissions() external {
+    onlyVerified();
+    onlyRegistered();
     uint currentDay = daystamp();
     uint toCollect = availableEmissions(msg.sender, currentDay);
     _mint(msg.sender, toCollect);
@@ -225,7 +233,8 @@ contract DemocraticToken {
   function newEpoch(Epoch memory epochToInsert) internal {
     uint currentDay = daystamp();
     uint thisEpoch = epochs.length - 1;
-    require(epochToInsert.beginDay > currentDay, "Epoch must start in future");
+    // Epoch must start in future
+    require(epochToInsert.beginDay > currentDay, "SF");
     if(epochs[thisEpoch].beginDay >= epochToInsert.beginDay) {
       // This new epoch is not at the end
       for(; thisEpoch >= 0; thisEpoch--) {
@@ -257,11 +266,10 @@ contract DemocraticToken {
 
   function proposeEpoch(
     Epoch memory proposedEpoch, uint electionStartDay, uint electionEndDay
-  ) external onlyVerified onlyRegistered {
+  ) external {
     // +2 because electionEndDay is inclusive, and at least one day in between
     //  because the election result must be processed before the new epoch begins
-    require(proposedEpoch.beginDay >= electionEndDay + 2,
-      "Epoch must start at least 2 days after election end");
+    require(proposedEpoch.beginDay >= electionEndDay + 2, "BD");
 
     pendingEpochs.push(proposedEpoch);
     pendingEpochCount++;
@@ -270,16 +278,25 @@ contract DemocraticToken {
 
   function proposeMint(
     Mint memory proposedMint, uint electionStartDay, uint electionEndDay
-  ) external onlyVerified onlyRegistered {
+  ) external {
     pendingMints.push(proposedMint);
     pendingMintCount++;
     newProposal(1, pendingMints.length - 1, electionStartDay, electionEndDay);
   }
 
+  function proposeCustomTx(
+    CustomTx memory proposedCustomTx, uint electionStartDay, uint electionEndDay
+  ) external {
+    pendingCustomTx.push(proposedCustomTx);
+    pendingCustomTxCount++;
+    newProposal(3, pendingCustomTx.length - 1, electionStartDay, electionEndDay);
+  }
+
   function proposeBan(
     address toBan, uint banExpirationDay, uint electionStartDay, uint electionEndDay
-  ) external onlyVerified onlyRegistered {
-    require(registered[toBan].registrationDay > 0, "Cannot ban if not registered");
+  ) external {
+    // Cannot ban if not registered
+    require(registered[toBan].registrationDay > 0, "NR");
 
     pendingBans.push(Ban(
       toBan, banExpirationDay, verifications.addressIdHash(toBan)
@@ -294,11 +311,14 @@ contract DemocraticToken {
     uint electionStartDay,
     uint electionEndDay
   ) internal {
+    onlyVerified();
+    onlyRegistered();
     uint currentDay = daystamp();
     Epoch memory currentEpoch = epochOnDay(currentDay);
-    require(electionStartDay >= currentDay, "Election cannot start in past");
-    require(electionEndDay - electionStartDay >= currentEpoch.epochElectionMinDays,
-      "Election must meet minimum duration");
+    // Election cannot start in past
+    require(electionStartDay >= currentDay, "SP");
+    // Election must meet minimum duration
+    require(electionEndDay - electionStartDay >= currentEpoch.epochElectionMinDays, "MD");
 
     proposals.push(Proposal(
       resourceType,
@@ -316,21 +336,23 @@ contract DemocraticToken {
 
   function vote (
     uint proposalIndex, bool inSupport, uint quadraticPayment
-  ) external onlyVerified onlyRegistered {
-    require(proposalIndex < proposalCount, "Invalid index specified");
+  ) external {
+    onlyVerified();
+    onlyRegistered();
+    require(proposalIndex < proposalCount, "II");
     uint currentDay = daystamp();
     Proposal storage proposal = proposals[proposalIndex];
     RegisteredAccount storage voter = registered[msg.sender];
-    require(voter.proposalVoted[proposalIndex] == 0,
-      "Can only vote once per election");
-    require(voter.registrationDay < proposal.electionStartDay,
-      "Must have registered before election start");
-    require(currentDay >= proposal.electionStartDay,
-      "Election has not begun");
-    require(currentDay <= proposal.electionEndDay,
-      "Election has finished");
-    require(balanceOf[msg.sender] >= quadraticPayment,
-      "Insufficient balance");
+    // Can only vote once per election
+    require(voter.proposalVoted[proposalIndex] == 0, "VO");
+    // Must have registered before election start
+    require(voter.registrationDay < proposal.electionStartDay, "RB");
+    // Election has not begin
+    require(currentDay >= proposal.electionStartDay, "EB");
+    // Election has finished
+    require(currentDay <= proposal.electionEndDay, "EF");
+    // Insufficient balance
+    require(balanceOf[msg.sender] >= quadraticPayment, "IB");
     // The registeredCount value is not known when the proposal is created,
     //  therefore fill it on first vote
     if(proposal.registeredCount == 0) {
@@ -356,7 +378,7 @@ contract DemocraticToken {
   function electionTabulation(uint proposalIndex) external view
     returns(bool participationMet, bool supportThresholdMet)
   {
-    require(proposalIndex < proposalCount, "Invalid index specified");
+    require(proposalIndex < proposalCount, "II");
     Proposal memory proposal = proposals[proposalIndex];
     return electionTabulation(proposal);
   }
@@ -381,15 +403,17 @@ contract DemocraticToken {
 
   // Somebody must invoke this function after the election ends but before the
   //  resulting epoch is set to begin
-  function processElectionResult(uint proposalIndex) external onlyVerified onlyRegistered {
-    require(proposalIndex < proposalCount, "Invalid index specified");
+  function processElectionResult(uint proposalIndex) external {
+    onlyVerified();
+    onlyRegistered();
+    require(proposalIndex < proposalCount, "II");
     uint currentDay = daystamp();
     Proposal storage proposal = proposals[proposalIndex];
-    require(!proposal.hasBeenProcessed, "Election has been processed already");
-    require(currentDay > proposal.electionEndDay, "Election has not finished");
+    require(!proposal.hasBeenProcessed, "EP");
+    require(currentDay > proposal.electionEndDay, "EF");
     (bool participationMet, bool supportThresholdMet) = electionTabulation(proposal);
-    require(participationMet, "Minimum participation not met");
-    require(supportThresholdMet, "Minimum support threshold not met");
+    require(participationMet, "MP");
+    require(supportThresholdMet, "MT");
     proposal.hasBeenProcessed = true;
     if(proposal.resourceType == 0) {
       newEpoch(pendingEpochs[proposal.resourceIndex]);
@@ -409,13 +433,16 @@ contract DemocraticToken {
       );
       activeBans[pendingBans[proposal.resourceIndex].idHash] =
         pendingBans[proposal.resourceIndex].banExpirationDay;
+    } else if(proposal.resourceType == 3) {
+      (bool success, bytes memory data) = pendingCustomTx[proposal.resourceIndex].to.call(
+        pendingCustomTx[proposal.resourceIndex].data);
+      emit CustomTxSent(
+        pendingCustomTx[proposal.resourceIndex].to,
+        pendingCustomTx[proposal.resourceIndex].data,
+        data);
+      require(success);
     }
     emit ProposalProcessed(proposalIndex, proposal);
-  }
-
-  // TODO remove this function
-  function propose() external onlyVerified {
-    emit Transfer(address(0), msg.sender, 0);
   }
 
   function transfer(address recipient, uint amount) external returns (bool) {
@@ -440,15 +467,7 @@ contract DemocraticToken {
   }
 
   function daystamp() public view returns(uint) {
-    return _daystamp(block.timestamp);
-  }
-
-  function daystamp(uint timestamp) external pure returns(uint) {
-    return _daystamp(timestamp);
-  }
-
-  function _daystamp(uint timestamp) internal pure returns(uint) {
-    return timestamp / SECONDS_PER_DAY;
+    return block.timestamp / 86400;
   }
 
   function _mint(address account, uint amount) internal {
@@ -457,19 +476,12 @@ contract DemocraticToken {
     emit Transfer(address(0), account, amount);
   }
 
-  modifier onlyVerified() {
-    require(verifications.addressActive(msg.sender), "Must be verified");
-    _;
+  function onlyVerified() internal view {
+    require(verifications.addressActive(msg.sender), "RV");
   }
 
-  modifier onlyRegistered() {
-    require(registered[msg.sender].lastFeeCollected > 0, "Must be registered");
-    _;
-  }
-
-  modifier notBanned() {
-    // TODO write banning elections
-    _;
+  function onlyRegistered() internal view {
+    require(registered[msg.sender].lastFeeCollected > 0, "RR");
   }
 
   // From: https://github.com/Uniswap/v2-core/blob/v1.0.1/contracts/libraries/Math.sol
