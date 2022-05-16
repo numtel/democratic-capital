@@ -141,6 +141,20 @@ async function({
   await send.processElectionResult(proposal3Index);
   await send.processElectionResult(proposal4Index);
 
+  // This is what the frontend will have to do for each day on calendar
+  const proposalsOnDay = [];
+  let fetchProposalError = false;
+  while(!fetchProposalError) {
+    try {
+      proposalsOnDay.push(await call.proposalsByDay(curDay + 1, proposalsOnDay.length));
+    } catch(error) {
+      fetchProposalError = true;
+    }
+  }
+  assert.strictEqual(proposalsOnDay.join(','), [
+    proposal1Index, proposal2Index, proposal3Index, proposal4Index
+  ].join(','));
+
   await increaseTime(SECONDS_PER_DAY * 3);
   await send.collectEmissions();
 
@@ -239,7 +253,7 @@ async function({
   const MINT_AMOUNT = 30 * Math.pow(10, DECIMALS);
   const MINT_RECIP = accounts[1];
   await register(MINT_RECIP);
-  const proposalIndex = (await send.proposeMint([MINT_AMOUNT, MINT_RECIP], curDay+1, curDay+1)).events.NewProposal.returnValues.index;
+  const proposalIndex = (await send.proposeMint(MINT_AMOUNT, MINT_RECIP, curDay+1, curDay+1)).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
   await send.vote(proposalIndex, true, 0);
   await sendFrom(MINT_RECIP).vote(proposalIndex, true, 0);
@@ -273,7 +287,7 @@ async function({
 
   let cannotPropose;
   try {
-    await sendFrom(BAN_RECIP).proposeMint([1, BURN_ADDRESS], curDay+4, curDay+4)
+    await sendFrom(BAN_RECIP).proposeMint(1, BURN_ADDRESS, curDay+4, curDay+4)
   } catch(error) {
     cannotPropose = true;
   }
@@ -305,8 +319,8 @@ async function({
       {type: 'uint256', name: 'amount'}
     ]
   }, [account, TX_AMOUNT]);
-  const proposalIndex = (await send.proposeCustomTx([
-      contracts.DemocraticToken.options.address, TX_DATA], curDay+1, curDay+1))
+  const proposalIndex = (await send.proposeCustomTx(
+      contracts.DemocraticToken.options.address, TX_DATA, curDay+1, curDay+1))
     .events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
   await send.vote(proposalIndex, true, 0);

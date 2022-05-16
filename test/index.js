@@ -62,7 +62,7 @@ const cases = fs.readdirSync(__dirname)
     contracts[contractName] = await contract.deploy({
       data: bytecode,
       arguments: contractName === 'DemocraticToken'
-        ? [ contracts.MockVerification.options.address, INITIAL_EPOCH ]
+        ? [ contracts.MockVerification.options.address, "Test Demo", "TEST", INITIAL_EPOCH ]
         : [],
     // No owner on these contracts, so account used doesn't matter
     }).send({ from: accounts[0], gas: GAS_AMOUNT });
