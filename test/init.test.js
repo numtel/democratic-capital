@@ -91,7 +91,8 @@ async function({
   increaseTime, SECONDS_PER_DAY, curDay, Epoch, emissionDetails,
 }) {
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(5, INITIAL_EMISSION * 2, 7),
+    Epoch(5, INITIAL_EMISSION * 2,
+      '0x00070000ffffffff0000ffffffff0000ffffffff0000ffffffff0000ffffffff'),
     curDay + 1,
     curDay + 1)).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
@@ -174,7 +175,8 @@ async function({
   // 0xcccc would be absolute minimum threshold for
   //  4 support, 1 against: 0.8 * 0xffff
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0x8fff, 0xffff),
+    Epoch(3, INITIAL_EMISSION * 2,
+      '0x000000008fffffff0000ffffffff0000ffffffff0000ffffffff0000ffffffff'),
     curDay + 1,
     curDay + 1)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -210,7 +212,7 @@ async function({
   // One pays to quadruple their vote: sqrt(15+1)
   // The other does not pay
   const proposal2Index = (await send.proposeEpoch(
-    Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
+    Epoch(7, INITIAL_EMISSION * 3),
     curDay + 4,
     curDay + 4)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -253,7 +255,9 @@ async function({
   const MINT_AMOUNT = 30 * Math.pow(10, DECIMALS);
   const MINT_RECIP = accounts[1];
   await register(MINT_RECIP);
-  const proposalIndex = (await send.proposeMint(MINT_AMOUNT, MINT_RECIP, curDay+1, curDay+1)).events.NewProposal.returnValues.index;
+  const proposalIndex = (await send.proposeMint(
+      MINT_AMOUNT, MINT_RECIP, curDay+1, curDay+1)
+    ).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
   await send.vote(proposalIndex, true, 0);
   await sendFrom(MINT_RECIP).vote(proposalIndex, true, 0);
@@ -276,7 +280,9 @@ async function({
   const BAN_END = curDay + 3;
   const BAN_RECIP = accounts[1];
   await register(BAN_RECIP);
-  const proposalIndex = (await send.proposeBan(BAN_RECIP, BAN_END, curDay+1, curDay+1)).events.NewProposal.returnValues.index;
+  const proposalIndex = (await send.proposeBan(
+      BAN_RECIP, BAN_END, curDay+1, curDay+1)
+    ).events.NewProposal.returnValues.index;
   await increaseTime(SECONDS_PER_DAY);
   await send.vote(proposalIndex, true, 0);
   // Who would vote to ban themselves? A test user!
@@ -351,7 +357,8 @@ async function({
   const ELECT_ACCT = accounts[1];
   // Create epoch with registration elections of 1 day
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(3, INITIAL_EMISSION, 0, 0, 0xffff, 0xffff, 1),
+    Epoch(3, INITIAL_EMISSION,
+      '0x00000000ffffffff0000ffffffff0000ffffffff0000ffffffff0001ffffffff'),
     curDay + 1,
     curDay + 1)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -412,7 +419,8 @@ async function({
 }) {
   // Propose epoch with threshold of majority
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0x8000, 0xffff),
+    Epoch(3, INITIAL_EMISSION * 2,
+      '0x000000008000ffff0000ffffffff0000ffffffff0000ffffffff0000ffffffff'),
     curDay + 1,
     curDay + 1)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -430,7 +438,7 @@ async function({
 
   // Propose another epoch and vote with 2 different accounts
   const proposal2Index = (await send.proposeEpoch(
-    Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
+    Epoch(7, INITIAL_EMISSION * 3),
     curDay + 4,
     curDay + 4)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -458,7 +466,8 @@ async function({
 }) {
   // Propose epoch with minimum participation of majority
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(3, INITIAL_EMISSION * 2, 0, 0, 0xffff, 0x8000),
+    Epoch(3, INITIAL_EMISSION * 2,
+      '0x00000000ffff80000000ffffffff0000ffffffff0000ffffffff0000ffffffff'),
     curDay + 1,
     curDay + 1)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -476,7 +485,7 @@ async function({
 
   // Propose another epoch and vote with 2 different accounts
   const proposal2Index = (await send.proposeEpoch(
-    Epoch(7, INITIAL_EMISSION * 3, 0, 0, 0xffff, 0xffff),
+    Epoch(7, INITIAL_EMISSION * 3),
     curDay + 4,
     curDay + 4)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -503,7 +512,7 @@ async function({
   emissionDetails, register, accounts, sendFrom, callFrom,
 }) {
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(4, INITIAL_EMISSION * 2, 0, 0, 0xffff, 0xffff),
+    Epoch(4, INITIAL_EMISSION * 2),
     curDay + 1,
     curDay + 1)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -526,7 +535,7 @@ async function({
   emissionDetails, register, accounts, sendFrom, callFrom,
 }) {
   const proposalIndex = (await send.proposeEpoch(
-    Epoch(4, INITIAL_EMISSION * 2, 0, 0, 0xffff, 0xffff),
+    Epoch(4, INITIAL_EMISSION * 2),
     curDay + 1,
     curDay + 2)).events.NewProposal.returnValues.index;
   // Skip forward to start election
@@ -549,3 +558,4 @@ async function({
 });
 
 // TODO check verified/registered permissions in all functions that require them
+// TODO perform threshold/participation checks for all proposal resource types
