@@ -4,6 +4,7 @@
   "description": "Democratically controlled cryptocurrency",
   "scripts": {
     "dev": "lite-server",
+    "dev-chain": "node dev-chain.js",
     "test": "node test/index.js",
     "todo": "bash -c \"grep -rn 'TODO' --exclude-dir={node_modules,build} --exclude={*.min*,*.swp,package.json,solc} *\"",
     "build-mock": "./solc --bin --abi --overwrite -o build contracts/MockVerification.sol",
