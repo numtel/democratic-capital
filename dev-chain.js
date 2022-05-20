@@ -9,7 +9,7 @@ const BUILD_DIR = 'build/';
 const GAS_AMOUNT = 20000000;
 const INITIAL_EMISSION = 100000;
 const PROMPT = '$ ';
-const INITIAL_EPOCH = [0, INITIAL_EMISSION, 0, 0, 0xffff, 0xffff, 0];
+const INITIAL_EPOCH = [0, INITIAL_EMISSION, '0x00000000ffffffff0000ffffffff0000ffffffff0000ffffffff0000ffffffff'];
 const SECONDS_PER_DAY = 60 * 60 * 24;
 const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 

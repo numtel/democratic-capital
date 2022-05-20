@@ -5,6 +5,7 @@ class DemocraticTokenApp {
     this.web3Modal = null;
     this.web3Provider = null;
     this.chainId = null;
+    this.contract = null;
     this.token = null;
     this.accounts = [];
     this.connected = false;
@@ -23,7 +24,7 @@ class DemocraticTokenApp {
       this.chainId = '0x' + (await this.web3.eth.getChainId()).toString(16);
       if(this.chainId !== window.config.chain)
         await this.switchChain();
-  
+
       this.accounts = await new Promise((resolve, reject) => {
         this.web3.eth.getAccounts((error, accounts) => {
           if(error) reject(error);
@@ -34,10 +35,13 @@ class DemocraticTokenApp {
       this.connected = false;
     }
 
-    if(!this.token) {
+    if(!this.contract) {
       const response = await fetch('DemocraticToken.abi');
       const abi = await response.json();
-      this.token = new this.web3.eth.Contract(abi, window.config.tokenContract);
+      this.contract = new this.web3.eth.Contract(abi, window.config.tokenContract);
+    }
+    if(!this.token) {
+      this.token = new DemocraticToken(this.contract, this.send, this.web3);
     }
     console.log('success');
   }
@@ -117,6 +121,12 @@ class DemocraticTokenApp {
         alert(error.message);
       }
     }
+  }
+  async send(method) {
+    // TODO prompt for wallet connection
+    if(!this.connected)
+      throw new Error('Wallet not connected');
+    return method.send({ from: this.accounts[0] });
   }
 }
 
