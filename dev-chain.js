@@ -18,7 +18,7 @@ const currentTimestamp = (returnDay) =>
 
 const ganacheServer = ganache.server({
   wallet: { mnemonic: devSeed.seed },
-  logging: { quiet: true },
+  logging: { quiet: false },
 });
 ganacheServer.listen(PORT, async err => {
   if (err) throw err;

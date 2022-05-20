@@ -1,11 +1,13 @@
 
 class DemocraticTokenApp {
-  constructor() {
+  constructor(element) {
+    this.element = element;
     this.web3 = null;
     this.web3Modal = null;
     this.web3Provider = null;
     this.chainId = null;
     this.contract = null;
+    this.verifications = null;
     this.token = null;
     this.accounts = [];
     this.connected = false;
@@ -36,14 +38,20 @@ class DemocraticTokenApp {
     }
 
     if(!this.contract) {
-      const response = await fetch('DemocraticToken.abi');
-      const abi = await response.json();
-      this.contract = new this.web3.eth.Contract(abi, window.config.tokenContract);
+      this.contract = await this.loadContract(
+        'DemocraticToken.abi', window.config.tokenContract);
+      this.verifications = await this.loadContract(
+        'IVerification.abi', await this.contract.methods.verifications().call());
     }
     if(!this.token) {
-      this.token = new DemocraticToken(this.contract, this.send, this.web3);
+      this.token = new DemocraticToken(this.contract, this);
     }
-    console.log('success');
+    this.element.innerHTML = await window.templates.index.call(this);
+  }
+  async loadContract(abiUrl, address) {
+    const response = await fetch(abiUrl);
+    const abi = await response.json();
+    return new this.web3.eth.Contract(abi, address);
   }
   async connect() {
     const web3Modal = this.web3Modal = new Web3Modal.default({
@@ -80,6 +88,7 @@ class DemocraticTokenApp {
     });
 
     this.web3 = new Web3(provider);
+    this.web3.eth.handleRevert = true;
 
     await this.init();
   }
@@ -126,9 +135,9 @@ class DemocraticTokenApp {
     // TODO prompt for wallet connection
     if(!this.connected)
       throw new Error('Wallet not connected');
-    return method.send({ from: this.accounts[0] });
+    return method.send({ from: this.accounts[0], gas: 20000000 });
   }
 }
 
-window.app = new DemocraticTokenApp;
+window.app = new DemocraticTokenApp(document.getElementById('app'));
 app.init();
