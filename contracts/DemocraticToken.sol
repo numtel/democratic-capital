@@ -24,6 +24,7 @@ contract DemocraticToken {
     uint beginDay;
     // How many tokens per day per registered user
     uint dailyEmission;
+    // TODO squeeze in a bit to toggle quadratic voting for each resource type
     // Params: 16 uint16s packed into one uint256
     // 0x0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff
     // 0: expiry day count
@@ -384,25 +385,62 @@ contract DemocraticToken {
 
   // Somebody must invoke this function after the election ends but before the
   //  resulting epoch is set to begin
+  // TODO epoch should have a reward parameter for invoking this function
   function processElectionResult(uint proposalIndex) external {
     onlyVerified();
     onlyRegistered();
     require(proposalIndex < proposals.length);
     uint currentDay = daystamp();
     Proposal storage proposal = proposals[proposalIndex];
+    // Proposal election must not already have been processed
     require(!proposal.hasBeenProcessed, "EP");
+    // Proposal election must have completed
     require(currentDay > proposal.electionEndDay, "EF");
+    // TODO election participation/threshold should match current epoch, not epoch when election started?
     Epoch memory proposalEpoch = epochOnDay(proposal.electionStartDay);
     require(proposal.voterCount > 0);
+    // Proposal votes must meet minimum participation level for this resource type
     require((proposal.voterCount * 0xffff) >=
       (proposal.registeredCount *
         extract16From256(proposalEpoch.params, 3 + (3 * proposal.resourceType))), "MP");
+    // Proposal votes must meet the minimum threshold for this resource type
     require(
         (proposal.votesSupporting * 0xffff)
         / (proposal.votesSupporting + proposal.votesAgainst)
       >= extract16From256(proposalEpoch.params, 2 + (3 * proposal.resourceType)), "MT");
+
     proposal.hasBeenProcessed = true;
+
     if(proposal.resourceType == 0) { // Epoch
+    /*
+      TODO what to do if more than one epoch can be processed to start on the same day?
+      if there are multiple epoch elections that end on the same day with the same begin day,
+        then the one with the most participation that passes wins (A)
+      if an election ends after another one (both pass) and they have same begin day
+        then the earlier one is set to hasBeenProcessed when later one is processed (B)
+      so, there needs to be a way to link epoch elections with matching epoch begin days
+      TODO clean out processed proposals from proposals array in order to save gas
+
+      Proposal[] competing;
+      competing.push(thisProposal);
+      for each proposal where resourceType == 0 and hasBeenProcessed == false and electionEndDay < currentDay
+        if proposal.epoch.beginDay == thisProposal.epoch.beginDay
+          if proposal.electionEndDay < thisProposal.electionEndDay
+            // take care of (B)
+            proposal.hasBeenProcessed = true
+          else if proposal.electionEndDay == thisProposal.electionEndDay
+            competing.push(proposal)
+      uint maxParticipation;
+      uint competingIndex;
+      for each competing
+        competing.hasBeenProcessed = true
+        if competing.passed and competing.participation > maxParticipation
+          maxParticipation = competing.participation
+          competingIndex = competing.index
+      // take care of (A)
+      epochToInsert = competingIndex.epoch
+
+    */
       Epoch memory epochToInsert = pendingEpochs[proposal.resourceIndex];
       uint thisEpoch = epochs.length - 1;
       // Epoch must start in future
@@ -460,6 +498,7 @@ contract DemocraticToken {
       require(success);
     } else if(proposal.resourceType == 4) { // Registration
       address account = pendingRegistrations[proposal.resourceIndex];
+      // TODO could register, collect emissions, unregister and then reregister to game emissions
       registered[account].lastFeeCollected = currentDay - 1;
       registered[account].registrationDay = currentDay;
       updateRegisteredCount(false);
