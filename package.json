@@ -7,9 +7,8 @@
     "dev-chain": "node dev-chain.js",
     "test": "node test/index.js",
     "todo": "bash -c \"grep -rn 'TODO' --exclude-dir={node_modules,build} --exclude={*.min*,*.swp,package.json,solc} *\"",
-    "build-mock": "./solc --bin --abi --overwrite -o build contracts/MockVerification.sol",
-    "build-dev": "./solc --bin --abi --overwrite -o build contracts/DemocraticToken.sol",
-    "build-prod": "./solc --bin --abi --overwrite -o build --optimize contracts/DemocraticToken.sol"
+    "build-dev": "./solc --bin --abi --overwrite -o build contracts/*.sol",
+    "build-prod": "./solc --bin --abi --overwrite -o build --optimize contracts/*.sol"
   },
   "author": "numtel <ben@latenightsketches.com>",
   "license": "MIT",

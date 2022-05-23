@@ -6,14 +6,7 @@ const web3 = new Web3(ganache.provider({ logging: { quiet: true } }));
 web3.eth.handleRevert = true;
 
 const BUILD_DIR = 'build/';
-const SECONDS_PER_DAY = 60 * 60 * 24;
-const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
-const DECIMALS = 4;
 const GAS_AMOUNT = 20000000;
-const INITIAL_EMISSION = 100000;
-const INITIAL_EPOCH = [0, INITIAL_EMISSION,
-  // 0000111122223333444455556666777788889999aaaabbbbccccddddeeeeffff
-  '0x00000000ffffffff0000ffffffff0000ffffffff0000ffffffff0000ffffffff'];
 const BURN_ACCOUNT = '0x0000000000000000000000000000000000000000';
 
 function increaseTime(seconds) {
@@ -37,6 +30,37 @@ function increaseTime(seconds) {
   })
 }
 
+async function deployContract(account, contractName, ...args) {
+  const bytecode = fs.readFileSync(
+    `${BUILD_DIR}${contractName}.bin`, { encoding: 'utf8' });
+  const abi = JSON.parse(fs.readFileSync(
+    `${BUILD_DIR}${contractName}.abi`, { encoding: 'utf8' }));
+  const contract = new web3.eth.Contract(abi);
+  const deployed = await contract.deploy({ data: bytecode, arguments: args })
+    .send({ from: account, gas: GAS_AMOUNT });
+
+  deployed.sendFrom = (address) => Object.keys(deployed.methods)
+    .reduce((out, cur) => {
+      out[cur] = function() {
+        return deployed.methods[cur].apply(null, arguments)
+          .send({ from: address, gas: GAS_AMOUNT });
+      }
+      return out;
+    }, {});
+
+  return deployed;
+}
+
+async function throws(asyncFun) {
+  let hadError;
+  try {
+    await asyncFun();
+  } catch(error) {
+    hadError = true;
+  }
+  return hadError;
+}
+
 const cases = fs.readdirSync(__dirname)
   .filter(file => file.endsWith('.test.js'))
   .reduce((out, caseFile) => {
@@ -51,26 +75,6 @@ const cases = fs.readdirSync(__dirname)
       else resolve(accounts);
     });
   });
-  const currentTimestamp = (returnDay) =>
-    Math.floor(Date.now() / (1000 * (returnDay ? 86400 : 1)));
-
-  const contracts = {};
-  // DemocraticToken must come after MockVerification since it uses the deployed
-  //  address as a constructor argument
-  for(let contractName of ['MockVerification', 'DemocraticToken']) {
-    const bytecode = fs.readFileSync(`${BUILD_DIR}${contractName}.bin`, { encoding: 'utf8' });
-    const abi = JSON.parse(fs.readFileSync(`${BUILD_DIR}${contractName}.abi`, { encoding: 'utf8' }));
-    const contract = new web3.eth.Contract(abi);
-    contracts[contractName] = await contract.deploy({
-      data: bytecode,
-      arguments: contractName === 'DemocraticToken'
-        ? [ contracts.MockVerification.options.address, "Test Demo", "TEST", INITIAL_EPOCH ]
-        : [],
-    // No owner on these contracts, so account used doesn't matter
-    }).send({ from: accounts[0], gas: GAS_AMOUNT });
-    contracts[contractName].abi = abi;
-    contracts[contractName].bytecode = bytecode;
-  }
 
   // Run the test cases!
   let passCount = 0, failCount = 0; totalCount = 0;
@@ -87,9 +91,8 @@ const cases = fs.readdirSync(__dirname)
       try {
         await theseCases[caseName]({
           // Supply test context as options object in first argument to case
-          web3, accounts, contracts, currentTimestamp, increaseTime,
-          SECONDS_PER_YEAR, SECONDS_PER_DAY, GAS_AMOUNT, INITIAL_EMISSION,
-          BURN_ACCOUNT, INITIAL_EPOCH, DECIMALS,
+          web3, accounts, increaseTime, deployContract, BURN_ACCOUNT,
+          throws,
         });
       } catch(error) {
         console.error(error);
