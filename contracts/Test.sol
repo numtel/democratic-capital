@@ -14,6 +14,9 @@ contract Test {
   function setMOSValue(address account, uint8 value) public {
     medianTest.set(account, value);
   }
+  function unsetMOSAccount(address account) public {
+    medianTest.unsetAccount(account);
+  }
   function getMOS() public view returns(uint8) {
     return medianTest.median;
   }

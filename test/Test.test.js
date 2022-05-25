@@ -38,3 +38,38 @@ exports.medianOfSixteen = async function({
   // 1, 1, 2, 6, 10, 12, 12, 14, 14, 16
   assert.strictEqual(Number(await test.methods.getMOS().call()), 11);
 };
+
+exports.medianOfSixteen2 = async function({
+  web3, accounts, deployContract,
+}) {
+  const test = await deployContract(accounts[0], 'Test');
+  await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 16);
+  await test.sendFrom(accounts[0]).setMOSValue(accounts[1], 16);
+  // 16, 16
+  assert.strictEqual(Number(await test.methods.getMOS().call()), 16);
+};
+
+exports.medianOfSixteen3 = async function({
+  web3, accounts, deployContract,
+}) {
+  const test = await deployContract(accounts[0], 'Test');
+  await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 16);
+  await test.sendFrom(accounts[0]).setMOSValue(accounts[1], 15);
+  // 15, 16
+  assert.strictEqual(Number(await test.methods.getMOS().call()), 15);
+};
+
+exports.medianOfSixteenUnset = async function({
+  web3, accounts, deployContract,
+}) {
+  const test = await deployContract(accounts[0], 'Test');
+  await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 16);
+  await test.sendFrom(accounts[0]).setMOSValue(accounts[1], 15);
+  await test.sendFrom(accounts[0]).unsetMOSAccount(accounts[1]);
+
+  // 16
+  assert.strictEqual(Number(await test.methods.getMOS().call()), 16);
+
+  await test.sendFrom(accounts[0]).unsetMOSAccount(accounts[0]);
+  assert.strictEqual(Number(await test.methods.getMOS().call()), 0);
+};

@@ -1,34 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import "./MedianOfSixteen.sol";
+using MedianOfSixteen for MedianOfSixteen.Data;
+import "./AddressSet.sol";
+using AddressSet for AddressSet.Set;
+import "./VoteSet.sol";
+using VoteSet for VoteSet.Data;
+
 contract VerifiedGroup {
   IVerification public verifications;
   mapping(address => uint) public joinedTimestamps;
   mapping(bytes32 => uint) public activeBans;
-  struct Day {
-    uint registeredCount;
-    // Pointer to previous record
-    uint previousDay;
-    // Redundancy for easy access
-    uint dayNumber;
-  }
-  mapping(uint => Day) public dayStats;
-  uint latestDay;
-  uint secondsPerDay;
+  MedianOfSixteen.Data preelectionDuration;
+  MedianOfSixteen.Data preelectionThreshold;
+  MedianOfSixteen.Data preelectionMinParticipation;
+  AddressSet.Set proposals;
+
+  uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
   event Registration(address indexed account);
   event Unregistered(address indexed account);
-  event AccountBanned(address indexed account, uint banExpirationDay, bytes32 idHash);
+  event AccountBanned(address indexed account, uint banExpirationTimestamp, bytes32 idHash);
 
-  constructor(address _verifications, uint _secondsPerDay) {
+  constructor(address _verifications) {
     require(_verifications != address(0));
     verifications = IVerification(_verifications);
-    require(_secondsPerDay > 0);
-    secondsPerDay = _secondsPerDay;
-  }
-
-  function daystamp() public view returns(uint) {
-    return block.timestamp / secondsPerDay;
   }
 
   function isVerified(address account) public view returns(bool) {
@@ -38,21 +35,33 @@ contract VerifiedGroup {
   function isRegistered(address account) public view returns(bool) {
     return joinedTimestamps[account] > 0;
   }
-  function register(address account) public {
+  function register(
+    address account,
+    uint8 _preelectionDuration,
+    uint8 _preelectionThreshold,
+    uint8 _preelectionMinParticipation
+  ) public {
     require(isVerified(account), 'Not verified');
     bytes32 idHash = verifications.addressIdHash(account);
-    // Account banned
     require(activeBans[idHash] <= block.timestamp, 'Account Banned');
     joinedTimestamps[account] = block.timestamp;
-    updateRegisteredCount(false);
+    preelectionDuration.set(account, _preelectionDuration);
+    preelectionThreshold.set(account, _preelectionThreshold);
+    preelectionMinParticipation.set(account, _preelectionMinParticipation);
     emit Registration(account);
   }
 
   function unregister(address account) public {
     require(isRegistered(account), 'Not registered');
     delete joinedTimestamps[account];
-    updateRegisteredCount(true);
+    preelectionDuration.unsetAccount(account);
+    preelectionThreshold.unsetAccount(account);
+    preelectionMinParticipation.unsetAccount(account);
     emit Unregistered(account);
+  }
+
+  function registeredCount() public view returns(uint) {
+    return preelectionDuration.count;
   }
 
   function ban(address account, uint banExpirationTimestamp) public {
@@ -62,37 +71,93 @@ contract VerifiedGroup {
     emit AccountBanned(account, banExpirationTimestamp, idHash);
   }
 
-  function updateRegisteredCount(bool decrement) internal {
-    uint currentDay = daystamp();
-    if(dayStats[currentDay].dayNumber > 0) {
-      // A record already exists for today
-      if(decrement) {
-        dayStats[currentDay].registeredCount--;
-      } else {
-        dayStats[currentDay].registeredCount++;
-      }
-    } else {
-      // Need to create a new record for today
-      if(decrement) {
-        dayStats[currentDay].registeredCount = dayStats[latestDay].registeredCount - 1;
-      } else {
-        dayStats[currentDay].registeredCount = dayStats[latestDay].registeredCount + 1;
-      }
-      dayStats[currentDay].previousDay = latestDay;
-      dayStats[currentDay].dayNumber = currentDay;
-      latestDay = currentDay;
-    }
+  function setPreelectionConfig(
+    address account,
+    uint8 _preelectionDuration,
+    uint8 _preelectionThreshold,
+    uint8 _preelectionMinParticipation
+  ) public {
+    preelectionDuration.set(account, _preelectionDuration);
+    preelectionThreshold.set(account, _preelectionThreshold);
+    preelectionMinParticipation.set(account, _preelectionMinParticipation);
   }
 
-  function statsOfDay(uint dayNumber) public view returns(Day memory stats) {
-    uint thisDayNumber = latestDay;
-    Day memory thisDay = dayStats[thisDayNumber];
-    // If no registrations or unregistrations happen, there will be no record
-    // so return the last day before or on the dayNumber
-    while(thisDay.dayNumber > dayNumber) {
-      thisDay = dayStats[thisDay.previousDay];
-    }
-    return thisDay;
+  function initProposal(
+    uint startTime,
+    uint endTime,
+    uint8 threshold,
+    uint minVoters,
+    address to,
+    bytes memory data
+  ) public {
+    Proposal proposal = new Proposal(
+      this,
+      block.timestamp + (preelectionDuration.median * SECONDS_PER_DAY),
+      preelectionThreshold.median,
+      (registeredCount() * preelectionMinParticipation.median) / 16,
+      startTime,
+      endTime,
+      threshold,
+      minVoters,
+      to,
+      data
+    );
+    proposals.insert(address(proposal));
+  }
+}
+
+contract Proposal {
+  VerifiedGroup group;
+  VoteSet.Data preelection;
+  VoteSet.Data election;
+  address to;
+  bytes data;
+
+  constructor(
+    VerifiedGroup _group,
+    uint _preEndTime,
+    uint8 _preThreshold,
+    uint _preMinVoters,
+    uint _startTime,
+    uint _endTime,
+    uint8 _threshold,
+    uint _minVoters,
+    address _to,
+    bytes memory _data
+  ) {
+    require(_preEndTime < _startTime);
+    group = _group;
+    preelection.startTime = block.timestamp;
+    preelection.endTime = _preEndTime;
+    preelection.threshold = _preThreshold;
+    preelection.minVoters = _preMinVoters;
+    election.startTime = _startTime;
+    election.endTime = _endTime;
+    election.threshold = _threshold;
+    election.minVoters = _minVoters;
+    to = _to;
+    data = _data;
+  }
+
+  function preVote(bool inSupport) public {
+    require(group.isRegistered(msg.sender));
+    require(group.isVerified(msg.sender));
+    preelection.vote(msg.sender, inSupport);
+  }
+
+  function prePassed() public view returns(bool) {
+    return preelection.passed();
+  }
+
+  function mainVote(bool inSupport) public {
+    require(prePassed());
+    require(group.isRegistered(msg.sender));
+    require(group.isVerified(msg.sender));
+    election.vote(msg.sender, inSupport);
+  }
+
+  function mainPassed() public view returns(bool) {
+    return election.passed();
   }
 }
 

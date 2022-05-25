@@ -23,25 +23,38 @@ library MedianOfSixteen {
       // This was the first setting
       self.median = value;
     } else {
-      uint medianPos = self.count / 2;
-      bool countIsEven = self.count % 2 == 0;
-      uint soFar;
-      uint curBucket;
-      uint otherBucket;
-      while(soFar <= medianPos) {
-        soFar += self.buckets[curBucket];
-        curBucket++;
-        if(countIsEven && soFar == medianPos && otherBucket == 0) {
-          // Median is between 2 buckets
-          otherBucket = curBucket;
-        }
-      }
-      if(otherBucket > 0) {
-        curBucket = (otherBucket + curBucket) / 2;
-      }
-      self.median = uint8(curBucket);
+      self.median = calculateMedian(self);
     }
-
-
+  }
+  function calculateMedian(Data storage self) internal view returns(uint8) {
+    require(self.count > 0);
+    uint medianPos = self.count / 2;
+    bool countIsEven = self.count % 2 == 0;
+    uint soFar;
+    uint8 curBucket;
+    uint8 otherBucket;
+    while(soFar <= medianPos) {
+      soFar += self.buckets[curBucket];
+      curBucket++;
+      if(countIsEven && soFar == medianPos && otherBucket == 0) {
+        // Median is between 2 buckets
+        otherBucket = curBucket;
+      }
+    }
+    if(otherBucket > 0) {
+      curBucket = (otherBucket + curBucket) / 2;
+    }
+    return curBucket;
+  }
+  function unsetAccount(Data storage self, address account) internal {
+    require(self.accountValues[account] > 0);
+    self.buckets[self.accountValues[account] - 1]--;
+    self.count--;
+    if(self.count == 0) {
+      self.median = 0;
+    } else {
+      self.median = calculateMedian(self);
+    }
+    delete self.accountValues[account];
   }
 }

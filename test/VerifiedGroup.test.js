@@ -8,7 +8,7 @@ exports.requiresVerified = async function({
 }) {
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, SECONDS_PER_DAY);
+    mockVerification.options.address);
 
   assert.strictEqual(await throws(() =>
     verifiedGroup.sendFrom(accounts[0]).register(accounts[0])), true,
@@ -17,21 +17,19 @@ exports.requiresVerified = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
 
-  await verifiedGroup.sendFrom(accounts[0]).register(accounts[0]);
-
-  const daystamp = Number(await verifiedGroup.methods.daystamp().call());
-
-  // Use future daystamp just to make sure it works
   assert.strictEqual(
-    Number((await verifiedGroup.methods.statsOfDay(daystamp + 1).call())
-      .registeredCount),
-    1, 'Should count registered user');
+    Number(await verifiedGroup.methods.registeredCount().call()),
+    0, 'Should have 0 registered');
+
+  await verifiedGroup.sendFrom(accounts[0]).register(accounts[0]);
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.registeredCount().call()),
+    1, 'Should have 1 registered');
 
   await verifiedGroup.sendFrom(accounts[0]).unregister(accounts[0]);
   assert.strictEqual(
-    Number((await verifiedGroup.methods.statsOfDay(daystamp).call())
-      .registeredCount),
-    0, 'Should decrement registered user');
+    Number(await verifiedGroup.methods.registeredCount().call()),
+    0, 'Should have 0 registered');
 };
 
 // TODO test ban
