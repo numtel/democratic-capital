@@ -3,7 +3,7 @@ const assert = require('assert');
 exports.medianOfSixteen = async function({
   web3, accounts, deployContract,
 }) {
-  const test = await deployContract(accounts[0], 'Test');
+  const test = await deployContract(accounts[0], 'TestMedianOfSixteen');
   await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 1);
   // 1
   assert.strictEqual(Number(await test.methods.getMOS().call()), 1);
@@ -42,7 +42,7 @@ exports.medianOfSixteen = async function({
 exports.medianOfSixteen2 = async function({
   web3, accounts, deployContract,
 }) {
-  const test = await deployContract(accounts[0], 'Test');
+  const test = await deployContract(accounts[0], 'TestMedianOfSixteen');
   await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 16);
   await test.sendFrom(accounts[0]).setMOSValue(accounts[1], 16);
   // 16, 16
@@ -52,7 +52,7 @@ exports.medianOfSixteen2 = async function({
 exports.medianOfSixteen3 = async function({
   web3, accounts, deployContract,
 }) {
-  const test = await deployContract(accounts[0], 'Test');
+  const test = await deployContract(accounts[0], 'TestMedianOfSixteen');
   await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 16);
   await test.sendFrom(accounts[0]).setMOSValue(accounts[1], 15);
   // 15, 16
@@ -62,7 +62,7 @@ exports.medianOfSixteen3 = async function({
 exports.medianOfSixteenUnset = async function({
   web3, accounts, deployContract,
 }) {
-  const test = await deployContract(accounts[0], 'Test');
+  const test = await deployContract(accounts[0], 'TestMedianOfSixteen');
   await test.sendFrom(accounts[0]).setMOSValue(accounts[0], 16);
   await test.sendFrom(accounts[0]).setMOSValue(accounts[1], 15);
   await test.sendFrom(accounts[0]).unsetMOSAccount(accounts[1]);

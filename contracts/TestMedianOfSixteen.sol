@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "./TxSet.sol";
 import "./MedianOfSixteen.sol";
 
-contract Test {
-  using TxSet for TxSet.Set;
-  TxSet.Set epochTxs;
-
+contract TestMedianOfSixteen {
   using MedianOfSixteen for MedianOfSixteen.Data;
   MedianOfSixteen.Data medianTest;
 
