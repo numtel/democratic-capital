@@ -21,8 +21,14 @@ contract VerifiedGroup {
   AddressSet.Set allowanceProposals;
   mapping(address => VoteSet.Data) disallowanceElections;
   AddressSet.Set disallowanceProposals;
-
   AddressSet.Set allowedContracts;
+
+  mapping(uint => VoteSet.Data) invokeElections;
+  struct Tx {
+    address to;
+    bytes data;
+  }
+  Tx[] invokeProposals;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
@@ -113,21 +119,53 @@ contract VerifiedGroup {
   }
 
   function proposeAllowing(address contractToAllow) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
     require(!allowanceProposals.exists(contractToAllow));
     allowanceProposals.insert(contractToAllow);
     configureElection(allowanceElections[contractToAllow]);
   }
 
   function proposeDisallowing(address contractToDisallow) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
     require(!disallowanceProposals.exists(contractToDisallow));
     disallowanceProposals.insert(contractToDisallow);
     configureElection(disallowanceElections[contractToDisallow]);
+  }
+
+  function proposeInvoke(address to, bytes memory data) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    configureElection(invokeElections[invokeProposals.length]);
+    invokeProposals.push(Tx(to, data));
+  }
+
+  function allowanceElectionCount() external view returns(uint) {
+    return allowanceProposals.count();
+  }
+
+  function disallowanceElectionCount() external view returns(uint) {
+    return disallowanceProposals.count();
+  }
+
+  function invokeElectionCount() external view returns(uint) {
+    return invokeProposals.length;
+  }
+
+  function allowanceElectionIndex(uint index) external view returns(address) {
+    return allowanceProposals.keyList[index];
+  }
+
+  function disallowanceElectionIndex(uint index) external view returns(address) {
+    return disallowanceProposals.keyList[index];
   }
 
   function allowanceElection(address contractToAllow) external view returns(
     uint endTime, uint8 threshold, uint minVoters, bool processed,
     uint supporting, uint against
   ) {
+    require(allowanceElections[contractToAllow].endTime > 0);
     endTime = allowanceElections[contractToAllow].endTime;
     threshold = allowanceElections[contractToAllow].threshold;
     minVoters = allowanceElections[contractToAllow].minVoters;
@@ -140,6 +178,7 @@ contract VerifiedGroup {
     uint endTime, uint8 threshold, uint minVoters, bool processed,
     uint supporting, uint against
   ) {
+    require(disallowanceElections[contractToDisallow].endTime > 0);
     endTime = disallowanceElections[contractToDisallow].endTime;
     threshold = disallowanceElections[contractToDisallow].threshold;
     minVoters = disallowanceElections[contractToDisallow].minVoters;
@@ -148,8 +187,23 @@ contract VerifiedGroup {
     against = disallowanceElections[contractToDisallow].against;
   }
 
+  function invokeElection(uint index) external view returns(
+    uint endTime, uint8 threshold, uint minVoters, bool processed,
+    uint supporting, uint against
+  ) {
+    require(invokeElections[index].endTime > 0);
+    endTime = invokeElections[index].endTime;
+    threshold = invokeElections[index].threshold;
+    minVoters = invokeElections[index].minVoters;
+    processed = invokeElections[index].processed;
+    supporting = invokeElections[index].supporting;
+    against = invokeElections[index].against;
+  }
+
   function processAllowanceElection(address contractToAllow) external {
     require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    require(allowanceElections[contractToAllow].endTime > 0);
     require(allowanceElections[contractToAllow].processed == false);
     allowanceElections[contractToAllow].processed = true;
     if(allowanceElections[contractToAllow].passed()) {
@@ -160,10 +214,25 @@ contract VerifiedGroup {
   function processDisallowanceElection(address contractToDisallow) external {
     require(isRegistered(msg.sender));
     require(isVerified(msg.sender), 'Not verified');
+    require(disallowanceElections[contractToDisallow].endTime > 0);
     require(disallowanceElections[contractToDisallow].processed == false);
     disallowanceElections[contractToDisallow].processed = true;
     if(disallowanceElections[contractToDisallow].passed()) {
       allowedContracts.remove(contractToDisallow);
+    }
+  }
+
+  function processInvokeElection(uint index) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    require(invokeElections[index].endTime > 0);
+    require(invokeElections[index].processed == false);
+    invokeElections[index].processed = true;
+    if(invokeElections[index].passed()) {
+      (bool success, bytes memory returned) =
+        invokeProposals[index].to.call(invokeProposals[index].data);
+      emit TxSent(invokeProposals[index].to, invokeProposals[index].data, returned);
+      require(success);
     }
   }
 
