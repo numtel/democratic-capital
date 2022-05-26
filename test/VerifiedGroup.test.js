@@ -11,7 +11,7 @@ exports.requiresVerified = async function({
     mockVerification.options.address);
 
   assert.strictEqual(await throws(() =>
-    verifiedGroup.sendFrom(accounts[0]).register(accounts[0])), true,
+    verifiedGroup.sendFrom(accounts[0]).register(1, 1, 1)), true,
     'Not yet verified should throw');
 
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
@@ -21,7 +21,7 @@ exports.requiresVerified = async function({
     Number(await verifiedGroup.methods.registeredCount().call()),
     0, 'Should have 0 registered');
 
-  await verifiedGroup.sendFrom(accounts[0]).register(accounts[0]);
+  await verifiedGroup.sendFrom(accounts[0]).register(1, 1, 1);
   assert.strictEqual(
     Number(await verifiedGroup.methods.registeredCount().call()),
     1, 'Should have 1 registered');
@@ -33,3 +33,7 @@ exports.requiresVerified = async function({
 };
 
 // TODO test ban
+// TODO test unregister from child contract
+// TODO test changing verification contract
+// TODO test child contract allowing/disallowing/invoking from
+// TODO test setProposalConfig

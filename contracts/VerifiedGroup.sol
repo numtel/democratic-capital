@@ -12,18 +12,29 @@ contract VerifiedGroup {
   IVerification public verifications;
   mapping(address => uint) public joinedTimestamps;
   mapping(bytes32 => uint) public activeBans;
-  MedianOfSixteen.Data preelectionDuration;
-  MedianOfSixteen.Data preelectionThreshold;
-  MedianOfSixteen.Data preelectionMinParticipation;
-  AddressSet.Set proposals;
+
+  MedianOfSixteen.Data proposalDuration;
+  MedianOfSixteen.Data proposalThreshold;
+  MedianOfSixteen.Data proposalMinParticipation;
+
+  mapping(address => VoteSet.Data) allowanceElections;
+  AddressSet.Set allowanceProposals;
+  mapping(address => VoteSet.Data) disallowanceElections;
+  AddressSet.Set disallowanceProposals;
+
+  AddressSet.Set allowedContracts;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
+  event VerificationContractChanged(address indexed oldContract, address indexed newContract);
   event Registration(address indexed account);
   event Unregistered(address indexed account);
   event AccountBanned(address indexed account, uint banExpirationTimestamp, bytes32 idHash);
+  event TxSent(address to, bytes data, bytes returned);
 
-  constructor(address _verifications) {
+  constructor(
+    address _verifications
+  ) {
     require(_verifications != address(0));
     verifications = IVerification(_verifications);
   }
@@ -35,130 +46,134 @@ contract VerifiedGroup {
   function isRegistered(address account) public view returns(bool) {
     return joinedTimestamps[account] > 0;
   }
+  // TODO registration elections
   function register(
-    address account,
-    uint8 _preelectionDuration,
-    uint8 _preelectionThreshold,
-    uint8 _preelectionMinParticipation
-  ) public {
+    uint8 _proposalDuration,
+    uint8 _proposalThreshold,
+    uint8 _proposalMinParticipation
+  ) external {
+    address account = msg.sender;
     require(isVerified(account), 'Not verified');
     bytes32 idHash = verifications.addressIdHash(account);
     require(activeBans[idHash] <= block.timestamp, 'Account Banned');
     joinedTimestamps[account] = block.timestamp;
-    preelectionDuration.set(account, _preelectionDuration);
-    preelectionThreshold.set(account, _preelectionThreshold);
-    preelectionMinParticipation.set(account, _preelectionMinParticipation);
+    proposalDuration.set(account, _proposalDuration);
+    proposalThreshold.set(account, _proposalThreshold);
+    proposalMinParticipation.set(account, _proposalMinParticipation);
     emit Registration(account);
   }
 
   function unregister(address account) public {
+    require(account == msg.sender || allowedContracts.exists(msg.sender));
     require(isRegistered(account), 'Not registered');
     delete joinedTimestamps[account];
-    preelectionDuration.unsetAccount(account);
-    preelectionThreshold.unsetAccount(account);
-    preelectionMinParticipation.unsetAccount(account);
+    proposalDuration.unsetAccount(account);
+    proposalThreshold.unsetAccount(account);
+    proposalMinParticipation.unsetAccount(account);
     emit Unregistered(account);
   }
 
   function registeredCount() public view returns(uint) {
-    return preelectionDuration.count;
+    return proposalDuration.count;
   }
 
-  function ban(address account, uint banExpirationTimestamp) public {
+  function ban(address account, uint banExpirationTimestamp) external {
+    require(allowedContracts.exists(msg.sender));
     unregister(account);
     bytes32 idHash = verifications.addressIdHash(account);
     activeBans[idHash] = banExpirationTimestamp;
     emit AccountBanned(account, banExpirationTimestamp, idHash);
   }
 
-  function setPreelectionConfig(
-    address account,
-    uint8 _preelectionDuration,
-    uint8 _preelectionThreshold,
-    uint8 _preelectionMinParticipation
-  ) public {
-    preelectionDuration.set(account, _preelectionDuration);
-    preelectionThreshold.set(account, _preelectionThreshold);
-    preelectionMinParticipation.set(account, _preelectionMinParticipation);
+  function setVerifications(address _verifications) external {
+    require(allowedContracts.exists(msg.sender));
+    require(_verifications != address(0));
+    emit VerificationContractChanged(address(verifications), _verifications);
+    verifications = IVerification(_verifications);
   }
 
-  function initProposal(
-    uint startTime,
-    uint endTime,
-    uint8 threshold,
-    uint minVoters,
-    address to,
-    bytes memory data
-  ) public {
-    Proposal proposal = new Proposal(
-      this,
-      block.timestamp + (preelectionDuration.median * SECONDS_PER_DAY),
-      preelectionThreshold.median,
-      (registeredCount() * preelectionMinParticipation.median) / 16,
-      startTime,
-      endTime,
-      threshold,
-      minVoters,
-      to,
-      data
-    );
-    proposals.insert(address(proposal));
+  function setProposalConfig(
+    uint8 _proposalDuration,
+    uint8 _proposalThreshold,
+    uint8 _proposalMinParticipation
+  ) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    proposalDuration.set(msg.sender, _proposalDuration);
+    proposalThreshold.set(msg.sender, _proposalThreshold);
+    proposalMinParticipation.set(msg.sender, _proposalMinParticipation);
   }
-}
 
-contract Proposal {
-  VerifiedGroup group;
-  VoteSet.Data preelection;
-  VoteSet.Data election;
-  address to;
-  bytes data;
+  function configureElection(VoteSet.Data storage election) internal {
+    election.endTime =
+      block.timestamp + (proposalDuration.median * SECONDS_PER_DAY);
+    election.threshold = proposalThreshold.median;
+    election.minVoters =
+      (registeredCount() * proposalMinParticipation.median) / 16;
+  }
 
-  constructor(
-    VerifiedGroup _group,
-    uint _preEndTime,
-    uint8 _preThreshold,
-    uint _preMinVoters,
-    uint _startTime,
-    uint _endTime,
-    uint8 _threshold,
-    uint _minVoters,
-    address _to,
-    bytes memory _data
+  function proposeAllowing(address contractToAllow) external {
+    require(!allowanceProposals.exists(contractToAllow));
+    allowanceProposals.insert(contractToAllow);
+    configureElection(allowanceElections[contractToAllow]);
+  }
+
+  function proposeDisallowing(address contractToDisallow) external {
+    require(!disallowanceProposals.exists(contractToDisallow));
+    disallowanceProposals.insert(contractToDisallow);
+    configureElection(disallowanceElections[contractToDisallow]);
+  }
+
+  function allowanceElection(address contractToAllow) external view returns(
+    uint endTime, uint8 threshold, uint minVoters, bool processed,
+    uint supporting, uint against
   ) {
-    require(_preEndTime < _startTime);
-    group = _group;
-    preelection.startTime = block.timestamp;
-    preelection.endTime = _preEndTime;
-    preelection.threshold = _preThreshold;
-    preelection.minVoters = _preMinVoters;
-    election.startTime = _startTime;
-    election.endTime = _endTime;
-    election.threshold = _threshold;
-    election.minVoters = _minVoters;
-    to = _to;
-    data = _data;
+    endTime = allowanceElections[contractToAllow].endTime;
+    threshold = allowanceElections[contractToAllow].threshold;
+    minVoters = allowanceElections[contractToAllow].minVoters;
+    processed = allowanceElections[contractToAllow].processed;
+    supporting = allowanceElections[contractToAllow].supporting;
+    against = allowanceElections[contractToAllow].against;
   }
 
-  function preVote(bool inSupport) public {
-    require(group.isRegistered(msg.sender));
-    require(group.isVerified(msg.sender));
-    preelection.vote(msg.sender, inSupport);
+  function disallowanceElection(address contractToDisallow) external view returns(
+    uint endTime, uint8 threshold, uint minVoters, bool processed,
+    uint supporting, uint against
+  ) {
+    endTime = disallowanceElections[contractToDisallow].endTime;
+    threshold = disallowanceElections[contractToDisallow].threshold;
+    minVoters = disallowanceElections[contractToDisallow].minVoters;
+    processed = disallowanceElections[contractToDisallow].processed;
+    supporting = disallowanceElections[contractToDisallow].supporting;
+    against = disallowanceElections[contractToDisallow].against;
   }
 
-  function prePassed() public view returns(bool) {
-    return preelection.passed();
+  function processAllowanceElection(address contractToAllow) external {
+    require(isRegistered(msg.sender));
+    require(allowanceElections[contractToAllow].processed == false);
+    allowanceElections[contractToAllow].processed = true;
+    if(allowanceElections[contractToAllow].passed()) {
+      allowedContracts.insert(contractToAllow);
+    }
   }
 
-  function mainVote(bool inSupport) public {
-    require(prePassed());
-    require(group.isRegistered(msg.sender));
-    require(group.isVerified(msg.sender));
-    election.vote(msg.sender, inSupport);
+  function processDisallowanceElection(address contractToDisallow) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    require(disallowanceElections[contractToDisallow].processed == false);
+    disallowanceElections[contractToDisallow].processed = true;
+    if(disallowanceElections[contractToDisallow].passed()) {
+      allowedContracts.remove(contractToDisallow);
+    }
   }
 
-  function mainPassed() public view returns(bool) {
-    return election.passed();
+  function invoke(address to, bytes memory data) external {
+    require(allowedContracts.exists(msg.sender));
+    (bool success, bytes memory returned) = to.call(data);
+    emit TxSent(to, data, returned);
+    require(success);
   }
+
 }
 
 interface IVerification {

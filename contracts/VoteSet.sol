@@ -3,10 +3,10 @@ pragma solidity 0.8.13;
 
 library VoteSet {
   struct Data {
-    uint startTime;
     uint endTime;
     uint8 threshold;
     uint minVoters;
+    bool processed;
     
     // 0: not voted, 1: in support, 2: against
     mapping(address => uint8) votesByAccount;
@@ -14,7 +14,6 @@ library VoteSet {
     uint against;
   }
   function vote(Data storage self, address account, bool inSupport) internal {
-    require(self.startTime > block.timestamp);
     // This is a re-vote, reverse existing value
     if(self.votesByAccount[account] == 1) {
       self.supporting--;
