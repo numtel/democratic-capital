@@ -78,10 +78,14 @@ contract VerifiedGroup {
     require(isVerified(msg.sender), 'Not verified');
     if(proposalParameters[9].median > 1) {
       if(registrationElections[msg.sender].endTime > 0) {
-        require(registrationElections[msg.sender].passed());
-        registrationElections[msg.sender].processed = true;
+        require(block.timestamp > registrationElections[msg.sender].endTime);
         registrationProposals.remove(msg.sender);
-        _register(_parameters);
+        if(registrationElections[msg.sender].passed()) {
+          _register(_parameters);
+        } else {
+          // Allow user to try again
+          registrationElections[msg.sender].endTime = 0;
+        }
       } else {
         emit NewRegistrationElection(msg.sender);
         registrationProposals.insert(msg.sender);
@@ -255,6 +259,30 @@ contract VerifiedGroup {
     uint supporting, uint against
   ) {
     return electionDetails(invokeElections[index]);
+  }
+
+  function allowanceElectionVote(address contractToAllow, bool inSupport) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    allowanceElections[contractToAllow].vote(msg.sender, inSupport);
+  }
+
+  function disallowanceElectionVote(address contractToDisallow, bool inSupport) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    disallowanceElections[contractToDisallow].vote(msg.sender, inSupport);
+  }
+
+  function registrationElectionVote(address account, bool inSupport) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    registrationElections[account].vote(msg.sender, inSupport);
+  }
+
+  function invokeElectionVote(uint index, bool inSupport) external {
+    require(isRegistered(msg.sender));
+    require(isVerified(msg.sender), 'Not verified');
+    invokeElections[index].vote(msg.sender, inSupport);
   }
 
   function processAllowanceElection(address contractToAllow) external {

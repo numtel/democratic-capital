@@ -14,6 +14,7 @@ library VoteSet {
     uint against;
   }
   function vote(Data storage self, address account, bool inSupport) internal {
+    require(block.timestamp < self.endTime);
     // This is a re-vote, reverse existing value
     if(self.votesByAccount[account] == 1) {
       self.supporting--;
