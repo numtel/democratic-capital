@@ -243,6 +243,40 @@ exports.childContractUnregister = async function({
     'No permission to invoke on parent contract');
 };
 
-// TODO test changing verification contract
+exports.changeVerificationContract = async function({
+  web3, accounts, deployContract, throws, increaseTime,
+}) {
+  const mockVerification1 = await deployContract(accounts[0], 'MockVerification');
+  const mockVerification2 = await deployContract(accounts[0], 'MockVerification');
+  await mockVerification1.sendFrom(accounts[0]).setStatus(accounts[0],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+  const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
+    mockVerification1.options.address, DUMMY_PARAMS);
+
+  await verifiedGroup.sendFrom(accounts[0]).proposeInvoke(
+    verifiedGroup.options.address,
+    verifiedGroup.methods.setVerifications(mockVerification2.options.address).encodeABI());
+
+  await verifiedGroup.sendFrom(accounts[0]).invokeElectionVote(0, true);
+
+  await increaseTime(SECONDS_PER_DAY * 1.1);
+  const events = (await verifiedGroup.sendFrom(accounts[0]).processInvokeElection(0)).events;
+  assert.strictEqual(
+    events.VerificationContractChanged.returnValues.oldContract,
+    mockVerification1.options.address);
+  assert.strictEqual(
+    events.VerificationContractChanged.returnValues.newContract,
+    mockVerification2.options.address);
+
+  assert.strictEqual(await throws(() =>
+    verifiedGroup.sendFrom(accounts[0]).setProposalConfig(DUMMY_PARAMS)), true,
+    'User not verified');
+
+  await mockVerification2.sendFrom(accounts[0]).setStatus(accounts[0],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+
+  await verifiedGroup.sendFrom(accounts[0]).setProposalConfig(DUMMY_PARAMS);
+};
+
 // TODO test child contract allowing/disallowing/invoking from
 // TODO test setProposalConfig
