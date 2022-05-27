@@ -43,7 +43,7 @@ contract VerifiedGroup {
     address to;
     bytes data;
   }
-  Tx[] invokeProposals;
+  Tx[] public invokeProposals;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 

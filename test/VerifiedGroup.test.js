@@ -118,7 +118,61 @@ exports.registrationElection = async function({
     0);
 };
 
-// TODO test ban
+exports.invokeBan = async function({
+  web3, accounts, deployContract, throws, increaseTime,
+}) {
+  const mockVerification = await deployContract(accounts[0], 'MockVerification');
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+  const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
+    mockVerification.options.address, DUMMY_PARAMS);
+
+  // Register second user
+  await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+  await verifiedGroup.sendFrom(accounts[1]).register(DUMMY_PARAMS);
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.registeredCount().call()),
+    2, 'Should have 2 registered');
+
+  const currentTime = (await web3.eth.getBlock('latest')).timestamp;
+  await verifiedGroup.sendFrom(accounts[0]).proposeInvoke(
+    verifiedGroup.options.address,
+    verifiedGroup.methods.ban(accounts[1], currentTime + SECONDS_PER_DAY * 2).encodeABI());
+
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.invokeElectionCount().call()),
+    1);
+
+  const proposalTx = await verifiedGroup.methods.invokeProposals(0).call();
+  assert.strictEqual(proposalTx.to, verifiedGroup.options.address);
+
+  await verifiedGroup.sendFrom(accounts[0]).invokeElectionVote(0, true);
+
+  await increaseTime(SECONDS_PER_DAY * 1.1);
+  const events = (await verifiedGroup.sendFrom(accounts[0]).processInvokeElection(0)).events;
+  assert.strictEqual(events.Unregistered.returnValues.account, accounts[1]);
+  assert.strictEqual(events.AccountBanned.returnValues.account, accounts[1]);
+  assert.strictEqual(events.TxSent.returnValues.to, verifiedGroup.options.address);
+
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.registeredCount().call()),
+    1, 'Should have 1 registered');
+
+  assert.strictEqual(await throws(() =>
+    verifiedGroup.sendFrom(accounts[1]).register(DUMMY_PARAMS)), true,
+    'User is banned still');
+
+  await increaseTime(SECONDS_PER_DAY * 1.1);
+
+  // Ban duration has elapsed, user can register again
+  await verifiedGroup.sendFrom(accounts[1]).register(DUMMY_PARAMS);
+  assert.strictEqual(
+    await verifiedGroup.methods.isRegistered(accounts[1]).call(),
+    true);
+
+};
+
 // TODO test unregister from child contract
 // TODO test changing verification contract
 // TODO test child contract allowing/disallowing/invoking from
