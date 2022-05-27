@@ -15,6 +15,10 @@ contract TestChild is Ownable {
     committee.unregister(account);
   }
 
+  function invokeUnregister(address account) public onlyOwner {
+    committee.invoke(address(this), abi.encodeCall(this.unregister, (account)));
+  }
+
 }
 
 interface IVerifiedGroup {
