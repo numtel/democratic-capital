@@ -10,6 +10,7 @@ library MedianOfSixteen {
   }
   function set(Data storage self, address account, uint8 value) internal {
     require(value > 0 && value < 17);
+    if(self.accountValues[account] == value) return;
     if(self.accountValues[account] > 0) {
       // Updating an existing value
       self.buckets[self.accountValues[account] - 1]--;
