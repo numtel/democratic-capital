@@ -6,16 +6,12 @@ contract Ownable {
 
   event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
 
-  constructor() {
-    owner = msg.sender;
-  }
-
   modifier onlyOwner() {
     require(owner == msg.sender, "Caller is not owner");
     _;
   }
 
-  function transferOwnership(address newOwner) external {
+  function _transferOwnership(address newOwner) internal {
     emit OwnershipTransferred(owner, newOwner);
     owner = newOwner;
   }

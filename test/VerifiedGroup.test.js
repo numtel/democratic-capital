@@ -173,7 +173,76 @@ exports.invokeBan = async function({
 
 };
 
-// TODO test unregister from child contract
+exports.childContractUnregister = async function({
+  web3, accounts, deployContract, throws, increaseTime,
+}) {
+  const mockVerification = await deployContract(accounts[0], 'MockVerification');
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+  const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
+    mockVerification.options.address, DUMMY_PARAMS);
+  const testChild = await deployContract(accounts[0], 'TestChild',
+    verifiedGroup.options.address);
+
+  // Allow child contract and invoke its method
+  await verifiedGroup.sendFrom(accounts[0]).proposeAllowing(testChild.options.address);
+  await verifiedGroup.sendFrom(accounts[0]).proposeInvoke(
+    testChild.options.address,
+    testChild.methods.unregister(accounts[0]).encodeABI());
+
+  // Verify allowance election details
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.allowanceElectionCount().call()),
+    1);
+
+  assert.strictEqual(
+    await verifiedGroup.methods.allowanceElectionIndex(0).call(),
+    testChild.options.address);
+
+  // Vote in both elections
+  await verifiedGroup.sendFrom(accounts[0]).allowanceElectionVote(testChild.options.address, true);
+  await verifiedGroup.sendFrom(accounts[0]).invokeElectionVote(0, true);
+
+  await increaseTime(SECONDS_PER_DAY * 1.1);
+
+  await verifiedGroup.sendFrom(accounts[0]).processAllowanceElection(testChild.options.address);
+  const events = (await verifiedGroup.sendFrom(accounts[0]).processInvokeElection(0)).events;
+  assert.strictEqual(events.Unregistered.returnValues.account, accounts[0]);
+  assert.strictEqual(events.TxSent.returnValues.to, testChild.options.address);
+
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.registeredCount().call()),
+    0, 'Should have 0 registered');
+
+  // Rejoin the group
+  await verifiedGroup.sendFrom(accounts[0]).register(DUMMY_PARAMS);
+
+  // Disallow child contract and also invoking it again
+  await verifiedGroup.sendFrom(accounts[0]).proposeDisallowing(testChild.options.address);
+  await verifiedGroup.sendFrom(accounts[0]).proposeInvoke(
+    testChild.options.address,
+    testChild.methods.unregister(accounts[0]).encodeABI());
+
+  assert.strictEqual(
+    Number(await verifiedGroup.methods.disallowanceElectionCount().call()),
+    1);
+
+  assert.strictEqual(
+    await verifiedGroup.methods.disallowanceElectionIndex(0).call(),
+    testChild.options.address);
+
+  await verifiedGroup.sendFrom(accounts[0]).disallowanceElectionVote(testChild.options.address, true);
+  await verifiedGroup.sendFrom(accounts[0]).invokeElectionVote(1, true);
+
+  await increaseTime(SECONDS_PER_DAY * 1.1);
+
+  await verifiedGroup.sendFrom(accounts[0]).processDisallowanceElection(testChild.options.address);
+
+  assert.strictEqual(await throws(() =>
+    verifiedGroup.sendFrom(accounts[0]).processInvokeElection(1)), true,
+    'No permission to invoke on parent contract');
+};
+
 // TODO test changing verification contract
 // TODO test child contract allowing/disallowing/invoking from
 // TODO test setProposalConfig
