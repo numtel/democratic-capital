@@ -278,5 +278,37 @@ exports.changeVerificationContract = async function({
   await verifiedGroup.sendFrom(accounts[0]).setProposalConfig(DUMMY_PARAMS);
 };
 
+exports.setProposalConfig = async function({
+  web3, accounts, deployContract, throws, increaseTime,
+}) {
+  const mockVerification = await deployContract(accounts[0], 'MockVerification');
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1],
+    Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
+  const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
+    mockVerification.options.address, DUMMY_PARAMS);
+
+  function allSame(checkAgainst, array) {
+    for(let i=0; i<checkAgainst.length; i++)
+      if(Number(array[i]) !== checkAgainst[i]) return false;
+    return true;
+  }
+  assert.strictEqual(allSame(DUMMY_PARAMS,
+    await verifiedGroup.methods.getProposalConfig().call()), true);
+
+  const OTHER_PARAMS = [3,3,3,3,3,3,3,3,3,3,3,3];
+  const MEDIAN_PARAMS = [2,2,2,2,2,2,2,2,2,2,2,2];
+  // Must register new user first since the OTHER_PARAMS will turn on registration elections
+  await verifiedGroup.sendFrom(accounts[1]).register(DUMMY_PARAMS);
+  await verifiedGroup.sendFrom(accounts[0]).setProposalConfig(OTHER_PARAMS);
+
+  assert.strictEqual(allSame(OTHER_PARAMS,
+    await verifiedGroup.methods.getProposalConfig(accounts[0]).call()), true);
+  assert.strictEqual(allSame(DUMMY_PARAMS,
+    await verifiedGroup.methods.getProposalConfig(accounts[1]).call()), true);
+  assert.strictEqual(allSame(MEDIAN_PARAMS,
+    await verifiedGroup.methods.getProposalConfig().call()), true);
+};
+
 // TODO test child contract allowing/disallowing/invoking from
-// TODO test setProposalConfig
