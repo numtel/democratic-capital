@@ -8,8 +8,7 @@ const PORT = 8545;
 const BUILD_DIR = 'build/';
 const GAS_AMOUNT = 20000000;
 const INITIAL_EMISSION = 100000;
-const PROMPT = '$ ';
-const INITIAL_EPOCH = [0, INITIAL_EMISSION, '0x00000000ffffffff0000ffffffff0000ffffffff0000ffffffff0000ffffffff'];
+const PROMPT = '> ';
 const SECONDS_PER_DAY = 60 * 60 * 24;
 const SECONDS_PER_YEAR = SECONDS_PER_DAY * 365;
 
@@ -30,17 +29,14 @@ const web3 = new Web3(ganacheServer.provider);
 const contracts = {
   MockVerification: {
     instance: null,
+    abi: 'IVerification.abi',
     constructorArgs: [],
   },
-  DemocraticToken: {
+  GroupList: {
     instance: null,
-    constructorArgs: [
-      () => contracts.MockVerification.instance.options.address,
-      "Democratic Token Local",
-      "DEMOLO",
-      INITIAL_EPOCH,
-    ]
-  }
+    abi: 'GroupList.abi',
+    constructorArgs: [],
+  },
 };
 
 
@@ -142,9 +138,15 @@ async function deployContracts() {
       decimals: 18
     },
     blockExplorer: "https://etherscan.io",
-    tokenContract: contracts.DemocraticToken.instance.options.address,
+    contracts: Object.keys(contracts).reduce((out, cur) => {
+      out[cur] = {
+        address: contracts[cur].instance.options.address,
+        abi: contracts[cur].abi,
+      };
+      return out;
+    }, {}),
   })};
   `);
-  console.log('Democratic Token Development Chain CLI\nType "help" for commands, ctrl+c to exit');
+  console.log('Democratic Capital Development Chain CLI\nType "help" for commands, ctrl+c to exit');
   process.stdout.write(PROMPT);
 }

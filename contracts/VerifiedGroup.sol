@@ -57,14 +57,14 @@ contract VerifiedGroup {
   event NewInvokeElection(uint index);
   event NewRegistrationElection(address indexed account);
 
-  constructor(address _verifications, uint8[PARAM_COUNT] memory _parameters) {
+  constructor(address _verifications, address _firstAccount, uint8[PARAM_COUNT] memory _parameters) {
     require(_verifications != address(0));
     verifications = IVerification(_verifications);
     allowedContracts.insert(address(this));
 
     // Contract creator becomes first member automatically
     // in order to prevent any bots from taking over before it can start
-    register(_parameters);
+    _register(_firstAccount, _parameters);
   }
 
   function isVerified(address account) public view returns(bool) {
@@ -81,7 +81,7 @@ contract VerifiedGroup {
         require(block.timestamp > registrationElections[msg.sender].endTime);
         registrationProposals.remove(msg.sender);
         if(registrationElections[msg.sender].passed()) {
-          _register(_parameters);
+          _register(msg.sender, _parameters);
         } else {
           // Allow user to try again
           registrationElections[msg.sender].endTime = 0;
@@ -95,21 +95,24 @@ contract VerifiedGroup {
         registrationElections[msg.sender].endTime -= SECONDS_PER_DAY;
       }
     } else {
-      _register(_parameters);
+      _register(msg.sender, _parameters);
     }
   }
 
-  function _register(uint8[PARAM_COUNT] memory _parameters) internal {
-    bytes32 idHash = verifications.addressIdHash(msg.sender);
-    require(activeBans[idHash] <= block.timestamp, 'Account Banned');
-    joinedTimestamps[msg.sender] = block.timestamp;
-    setProposalConfig(_parameters);
-    emit Registration(msg.sender);
+  function _register(address account, uint8[PARAM_COUNT] memory _parameters) internal {
+    require(isVerified(account));
+    bytes32 idHash = verifications.addressIdHash(account);
+    require(activeBans[idHash] <= block.timestamp);
+    joinedTimestamps[account] = block.timestamp;
+    for(uint i = 0; i < PARAM_COUNT; i++) {
+      proposalParameters[i].set(account, _parameters[i]);
+    }
+    emit Registration(account);
   }
 
   function setProposalConfig(uint8[PARAM_COUNT] memory _parameters) public {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     for(uint i = 0; i < PARAM_COUNT; i++) {
       proposalParameters[i].set(msg.sender, _parameters[i]);
     }
@@ -130,7 +133,7 @@ contract VerifiedGroup {
 
   function unregister(address account) public {
     require(account == msg.sender || allowedContracts.exists(msg.sender));
-    require(isRegistered(account), 'Not registered');
+    require(isRegistered(account));
     delete joinedTimestamps[account];
     for(uint i = 0; i < PARAM_COUNT; i++) {
       proposalParameters[i].unsetAccount(account);
@@ -168,7 +171,7 @@ contract VerifiedGroup {
 
   function proposeAllowing(address contractToAllow) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     require(!allowanceProposals.exists(contractToAllow));
     emit NewAllowanceElection(contractToAllow);
     allowanceProposals.insert(contractToAllow);
@@ -177,7 +180,7 @@ contract VerifiedGroup {
 
   function proposeDisallowing(address contractToDisallow) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     require(!disallowanceProposals.exists(contractToDisallow));
     emit NewDisallowanceElection(contractToDisallow);
     disallowanceProposals.insert(contractToDisallow);
@@ -186,7 +189,7 @@ contract VerifiedGroup {
 
   function proposeInvoke(address to, bytes memory data) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     emit NewInvokeElection(invokeProposals.length);
     configureElection(invokeElections[invokeProposals.length], 2);
     invokeProposals.push(Tx(to, data));
@@ -263,56 +266,52 @@ contract VerifiedGroup {
 
   function allowanceElectionVote(address contractToAllow, bool inSupport) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     allowanceElections[contractToAllow].vote(msg.sender, inSupport);
   }
 
   function disallowanceElectionVote(address contractToDisallow, bool inSupport) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     disallowanceElections[contractToDisallow].vote(msg.sender, inSupport);
   }
 
   function registrationElectionVote(address account, bool inSupport) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     registrationElections[account].vote(msg.sender, inSupport);
   }
 
   function invokeElectionVote(uint index, bool inSupport) external {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
+    require(isVerified(msg.sender));
     invokeElections[index].vote(msg.sender, inSupport);
   }
 
-  function processAllowanceElection(address contractToAllow) external {
+  function _processElection(VoteSet.Data storage election) internal {
     require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
-    require(allowanceElections[contractToAllow].endTime > 0);
-    require(allowanceElections[contractToAllow].processed == false);
-    allowanceElections[contractToAllow].processed = true;
+    require(isVerified(msg.sender));
+    require(election.endTime > 0);
+    require(election.processed == false);
+    election.processed = true;
+  }
+
+  function processAllowanceElection(address contractToAllow) external {
+    _processElection(allowanceElections[contractToAllow]);
     if(allowanceElections[contractToAllow].passed()) {
       allowedContracts.insert(contractToAllow);
     }
   }
 
   function processDisallowanceElection(address contractToDisallow) external {
-    require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
-    require(disallowanceElections[contractToDisallow].endTime > 0);
-    require(disallowanceElections[contractToDisallow].processed == false);
-    disallowanceElections[contractToDisallow].processed = true;
+    _processElection(disallowanceElections[contractToDisallow]);
     if(disallowanceElections[contractToDisallow].passed()) {
       allowedContracts.remove(contractToDisallow);
     }
   }
 
   function processInvokeElection(uint index) external {
-    require(isRegistered(msg.sender));
-    require(isVerified(msg.sender), 'Not verified');
-    require(invokeElections[index].endTime > 0);
-    require(invokeElections[index].processed == false);
-    invokeElections[index].processed = true;
+    _processElection(invokeElections[index]);
     if(invokeElections[index].passed()) {
       (bool success, bytes memory returned) =
         invokeProposals[index].to.call(invokeProposals[index].data);
@@ -326,6 +325,14 @@ contract VerifiedGroup {
     (bool success, bytes memory returned) = to.call(data);
     emit TxSent(to, data, returned);
     require(success);
+  }
+
+  function allowedContractCount() external view returns(uint) {
+    return allowedContracts.count();
+  }
+
+  function allowedContractIndex(uint index) external view returns(address) {
+    return allowedContracts.keyList[index];
   }
 
 }

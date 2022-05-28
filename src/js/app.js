@@ -1,14 +1,21 @@
 
-class DemocraticTokenApp {
+class DemocraticCapitalApp {
   constructor(element) {
     this.element = element;
     this.web3 = null;
     this.web3Modal = null;
     this.web3Provider = null;
     this.chainId = null;
-    this.contract = null;
-    this.verifications = null;
-    this.token = null;
+    this.contracts = {};
+    this.abi = {
+      GroupList: null,
+      VerifiedGroup: null,
+      TestChild: null,
+    };
+    this.bytecode = {
+      TestChild: null,
+    };
+    this.groups = null;
     this.accounts = [];
     this.connected = false;
   }
@@ -37,15 +44,22 @@ class DemocraticTokenApp {
       this.connected = false;
     }
 
-    if(!this.contract) {
-      this.contract = await this.loadContract(
-        'DemocraticToken.abi', window.config.tokenContract);
-      this.verifications = await this.loadContract(
-        'IVerification.abi', await this.contract.methods.verifications().call());
+    if(this.groups === null) {
+      for(let contractName of Object.keys(this.abi)) {
+        const response = await fetch(contractName + '.abi');
+        this.abi[contractName] = await response.json();
+      }
+      for(let contractName of Object.keys(this.bytecode)) {
+        this.bytecode[contractName] = async () => {
+          const response = await fetch(contractName + '.bin');
+          const bytecode = await response.text();
+          this.bytecode[contractName] = Promise.resolve(bytecode);
+          return bytecode;
+        };
+      }
+      this.groups = new GroupList(this);
     }
-    if(!this.token) {
-      this.token = new DemocraticToken(this.contract, this);
-    }
+    window.eventHandlers.splice(0, window.eventHandlers.length);
     this.element.innerHTML = await window.templates.index.call(this);
   }
   async loadContract(abiUrl, address) {
@@ -133,11 +147,12 @@ class DemocraticTokenApp {
   }
   async send(method) {
     // TODO prompt for wallet connection
+    // TODO prompt if account not verified
     if(!this.connected)
       throw new Error('Wallet not connected');
     return method.send({ from: this.accounts[0], gas: 20000000 });
   }
 }
 
-window.app = new DemocraticTokenApp(document.getElementById('app'));
+window.app = new DemocraticCapitalApp(document.getElementById('app'));
 app.init();

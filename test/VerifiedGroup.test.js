@@ -12,7 +12,7 @@ exports.requiresVerified = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, DUMMY_PARAMS);
+    mockVerification.options.address, accounts[0], DUMMY_PARAMS);
 
   assert.strictEqual(await throws(() =>
     verifiedGroup.sendFrom(accounts[1]).register(DUMMY_PARAMS)), true,
@@ -50,7 +50,7 @@ exports.registrationElection = async function({
   REG_ELECTION_PARAMS[9] = 2; // 1 day long registration election required
 
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, REG_ELECTION_PARAMS);
+    mockVerification.options.address, accounts[0], REG_ELECTION_PARAMS);
 
 
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1],
@@ -125,7 +125,7 @@ exports.invokeBan = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, DUMMY_PARAMS);
+    mockVerification.options.address, accounts[0], DUMMY_PARAMS);
 
   // Register second user
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1],
@@ -180,7 +180,7 @@ exports.childContractUnregister = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, DUMMY_PARAMS);
+    mockVerification.options.address, accounts[0], DUMMY_PARAMS);
   const testChild = await deployContract(accounts[0], 'TestChild',
     verifiedGroup.options.address);
 
@@ -250,7 +250,7 @@ exports.childContractInvoke = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, DUMMY_PARAMS);
+    mockVerification.options.address, accounts[0], DUMMY_PARAMS);
   const testChild = await deployContract(accounts[0], 'TestChild',
     verifiedGroup.options.address);
 
@@ -280,7 +280,7 @@ exports.changeVerificationContract = async function({
   await mockVerification1.sendFrom(accounts[0]).setStatus(accounts[0],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification1.options.address, DUMMY_PARAMS);
+    mockVerification1.options.address, accounts[0], DUMMY_PARAMS);
 
   await verifiedGroup.sendFrom(accounts[0]).proposeInvoke(
     verifiedGroup.options.address,
@@ -316,7 +316,7 @@ exports.setProposalConfig = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1],
     Math.floor(Date.now() / 1000) + SECONDS_PER_YEAR);
   const verifiedGroup = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, DUMMY_PARAMS);
+    mockVerification.options.address, accounts[0], DUMMY_PARAMS);
 
   function allSame(checkAgainst, array) {
     for(let i=0; i<checkAgainst.length; i++)
