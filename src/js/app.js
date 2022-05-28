@@ -18,6 +18,7 @@ class DemocraticCapitalApp {
     this.groups = null;
     this.accounts = [];
     this.connected = false;
+    this.path = window.location.pathname;
   }
   async init() {
     if(!this.web3 && localStorage.getItem("WEB3_CONNECT_CACHED_PROVIDER")) {
@@ -46,12 +47,12 @@ class DemocraticCapitalApp {
 
     if(this.groups === null) {
       for(let contractName of Object.keys(this.abi)) {
-        const response = await fetch(contractName + '.abi');
+        const response = await fetch('/' + contractName + '.abi');
         this.abi[contractName] = await response.json();
       }
       for(let contractName of Object.keys(this.bytecode)) {
         this.bytecode[contractName] = async () => {
-          const response = await fetch(contractName + '.bin');
+          const response = await fetch('/' + contractName + '.bin');
           const bytecode = await response.text();
           this.bytecode[contractName] = Promise.resolve(bytecode);
           return bytecode;
@@ -59,8 +60,38 @@ class DemocraticCapitalApp {
       }
       this.groups = new GroupList(this);
     }
-    window.eventHandlers.splice(0, window.eventHandlers.length);
-    this.element.innerHTML = await window.templates.index.call(this);
+
+
+    const routes = [
+      { regex: /^\/group\/(0x[a-f0-9]{40})$/i,
+        template: match => window.templates.groupDetailsPage.call(this, match[1]) },
+      { regex: /^\/group\/(0x[a-f0-9]{40})\/set-params$/i,
+        template: match => window.templates.setProposalConfigPage.call(this, match[1]) },
+      { regex: /^\//, // catch all others
+        template: () => window.templates.index.call(this) }
+    ];
+    let template;
+    for(let route of routes) {
+      const match = this.path.match(route.regex);
+      if(match) {
+        template = route.template(match);
+        break;
+      }
+    }
+    lit.render(await template, this.element);
+    document.querySelectorAll('a').forEach(link => {
+      if(link.attributes.href.value.startsWith('/')) {
+        link.addEventListener('click', (event) => {
+          event.preventDefault();
+          this.setUrl(link.attributes.href.value);
+        }, false);
+      }
+    });
+  }
+  async setUrl(url) {
+    window.history.pushState({}, '', url);
+    this.path = url;
+    await this.init();
   }
   async loadContract(abiUrl, address) {
     const response = await fetch(abiUrl);

@@ -28,6 +28,13 @@ class VerifiedGroup {
     }
     return out;
   }
+  async getProposalConfig() {
+    return (await this.contract.methods.getProposalConfig().call()).map(value => Number(value));
+  }
+  async getAccountProposalConfig(account) {
+    if(!account) account = this.app.accounts[0];
+    return (await this.contract.methods.getProposalConfig(account).call()).map(value => Number(value));
+  }
   async allowanceElections() {
   }
 }

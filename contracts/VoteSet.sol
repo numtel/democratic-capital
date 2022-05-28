@@ -30,6 +30,9 @@ library VoteSet {
       self.votesByAccount[account] = 2;
     }
   }
+  // TODO change range of minVoters and threshold
+  // threshold - 1: 50%, 16: 100% 3.125% each step
+  // minvoters - 1: 0%, 16: 100% 6.67% each step
   function passed(Data storage self) internal view returns(bool) {
     return block.timestamp > self.endTime
       && ((self.against + self.supporting) >= self.minVoters)
