@@ -8,8 +8,8 @@ contract GroupList {
 
   event NewGroup(address group);
 
-  function createGroup(address verifications, uint8[12] memory params) external {
-    VerifiedGroup newGroup = new VerifiedGroup(verifications, msg.sender, params);
+  function createGroup(address verifications) external {
+    VerifiedGroup newGroup = new VerifiedGroup(verifications, msg.sender);
     groups.push(address(newGroup));
     emit NewGroup(address(newGroup));
   }

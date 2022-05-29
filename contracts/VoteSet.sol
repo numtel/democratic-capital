@@ -13,8 +13,9 @@ library VoteSet {
     uint supporting;
     uint against;
   }
-  function vote(Data storage self, address account, bool inSupport) internal {
+  function vote(Data storage self, address account, bool inSupport, bool allowRevote) internal {
     require(block.timestamp < self.endTime);
+    require(allowRevote || self.votesByAccount[account] == 0);
     // This is a re-vote, reverse existing value
     if(self.votesByAccount[account] == 1) {
       self.supporting--;
@@ -30,12 +31,16 @@ library VoteSet {
       self.votesByAccount[account] = 2;
     }
   }
-  // TODO change range of minVoters and threshold
-  // threshold - 1: 50%, 16: 100% 3.125% each step
-  // minvoters - 1: 0%, 16: 100% 6.67% each step
   function passed(Data storage self) internal view returns(bool) {
-    return block.timestamp > self.endTime
-      && ((self.against + self.supporting) >= self.minVoters)
-      && (((self.supporting * 16) / (self.supporting + self.against)) >= self.threshold);
+    return block.timestamp > self.endTime && passing(self);
+  }
+
+  function passing(Data storage self) internal view returns(bool) {
+    return ((self.against + self.supporting) >= self.minVoters)
+      // threshold - 1: 50%, 16: 100% 3.125% each step
+      && (self.threshold == 16
+        // Special case in order to use exclusive greater than in lower levels
+        ? self.against == 0
+        : (((self.supporting * 32) / (self.supporting + self.against)) > (self.threshold + 15)));
   }
 }
