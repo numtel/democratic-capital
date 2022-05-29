@@ -25,6 +25,9 @@ contract ElectionsByMedian {
   event ElectionProcessed(bytes sent, bytes returned);
   event NewElection(bytes data, address key);
 
+  // TODO restrict invokeData to set of function hashes
+  //  in order to make multiple channels for proposal configs
+  //  also, support 2nd-level checking to invoke(address, bytes4)
   constructor(address _group) {
     group = IVerifiedGroup(_group);
   }

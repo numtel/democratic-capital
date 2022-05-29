@@ -71,6 +71,7 @@ contract VerifiedGroup {
     emit Unregistered(account);
   }
 
+  // TODO ban by idHash instead of address for also supporting pre-emptive banning
   function ban(address account, uint banExpirationTimestamp) external {
     require(contractAllowed(msg.sender), 'Invalid Caller');
     unregister(account);
