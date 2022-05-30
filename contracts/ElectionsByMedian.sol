@@ -40,11 +40,19 @@ contract ElectionsByMedian {
     return type(IElectionsByMedian).interfaceId;
   }
 
+  // Lifecycle methods
+  function onAllow() external {
+    require(msg.sender == address(group));
+    group.hookUnregister(this.unsetProposalConfig.selector);
+  }
+
+  // General usage methods
   function propose(bytes memory data) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');
 
-    address key = address(uint160(uint256(keccak256(data))));
+    address key = address(uint160(uint256(keccak256(abi.encode(count(), data)))));
+    // Should never collide but can't be too safe
     require(!proposals.exists(key));
 
     emit NewElection(data, key);
@@ -59,7 +67,7 @@ contract ElectionsByMedian {
     }
   }
 
-  function count() external view returns(uint) {
+  function count() public view returns(uint) {
     return proposals.count();
   }
 
@@ -113,10 +121,10 @@ contract ElectionsByMedian {
   function unsetProposalConfig(address account) external {
     // Allow contracts to invoke this function so that
     // they can clean out any users that unregister
-    require(account == msg.sender || group.contractAllowed(account), 'Invalid Caller');
-    duration.unsetAccount(msg.sender);
-    threshold.unsetAccount(msg.sender);
-    minParticipation.unsetAccount(msg.sender);
+    require(account == msg.sender || group.contractAllowed(msg.sender), 'Invalid Caller');
+    duration.unsetAccount(account);
+    threshold.unsetAccount(account);
+    minParticipation.unsetAccount(account);
   }
 
   function getProposalConfig(address account) external view

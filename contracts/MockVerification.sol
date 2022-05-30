@@ -3,8 +3,12 @@ pragma solidity 0.8.13;
 
 contract MockVerification {
   mapping(address => uint) public expirations;
+  uint constant SECONDS_PER_YEAR = 60 * 60 * 24 * 265;
 
   function setStatus(address account, uint expiration) external {
+    if(expiration == 0) {
+      expiration = block.timestamp + SECONDS_PER_YEAR;
+    }
     expirations[account] = expiration;
   }
 
