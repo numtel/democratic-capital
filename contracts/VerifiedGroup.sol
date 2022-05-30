@@ -169,10 +169,6 @@ contract VerifiedGroup {
 
 }
 
-interface IChild {
-  function onAllow() external;
-}
-
 interface IVerification {
   function addressActive(address toCheck) external view returns (bool);
   function addressExpiration(address toCheck) external view returns (uint);
