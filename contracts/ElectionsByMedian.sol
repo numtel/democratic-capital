@@ -7,6 +7,8 @@ import "./AddressSet.sol";
 using AddressSet for AddressSet.Set;
 import "./VoteSet.sol";
 using VoteSet for VoteSet.Data;
+import "./BytesLib.sol";
+using BytesLib for bytes;
 
 import "./IElectionsByMedian.sol";
 import "./IVerifiedGroup.sol";
@@ -19,17 +21,16 @@ contract ElectionsByMedian {
   mapping(address => VoteSet.Data) elections;
   mapping(address => bytes) invokeData;
   AddressSet.Set proposals;
+  bytes[] allowedInvokePrefixes;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
-  event ElectionProcessed(bytes sent, bytes returned);
+  event ElectionProcessed(address key, bytes sent, bytes returned);
   event NewElection(bytes data, address key);
 
-  // TODO restrict invokeData to set of function hashes
-  //  in order to make multiple channels for proposal configs
-  //  also, support 2nd-level checking to invoke(address, bytes4)
-  constructor(address _group) {
+  constructor(address _group, bytes[] memory _allowedInvokePrefixes) {
     group = IVerifiedGroup(_group);
+    allowedInvokePrefixes = _allowedInvokePrefixes;
   }
 
   // EIP-165
@@ -50,6 +51,20 @@ contract ElectionsByMedian {
   function propose(bytes memory data) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');
+    require(proposalConfigCount() > 0, 'Missing Proposal Config');
+    if(allowedInvokePrefixes.length > 0) {
+      bool foundAllowed = false;
+      for(uint i = 0; i < allowedInvokePrefixes.length; i++) {
+        if(data.length >= allowedInvokePrefixes[i].length) {
+          bytes memory dataPrefix = data.slice(0, allowedInvokePrefixes[i].length);
+          if(dataPrefix.equal(allowedInvokePrefixes[i])) {
+            foundAllowed = true;
+            break;
+          }
+        }
+      }
+      require(foundAllowed, 'Proposed Data Mismatch');
+    }
 
     address key = address(uint160(uint256(keccak256(abi.encode(count(), data)))));
     // Should never collide but can't be too safe
@@ -57,6 +72,7 @@ contract ElectionsByMedian {
 
     emit NewElection(data, key);
     proposals.insert(key);
+    invokeData[key] = data;
     elections[key].endTime = block.timestamp + (duration.median * SECONDS_PER_DAY);
     elections[key].threshold = threshold.median;
     // minVoters - 1: 0%, 16: 100% 6.67% each step
@@ -104,7 +120,7 @@ contract ElectionsByMedian {
     require(elections[key].processed == false, 'Election Already Processed');
     elections[key].processed = true;
     (bool success, bytes memory returned) = address(group).call(invokeData[key]);
-    emit ElectionProcessed(invokeData[key], returned);
+    emit ElectionProcessed(key, invokeData[key], returned);
     require(success, 'Invoke Failed');
   }
 
@@ -140,6 +156,10 @@ contract ElectionsByMedian {
     _duration = duration.median;
     _threshold = threshold.median;
     _minParticipation = minParticipation.median;
+  }
+
+  function proposalConfigCount() public view returns(uint) {
+    return duration.count;
   }
 }
 
