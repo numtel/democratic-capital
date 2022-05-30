@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 library VoteSet {
   struct Data {
+    uint startTime;
     uint endTime;
     uint8 threshold;
     uint minVoters;
@@ -14,8 +15,8 @@ library VoteSet {
     uint against;
   }
   function vote(Data storage self, address account, bool inSupport, bool allowRevote) internal {
-    require(block.timestamp < self.endTime);
-    require(allowRevote || self.votesByAccount[account] == 0);
+    require(block.timestamp < self.endTime, "Election Ended");
+    require(allowRevote || self.votesByAccount[account] == 0, "Cannot Vote Again");
     // This is a re-vote, reverse existing value
     if(self.votesByAccount[account] == 1) {
       self.supporting--;

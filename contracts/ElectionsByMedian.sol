@@ -73,6 +73,7 @@ contract ElectionsByMedian {
     emit NewElection(data, key);
     proposals.insert(key);
     invokeData[key] = data;
+    elections[key].startTime = block.timestamp;
     elections[key].endTime = block.timestamp + (duration.median * SECONDS_PER_DAY);
     elections[key].threshold = threshold.median;
     // minVoters - 1: 0%, 16: 100% 6.67% each step
@@ -92,10 +93,12 @@ contract ElectionsByMedian {
   }
 
   function details(address key) external view returns(
-    uint endTime, uint8 _threshold, uint minVoters, bool processed,
+    uint startTime, uint endTime,
+    uint8 _threshold, uint minVoters, bool processed,
     uint supporting, uint against, bool passed, bool passing
   ) {
     require(elections[key].endTime > 0, 'Not Found');
+    startTime = elections[key].startTime;
     endTime = elections[key].endTime;
     _threshold = elections[key].threshold;
     minVoters = elections[key].minVoters;
@@ -109,13 +112,15 @@ contract ElectionsByMedian {
   function vote(address key, bool inSupport) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');
+    require(group.joinedTimestamps(msg.sender) < elections[key].startTime,
+      "Registered After Election Start");
     elections[key].vote(msg.sender, inSupport, false);
   }
 
   function process(address key) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');
-    require(elections[key].endTime > 0, 'Election Not Finished');
+    require(elections[key].passed(), 'Election Not Passed');
     require(elections[key].processed == false, 'Election Already Processed');
     elections[key].processed = true;
     (bool success, bytes memory returned) = address(group).call(invokeData[key]);
