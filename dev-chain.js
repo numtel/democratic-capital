@@ -37,6 +37,11 @@ const contracts = {
     abi: 'GroupList.abi',
     constructorArgs: [],
   },
+  TestInterfaceIds: {
+    instance: null,
+    abi: 'TestInterfaceIds.abi',
+    constructorArgs: [],
+  },
 };
 
 
@@ -126,6 +131,11 @@ async function deployContracts() {
     }).send({ from: accounts[0], gas: GAS_AMOUNT });
     contracts[contractName].instance = deployed;
   }
+  const interfaceIds = {};
+  for(let name of Object.keys(contracts.TestInterfaceIds.instance.methods)) {
+    if(name.startsWith('0x') || name.endsWith('()')) continue;
+    interfaceIds[name] = await contracts.TestInterfaceIds.instance.methods[name]().call();
+  }
   // Provide contract addresses to frontend
   fs.writeFileSync(`${BUILD_DIR}config.js`, `
   window.config=${JSON.stringify({
@@ -138,6 +148,7 @@ async function deployContracts() {
       decimals: 18
     },
     blockExplorer: "https://etherscan.io",
+    interfaceIds,
     contracts: Object.keys(contracts).reduce((out, cur) => {
       out[cur] = {
         address: contracts[cur].instance.options.address,

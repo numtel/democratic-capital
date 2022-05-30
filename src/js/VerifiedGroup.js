@@ -1,9 +1,9 @@
 
 class VerifiedGroup {
-  constructor(app, address) {
+  constructor(app, abi, address) {
     this.app = app;
     this.address = address;
-    this.contract = new this.app.web3.eth.Contract(this.app.abi.VerifiedGroup, address);
+    this.contract = new this.app.web3.eth.Contract(abi, address);
   }
   async registeredCount() {
     return Number(await this.contract.methods.registeredCount().call());
@@ -12,29 +12,24 @@ class VerifiedGroup {
     if(!account) account = this.app.accounts[0];
     return await this.contract.methods.isRegistered(account).call();
   }
-  async register(params) {
-    if(params.length !== 12)
-      throw new Error('Invalid parameter count');
-    return await this.app.send(this.contract.methods.register(params));
+  async register(account) {
+    return await this.app.send(this.contract.methods.register(account));
   }
-  async unregister() {
-    return await this.app.send(this.contract.methods.unregister(this.app.accounts[0]));
+  async unregister(account) {
+    return await this.app.send(this.contract.methods.unregister(account));
+  }
+  async allowContract(contract) {
+    return await this.app.send(this.contract.methods.allowContract(contract));
+  }
+  async disallowContract(contract) {
+    return await this.app.send(this.contract.methods.disallowContract(contract));
   }
   async allowedContracts() {
     const out = [];
     const count = Number(await this.contract.methods.allowedContractCount().call());
     for(let i = 0; i < count; i++) {
-      out.push(await this.contract.allowedContractIndex(i).call());
+      out.push(await this.contract.methods.allowedContractIndex(i).call());
     }
     return out;
-  }
-  async getProposalConfig() {
-    return (await this.contract.methods.getProposalConfig().call()).map(value => Number(value));
-  }
-  async getAccountProposalConfig(account) {
-    if(!account) account = this.app.accounts[0];
-    return (await this.contract.methods.getProposalConfig(account).call()).map(value => Number(value));
-  }
-  async allowanceElections() {
   }
 }

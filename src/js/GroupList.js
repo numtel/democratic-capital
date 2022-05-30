@@ -1,18 +1,18 @@
 
 class GroupList {
-  constructor(app) {
+  constructor(app, abi) {
     this.app = app;
     this.contract = new this.app.web3.eth.Contract(
-      this.app.abi.GroupList, window.config.contracts.GroupList.address);
+      abi, window.config.contracts.GroupList.address);
   }
-  async createGroup(params) {
-    if(params.length !== 12)
-      throw new Error('Invalid parameter count');
-
+  async createGroup() {
     const retval = await this.app.send(this.contract.methods.createGroup(
-      window.config.contracts.MockVerification.address, params));
+      window.config.contracts.MockVerification.address));
 
-    return new VerifiedGroup(this.app, retval.events.NewGroup.returnValues.group);
+    return new VerifiedGroup(
+      this.app,
+      await this.app.contracts.VerifiedGroup.abi(),
+      retval.events.NewGroup.returnValues.group);
   }
   async fetchList() {
     const groups = [];
@@ -20,6 +20,7 @@ class GroupList {
     while(!fetchError) {
       try {
         groups.push(new VerifiedGroup(this.app,
+          await this.app.contracts.VerifiedGroup.abi(),
           await this.contract.methods.groups(groups.length).call()));
       } catch(error) {
         fetchError = true;

@@ -5,7 +5,7 @@ import "./IElectionsByMedian.sol";
 import "./IOpenUnregistrations.sol";
 import "./IVerifiedGroup.sol";
 
-contract OpenRegistrations {
+contract OpenUnregistrations {
   IVerifiedGroup public group;
   address[] public elections;
 

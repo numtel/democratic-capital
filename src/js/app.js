@@ -6,15 +6,16 @@ class DemocraticCapitalApp {
     this.web3Modal = null;
     this.web3Provider = null;
     this.chainId = null;
-    this.contracts = {};
-    this.abi = {
-      GroupList: null,
-      VerifiedGroup: null,
-      TestChild: null,
+    this.contracts = {
+      GroupList: new ContractLoader('GroupList'),
+      VerifiedGroup: new ContractLoader('VerifiedGroup'),
+      ElectionsByMedian: new ContractLoader('ElectionsByMedian'),
+      OpenRegistrations: new ContractLoader('OpenRegistrations'),
+      OpenUnregistrations: new ContractLoader('OpenUnregistrations'),
     };
-    this.bytecode = {
-      TestChild: null,
-    };
+    this.electionContracts = [
+      'ElectionsByMedian',
+    ];
     this.groups = null;
     this.accounts = [];
     this.connected = false;
@@ -27,6 +28,7 @@ class DemocraticCapitalApp {
     } else {
       // Connect to rpc directly if no wallet connected
       this.web3 = new Web3(window.config.rpc);
+      this.web3.eth.handleRevert = true;
     }
 
     if(this.web3Provider) {
@@ -46,27 +48,12 @@ class DemocraticCapitalApp {
     }
 
     if(this.groups === null) {
-      for(let contractName of Object.keys(this.abi)) {
-        const response = await fetch('/' + contractName + '.abi');
-        this.abi[contractName] = await response.json();
-      }
-      for(let contractName of Object.keys(this.bytecode)) {
-        this.bytecode[contractName] = async () => {
-          const response = await fetch('/' + contractName + '.bin');
-          const bytecode = await response.text();
-          this.bytecode[contractName] = Promise.resolve(bytecode);
-          return bytecode;
-        };
-      }
-      this.groups = new GroupList(this);
+      this.groups = new GroupList(this, await this.contracts.GroupList.abi());
     }
-
 
     const routes = [
       { regex: /^\/group\/(0x[a-f0-9]{40})$/i,
         template: match => window.templates.groupDetailsPage.call(this, match[1]) },
-      { regex: /^\/group\/(0x[a-f0-9]{40})\/set-params$/i,
-        template: match => window.templates.setProposalConfigPage.call(this, match[1]) },
       { regex: /^\//, // catch all others
         template: () => window.templates.index.call(this) }
     ];
@@ -182,6 +169,28 @@ class DemocraticCapitalApp {
     if(!this.connected)
       throw new Error('Wallet not connected');
     return method.send({ from: this.accounts[0], gas: 20000000 });
+  }
+}
+
+class ContractLoader {
+  constructor(filename) {
+    this.filename = filename;
+    this._bytecode = null;
+    this._abi = null;
+  }
+  async abi() {
+    if(this._abi) return this._abi;
+    const response = await fetch('/' + this.filename + '.abi');
+    const abi = await response.json();
+    this._abi = Promise.resolve(abi);
+    return abi;
+  }
+  async bytecode() {
+    if(this._bytecode) return this._bytecode;
+    const response = await fetch('/' + this.filename + '.bin');
+    const bytecode = await response.text();
+    this._bytecode = Promise.resolve(bytecode);
+    return bytecode;
   }
 }
 
