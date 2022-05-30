@@ -103,7 +103,6 @@ contract VerifiedGroup {
     }
   }
 
-  // TODO ban by idHash instead of address for also supporting pre-emptive banning
   function ban(address account, uint banExpirationTimestamp) external onlyAllowed {
     unregister(account);
     bytes32 idHash = verifications.addressIdHash(account);

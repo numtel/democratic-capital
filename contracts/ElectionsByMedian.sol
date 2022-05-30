@@ -109,7 +109,6 @@ contract ElectionsByMedian {
   function vote(address key, bool inSupport) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');
-    // TODO allowRevote as part of proposal config?
     elections[key].vote(msg.sender, inSupport, false);
   }
 
