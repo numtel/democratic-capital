@@ -10,8 +10,12 @@ const templates = window.templates = {
     }
 
     const createGroup = async () => {
-      await this.groups.createGroup();
-      await this.init();
+      try {
+        await this.groups.createGroup();
+        await this.init();
+      } catch(error) {
+        alert(error.reason);
+      }
     };
 
     return lit.html`
@@ -28,11 +32,39 @@ const templates = window.templates = {
     `;
   },
   async group(group) {
-    const isMember = await group.isRegistered();
-    const allowedContracts = await group.allowedContracts();
-    const memberCount = await group.registeredCount();
+    let isMember, allowedContracts, memberCount;
+    try {
+      isMember = await group.isRegistered();
+      allowedContracts = await group.allowedContracts();
+      memberCount = await group.registeredCount();
+    } catch(error) {
+      console.error(error);
+      return lit.html`<p>Group not found</p>`;
+    }
+    const allowedContractTpl = [];
+    for(let allowedContract of allowedContracts) {
+      allowedContractTpl.push(lit.html`
+        <li>
+          <dl>
+            <dt>Contract Address</dt>
+            <dd>
+              ${allowedContract.address} ${allowedContract.self ? '(Self Reference)' : ''}
+            </dd>
+            ${allowedContract.interfaceName ? lit.html`
+              <dt>Contract Type</dt>
+              <dd>
+                <a href="/group/${group.address}/${allowedContract.interfaceName}/${allowedContract.address}">
+                  ${allowedContract.interfaceName} ${allowedContract.childContract.isElection ? '(Elections)' : ''}
+                </a>
+              </dd>
+            ` : ''}
+          </dl>
+        </li>
+      `);
+    }
+
     const adminMode = (isMember && memberCount === 1)
-      || allowedContracts.indexOf(this.accounts[0]) !== -1;
+      || allowedContracts.filter(x => x.address === this.accounts[0]).length > 0;
 
     const register = async () => {
       const address = prompt('Account address?');
@@ -89,7 +121,11 @@ const templates = window.templates = {
       <dt>Membership</dt>
       <dd>${isMember ? 'Yes' : 'No'} ${adminMode ? '(Admin)' : ''}</dd>
       <dt>Allowed Contracts</dt>
-      <dd>${JSON.stringify(allowedContracts)}</dd>
+      <dd>
+        <ul>
+          ${allowedContractTpl}
+        </ul>
+      </dd>
     </dl>
     ${adminMode ? lit.html`
       <h2>Admin Controls</h2>
@@ -100,6 +136,18 @@ const templates = window.templates = {
         <button @click="${disallowContract}">Disallow Contract...</button>
       </div>
     ` : ''}
+    `;
+  },
+  async childContractDetailsPage(groupAddress, interfaceName, childAddress) {
+    const group = new VerifiedGroup(this, await this.contracts.VerifiedGroup.abi(), groupAddress);
+    const instance = new this.childContracts[interfaceName].klass(
+      this,
+      await this.contracts[interfaceName].abi(),
+      childAddress);
+    return lit.html`
+      <a href="/">Home</a>
+      <a href="/group/${groupAddress}">Group Details</a>
+      ${await instance.render()}
     `;
   },
 };

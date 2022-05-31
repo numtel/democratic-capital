@@ -12,10 +12,14 @@ class DemocraticCapitalApp {
       ElectionsByMedian: new ContractLoader('ElectionsByMedian'),
       OpenRegistrations: new ContractLoader('OpenRegistrations'),
       OpenUnregistrations: new ContractLoader('OpenUnregistrations'),
+      IThisInterfaceId: new ContractLoader('IThisInterfaceId'),
     };
-    this.electionContracts = [
-      'ElectionsByMedian',
-    ];
+    this.childContracts = {
+      ElectionsByMedian: {
+        klass: ElectionsByMedian,
+        isElection: true,
+      },
+    };
     this.groups = null;
     this.accounts = [];
     this.connected = false;
@@ -54,6 +58,8 @@ class DemocraticCapitalApp {
     const routes = [
       { regex: /^\/group\/(0x[a-f0-9]{40})$/i,
         template: match => window.templates.groupDetailsPage.call(this, match[1]) },
+      { regex: /^\/group\/(0x[a-f0-9]{40})\/([^\/]+)\/(0x[a-f0-9]{40})$/i,
+        template: match => window.templates.childContractDetailsPage.call(this, match[1], match[2], match[3]) },
       { regex: /^\//, // catch all others
         template: () => window.templates.index.call(this) }
     ];

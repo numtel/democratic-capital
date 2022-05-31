@@ -28,7 +28,26 @@ class VerifiedGroup {
     const out = [];
     const count = Number(await this.contract.methods.allowedContractCount().call());
     for(let i = 0; i < count; i++) {
-      out.push(await this.contract.methods.allowedContractIndex(i).call());
+      const address = await this.contract.methods.allowedContractIndex(i).call();
+      const self = address === this.address;
+      const interfaceIdContract = new this.app.web3.eth.Contract(
+        await this.app.contracts.IThisInterfaceId.abi(), address);
+      let interfaceId;
+      try {
+        interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
+      } catch(error) {
+      }
+      let interfaceName, instance, childContract;
+      if(interfaceId in window.config.interfaceIds) {
+        interfaceName = window.config.interfaceIds[interfaceId];
+        childContract = this.app.childContracts[interfaceName];
+        instance = new childContract.klass(
+          this.app,
+          await this.app.contracts[interfaceName].abi(),
+          address);
+      }
+
+      out.push({ address, self, interfaceId, interfaceName, instance, childContract });
     }
     return out;
   }

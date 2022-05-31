@@ -134,7 +134,7 @@ async function deployContracts() {
   const interfaceIds = {};
   for(let name of Object.keys(contracts.TestInterfaceIds.instance.methods)) {
     if(name.startsWith('0x') || name.endsWith('()')) continue;
-    interfaceIds[name] = await contracts.TestInterfaceIds.instance.methods[name]().call();
+    interfaceIds[await contracts.TestInterfaceIds.instance.methods[name]().call()] = name;
   }
   // Provide contract addresses to frontend
   fs.writeFileSync(`${BUILD_DIR}config.js`, `
