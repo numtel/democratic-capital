@@ -110,6 +110,16 @@ const templates = window.templates = {
         await this.init();
       }
     };
+    const newElections = async () => {
+      try {
+        const instance = new ElectionsByMedian(this);
+        await instance.deployNew(group.address, []);
+        await group.allowContract(instance.address);
+        await this.init();
+      } catch(error) {
+        alert(error.reason);
+      }
+    }
 
     return lit.html`
     <h2>Group Details</h2>
@@ -134,6 +144,7 @@ const templates = window.templates = {
         <button @click="${unregister}">Unregister Account...</button>
         <button @click="${allowContract}">Allow Contract...</button>
         <button @click="${disallowContract}">Disallow Contract...</button>
+        <button @click="${newElections}">Deploy new ElectionsByMedian</button>
       </div>
     ` : ''}
     `;

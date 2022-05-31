@@ -1,6 +1,8 @@
 
 class VerifiedGroup {
   constructor(app, abi, address) {
+    if(!(app instanceof DemocraticCapitalApp))
+      throw new Error('invalid app');
     this.app = app;
     this.address = address;
     this.contract = new this.app.web3.eth.Contract(abi, address);
@@ -36,6 +38,7 @@ class VerifiedGroup {
       try {
         interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
       } catch(error) {
+        // Doesn't matter, just checking
       }
       let interfaceName, instance, childContract;
       if(interfaceId in window.config.interfaceIds) {

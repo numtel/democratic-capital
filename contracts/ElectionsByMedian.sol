@@ -93,13 +93,14 @@ contract ElectionsByMedian {
   }
 
   function details(address key) external view returns(
-    uint startTime, uint endTime,
+    uint startTime, uint endTime, bytes memory data,
     uint8 _threshold, uint minVoters, bool processed,
     uint supporting, uint against, bool passed, bool passing
   ) {
     require(elections[key].endTime > 0, 'Not Found');
     startTime = elections[key].startTime;
     endTime = elections[key].endTime;
+    data = invokeData[key];
     _threshold = elections[key].threshold;
     minVoters = elections[key].minVoters;
     processed = elections[key].processed;

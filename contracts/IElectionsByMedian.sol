@@ -6,7 +6,8 @@ interface IElectionsByMedian {
   function count() external view returns(uint);
   function atIndex(uint index) external view returns(address);
   function details(address key) external view returns(
-    uint endTime, uint8 _threshold, uint minVoters, bool processed,
+    uint startTime, uint endTime, bytes memory data,
+    uint8 _threshold, uint minVoters, bool processed,
     uint supporting, uint against, bool passed, bool passing
   );
   function vote(address key, bool inSupport) external;

@@ -1,6 +1,8 @@
 
 class GroupList {
   constructor(app, abi) {
+    if(!(app instanceof DemocraticCapitalApp))
+      throw new Error('invalid app');
     this.app = app;
     this.contract = new this.app.web3.eth.Contract(
       abi, window.config.contracts.GroupList.address);
