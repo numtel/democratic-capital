@@ -1,33 +1,55 @@
+import {html, css} from './lit-all.min.js';
+import {BaseElement} from './BaseElement.js';
+import {app} from './Web3App.js';
 
-class GroupList {
-  constructor(app, abi) {
-    if(!(app instanceof DemocraticCapitalApp))
-      throw new Error('invalid app');
-    this.app = app;
-    this.contract = new this.app.web3.eth.Contract(
-      abi, window.config.contracts.GroupList.address);
+export class GroupList extends BaseElement {
+  static properties = {
+    _groups: {state: true},
+  };
+  constructor() {
+    super();
+    this.contract = this.loadContract();
+    this._groups = [];
+    this.fetchList();
   }
-  async createGroup() {
-    const retval = await this.app.send(this.contract.methods.createGroup(
-      window.config.contracts.MockVerification.address));
-
-    return new VerifiedGroup(
-      this.app,
-      await this.app.contracts.VerifiedGroup.abi(),
-      retval.events.NewGroup.returnValues.group);
+  async loadContract() {
+    const response = await fetch('/GroupList.abi');
+    const abi = await response.json();
+    await app.initialized;
+    return new app.web3.eth.Contract(
+      abi,
+      window.config.contracts.GroupList.address);
+  }
+  render() {
+    return html`
+      <button @click="${this.createGroup}">Create New Group</button>
+      <ul>
+        ${this._groups.map(group => html`
+          <li><a @click="${this.route}" href="/group/${group}">${group}</a></li>
+        `)}
+      </ul>
+    `;
   }
   async fetchList() {
-    const groups = [];
+    const contract = await this.contract;
+    this._groups.splice(0, this._groups.length);
     let fetchError = false;
     while(!fetchError) {
       try {
-        groups.push(new VerifiedGroup(this.app,
-          await this.app.contracts.VerifiedGroup.abi(),
-          await this.contract.methods.groups(groups.length).call()));
+        this._groups.push(
+          await contract.methods.groups(this._groups.length).call());
       } catch(error) {
         fetchError = true;
       }
     }
-    return groups;
+    this.requestUpdate();
+  }
+  async createGroup() {
+    const contract = await this.contract;
+    await app.send(contract.methods.createGroup(
+      window.config.contracts.MockVerification.address));
+    await this.fetchList();
   }
 }
+
+customElements.define('group-list', GroupList);

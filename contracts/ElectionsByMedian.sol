@@ -21,7 +21,7 @@ contract ElectionsByMedian {
   mapping(address => VoteSet.Data) elections;
   mapping(address => bytes) invokeData;
   AddressSet.Set proposals;
-  bytes[] allowedInvokePrefixes;
+  bytes[] public allowedInvokePrefixes;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
@@ -48,6 +48,9 @@ contract ElectionsByMedian {
   }
 
   // General usage methods
+  function invokePrefixes() external view returns(bytes[] memory) {
+    return allowedInvokePrefixes;
+  }
   function propose(bytes memory data) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');

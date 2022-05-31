@@ -15,6 +15,53 @@ class ElectionsByMedian {
     }
 
     this.bytecode = null;
+
+    this.proposalMethods = {
+      register: {
+        args: [
+          { type: 'address', note: 'User to add' }
+        ],
+        note: 'Add a user to the group. (Must be verified on Coinpassport.)',
+      },
+      unregister: {
+        args: [
+          { type: 'address', note: 'User to remove' }
+        ],
+        note: 'Remove a user from the group.',
+      },
+      ban: {
+        args: [
+          { type: 'address', note: 'User to ban' },
+          { type: 'timestamp', note: 'Ban expiration time' },
+        ],
+        note: 'Ban a user from the group. They will not be able to register again using the same passport until the ban expires.',
+      },
+      setVerifications: {
+        args: [
+          { type: 'address', note: 'Verification contract' },
+        ],
+        note: 'Change the contract address used for verification data.',
+      },
+      allowContract: {
+        args: [
+          { type: 'address', note: 'Contract to Allow' },
+        ],
+        note: 'Allow a new contract access to invoke functions on behalf of the group. Audit this contract thoroughly before accepting it.',
+      },
+      disallowContract: {
+        args: [
+          { type: 'address', note: 'Contract to Disallow' },
+        ],
+        note: 'Disallow a contract that is currently allowed to invoke functions on behalf of the group.',
+      },
+      invoke: {
+        args: [
+          { type: 'address', note: 'Contract to call' },
+          { type: 'bytes', note: 'Data to send in call' },
+        ],
+        note: 'Invoke any contract from the group',
+      },
+    };
   }
   async deployNew(groupAddress, allowedInvokePrefixes) {
     if(this.contract)
@@ -46,6 +93,7 @@ class ElectionsByMedian {
     const proposalConfig = this.proposalConfigView(await this.getProposalConfigMedians());
     const myProposalConfig = this.proposalConfigView(await this.getProposalConfig());
     const proposals = await this.fetchAllProposals();
+    const invokePrefixes = await this.invokePrefixes();
 
     const vote = (key, inSupport) => {
       return async () => {
@@ -110,7 +158,7 @@ class ElectionsByMedian {
           ${timeLeft > 0 ? lit.html`
             <button @click="${vote(proposal.key, true)}">Vote in Support</button>
             <button @click="${vote(proposal.key, false)}">Vote Against</button>
-          ` : proposal.passed ? lit.html`
+          ` : proposal.passed && !proposal.processed ? lit.html`
             <button @click="${process(proposal.key)}">Invoke Proposal Data</button>
           ` : ''}
         </li>
@@ -142,9 +190,20 @@ class ElectionsByMedian {
       } catch(error) {
         alert(error.reason);
       }
-    }
+    };
+
+    const submitProposal = async event => {
+      event.preventDefault();
+      console.log(event);
+    };
 
     return lit.html`
+      <h2>Elections by Median</h2>
+      <p>${invokePrefixes.length === 0
+            ? 'Full invoke capability (no filter)'
+            : JSON.stringify(invokePrefixes)}
+      </p>
+      <h3>Parameters</h3>
       <dl class="parameters">
         <dt>Number of Users with Configured Parameters</dt>
         <dd>${configCount}</dd>
@@ -174,7 +233,28 @@ class ElectionsByMedian {
           <button @click="${configure}">Configure my Parameters</button>
         </dd>
       </dl>
+      <h3>Proposals</h3>
       <button @click="${propose}">Create New Proposal</button>
+      <form @submit="${submitProposal}">
+        <fieldset>
+          <legend>Submit New Proposal</legend>
+          <div>
+            <label>
+              <span>Method to Invoke</span>
+              <select>
+                <option>register</option>
+                <option>unregister</option>
+                <option>ban</option>
+                <option>setVerifications</option>
+                <option>allowContract</option>
+                <option>disallowContract</option>
+                <option>invoke</option>
+              </select>
+            </label>
+          </div>
+          <button type="submit">Submit Proposal</button>
+        </fieldset>
+      </form>
       <ul class="proposals">
         ${proposalsTpl}
       </ul>
@@ -201,6 +281,9 @@ class ElectionsByMedian {
   async setProposalConfig(duration, threshold, minParticipation) {
     return await this.app.send(this.contract.methods.setProposalConfig(
       duration, threshold, minParticipation));
+  }
+  async invokePrefixes() {
+    return await this.contract.methods.invokePrefixes().call();
   }
   async propose(invokeData) {
     return await this.app.send(this.contract.methods.propose(invokeData));

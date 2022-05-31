@@ -1,0 +1,34 @@
+import {html, css} from './lit-all.min.js';
+import {BaseElement} from './BaseElement.js';
+import {GroupList} from './GroupList.js';
+import {GroupDetails} from './GroupDetails.js';
+
+export class AppRouter extends BaseElement {
+  static properties = {
+    path: {type: String, reflect: true},
+  };
+  static routes = [
+    { regex: /^\/group\/(0x[a-f0-9]{40})$/i,
+      template: match => html`
+        <group-details address="${match[1]}"></group-details>` },
+    { regex: /^\/group\/(0x[a-f0-9]{40})\/([^\/]+)\/(0x[a-f0-9]{40})$/i,
+      template: match => html`
+        <group-details address="${match[1]}"></group-details>` },
+    { regex: /^\//, // catch all others
+      template: () => html`<group-list></group-list>` }
+  ];
+  constructor() {
+    super();
+    this.path = window.location.pathname;
+    window.addEventListener('popstate', event => {
+      this.path = window.location.pathname;
+    });
+  }
+  render() {
+    for(let route of AppRouter.routes) {
+      const match = this.path.match(route.regex);
+      if(match) return route.template(match);
+    }
+  }
+}
+customElements.define('app-router', AppRouter);
