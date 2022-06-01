@@ -3,6 +3,7 @@ import {BaseElement} from './BaseElement.js';
 import {GroupList} from './GroupList.js';
 import {GroupDetails} from './GroupDetails.js';
 import {DeployChild} from './DeployChild.js';
+import {ChildDetails} from './ChildDetails.js';
 
 export class AppRouter extends BaseElement {
   static properties = {
@@ -17,7 +18,7 @@ export class AppRouter extends BaseElement {
         <deploy-child groupAddress="${match[1]}"></deploy-child>` },
     { regex: /^\/group\/(0x[a-f0-9]{40})\/([^\/]+)\/(0x[a-f0-9]{40})$/i,
       template: match => html`
-        <group-details address="${match[1]}"></group-details>` },
+        <child-details groupAddress="${match[1]}" childType="${match[2]}" childAddress="${match[3]}"></child-details>` },
     { regex: /^\//, // catch all others
       template: () => html`<group-list></group-list>` }
   ];

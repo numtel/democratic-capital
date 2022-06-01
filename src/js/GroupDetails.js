@@ -1,6 +1,7 @@
 import {html, css} from './lit-all.min.js';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
+import {DeployChild} from './DeployChild.js';
 
 export class GroupDetails extends BaseElement {
   static properties = {
@@ -18,8 +19,6 @@ export class GroupDetails extends BaseElement {
     super.connectedCallback();
     this.contract = await this.loadContract('VerifiedGroup', this.address);
     await this.fetchDetails();
-    console.log(app.web3.utils.sha3('register(address)'));
-    console.log(this.contract.methods.register(this.address).encodeABI());
   }
   async fetchDetails() {
     this._loading = true;
@@ -28,6 +27,7 @@ export class GroupDetails extends BaseElement {
       this._details.isMember = await this.contract.methods.isRegistered(app.accounts[0]).call();
       this._details.memberCount = Number(await this.contract.methods.registeredCount().call());
       this._details.allowedContracts = await this.allowedContracts();
+      this._details.deployedChildren = await this.allFactoriesChildren();
     } catch(error) {
       console.error(error);
       this._details.error = true;
@@ -53,6 +53,27 @@ export class GroupDetails extends BaseElement {
       }
 
       out.push({ address, self, interfaceId, interfaceName });
+    }
+    return out;
+  }
+  async allFactoriesChildren() {
+    const out = {};
+    for(let type of Object.keys(DeployChild.types)) {
+      out[type] = await this.factoryDeployedChildren(DeployChild.types[type].factory);
+    }
+    return out;
+  }
+  async factoryDeployedChildren(factoryName) {
+    const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
+    const out = [];
+    let fetchError = false;
+    while(!fetchError) {
+      try {
+        out.push(
+          await factory.methods.deployedByGroup(this.address, out.length).call());
+      } catch(error) {
+        fetchError = true;
+      }
     }
     return out;
   }
@@ -147,6 +168,27 @@ export class GroupDetails extends BaseElement {
 
                   </dl>
                 </li>
+              `)}
+            </ul>
+          </dd>
+          <dt>Deployed Children</dt>
+          <dd>
+            <ul>
+              ${Object.keys(this._details.deployedChildren).map(childType => html`
+                ${this._details.deployedChildren[childType].length > 0 ? html`
+                  <li>
+                    <span>${childType}</span>
+                    <ul>
+                    ${this._details.deployedChildren[childType].map(childAddress => html`
+                      <li>
+                        <a @click="${this.route}" href="/group/${this.address}/${childType}/${childAddress}">
+                          ${childAddress}
+                        </a>
+                      </li>
+                    `)}
+                    </ul>
+                  </li>
+                ` : ''}
               `)}
             </ul>
           </dd>

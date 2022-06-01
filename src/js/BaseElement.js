@@ -9,9 +9,10 @@ export class BaseElement extends LitElement {
     return this;
   }
   async route(event) {
-    event.preventDefault();
-    window.history.pushState({}, '', event.target.attributes.href.value);
-    document.querySelector('app-router').path = event.target.attributes.href.value;
+    event.preventDefault && event.preventDefault();
+    const newPath = typeof event === 'string' ? event : event.target.attributes.href.value;
+    window.history.pushState({}, '', newPath);
+    document.querySelector('app-router').path = newPath;
   }
   async loadContract(abiFilename, address) {
     const response = await fetch('/' + abiFilename + '.abi');
