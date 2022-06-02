@@ -1,6 +1,7 @@
 import {html, css, LitElement} from './lit-all.min.js';
 import {AppRouter} from './AppRouter.js';
 
+// TODO parcel.js for abi-decoder and better dx
 export class SimpleGreeting extends LitElement {
 
   static styles = css`p { color: blue }`;

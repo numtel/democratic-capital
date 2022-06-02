@@ -114,13 +114,6 @@ export class Web3App {
       }
     }
   }
-  async send(method) {
-    // TODO prompt for wallet connection
-    // TODO prompt if account not verified
-    if(!this.connected)
-      throw new Error('Wallet not connected');
-    return method.send({ from: this.accounts[0], gas: 20000000 });
-  }
 }
 
 export const app = new Web3App;

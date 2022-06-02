@@ -13,4 +13,8 @@ contract GroupList {
     groups.push(address(newGroup));
     emit NewGroup(address(newGroup));
   }
+
+  function count() external view returns(uint) {
+    return groups.length;
+  }
 }

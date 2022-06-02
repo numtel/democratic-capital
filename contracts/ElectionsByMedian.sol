@@ -129,6 +129,8 @@ contract ElectionsByMedian {
     elections[key].processed = true;
     (bool success, bytes memory returned) = address(group).call(invokeData[key]);
     emit ElectionProcessed(key, invokeData[key], returned);
+    // TODO consider election processed even if invoke fails?
+    //  invoke condition could become valid at much later time?
     require(success, 'Invoke Failed');
   }
 

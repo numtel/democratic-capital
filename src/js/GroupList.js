@@ -35,6 +35,7 @@ export class GroupList extends BaseElement {
       `}
     `;
   }
+  // TODO pagination element
   async fetchList() {
     this._loading = true;
     this._groups.splice(0, this._groups.length);
