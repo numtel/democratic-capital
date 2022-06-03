@@ -1,4 +1,4 @@
-import {html, css} from './lit-all.min.js';
+import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {GroupList} from './GroupList.js';
 import {GroupDetails} from './GroupDetails.js';

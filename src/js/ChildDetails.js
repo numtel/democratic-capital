@@ -1,4 +1,4 @@
-import {html, css, ref} from './lit-all.min.js';
+import {html, css, ref} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {ElectionsByMedianDetails} from './ElectionsByMedianDetails.js';

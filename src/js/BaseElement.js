@@ -1,4 +1,4 @@
-import {html, css, LitElement} from './lit-all.min.js';
+import {html, css, LitElement} from 'lit';
 import {app} from './Web3App.js';
 
 export class BaseElement extends LitElement {

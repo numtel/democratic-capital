@@ -1,4 +1,4 @@
-import {html, css, LitElement} from './lit-all.min.js';
+import {html, css, LitElement} from 'lit';
 import {AppRouter} from './AppRouter.js';
 
 // TODO parcel.js for abi-decoder and better dx
