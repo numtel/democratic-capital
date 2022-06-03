@@ -114,6 +114,10 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
     this._loading = false;
   }
+  async update() {
+    super.update();
+    this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
+  }
   async proposalCount() {
     return Number(await this.contract.methods.count().call());
   }
