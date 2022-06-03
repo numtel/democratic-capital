@@ -1,4 +1,4 @@
-import {html, css, ref} from 'lit';
+import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 

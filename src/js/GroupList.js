@@ -16,7 +16,7 @@ export class GroupList extends BaseElement {
   async connectedCallback() {
     super.connectedCallback();
     this.contract = await this.loadContract(
-      'GroupList', window.config.contracts.GroupList.address);
+      'VerifiedGroupFactory', window.config.contracts.VerifiedGroupFactory.address);
     await this.fetchList();
   }
   render() {
@@ -53,10 +53,11 @@ export class GroupList extends BaseElement {
   async createGroup() {
     const contract = await this.contract;
     try {
-      await app.send(contract.methods.createGroup(
+      await this.send(contract.methods.createGroup(
         window.config.contracts.MockVerification.address));
       await this.fetchList();
     } catch(error) {
+      console.error(error);
       alert(error.reason);
     }
   }

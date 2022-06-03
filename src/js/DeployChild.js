@@ -1,4 +1,5 @@
-import {html, css, ref} from 'lit';
+import {html, css} from 'lit';
+import {ref} from 'lit/directives/ref.js';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {NewElectionsByMedian} from './NewElectionsByMedian.js';
@@ -44,7 +45,7 @@ export class DeployChild extends BaseElement {
       const factoryName = DeployChild.types[this._selTypeValue].factory;
       const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
       const events = (await this.send(factory.methods.deployNew(...args))).events;
-      await this.route('/group/' + this.groupAddress);
+      await this.route('/group/' + this.groupAddress + '/' + this._selTypeValue + '/' + events.NewDeployment.returnValues.deployed);
     } catch(error) {
       console.error(error);
       alert(error.reason || error.message || error);

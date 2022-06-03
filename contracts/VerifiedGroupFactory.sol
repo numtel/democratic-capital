@@ -3,7 +3,7 @@ pragma solidity 0.8.13;
 
 import "./VerifiedGroup.sol";
 
-contract GroupList {
+contract VerifiedGroupFactory {
   address[] public groups;
 
   event NewGroup(address group);

@@ -32,9 +32,9 @@ const contracts = {
     abi: 'IVerification.abi',
     constructorArgs: [],
   },
-  GroupList: {
+  VerifiedGroupFactory: {
     instance: null,
-    abi: 'GroupList.abi',
+    abi: 'VerifiedGroupFactory.abi',
     constructorArgs: [],
   },
   TestInterfaceIds: {
