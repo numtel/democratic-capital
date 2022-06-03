@@ -82,7 +82,7 @@ export class GroupDetails extends BaseElement {
   }
   renderEmpty() {
     return html`
-      <p>No Groups Yet!</p>
+      <p>No Contracts Yet!</p>
     `;
   }
   renderLoading() {

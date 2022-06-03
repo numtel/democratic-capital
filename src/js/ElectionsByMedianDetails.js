@@ -3,6 +3,7 @@ import {ifDefined} from 'lit/directives/if-defined.js';
 import abiDecoder from 'abi-decoder';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
+import {PaginatedList} from './PaginatedList.js';
 
 export class ElectionsByMedianDetails extends BaseElement {
   static properties = {
@@ -14,6 +15,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     _myCurThreshold: {state: true},
     _myCurMinParticipation: {state: true},
     _newProposalMethod: {state: true},
+    _updateProposals: {state: true},
   };
   static proposalMethods = {
     register: {
@@ -70,6 +72,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._myCurMinParticipation = 1;
     this._newProposalMethod = null;
     this._details = {};
+    this._updateProposals = 0;
     this.groupContract = null;
     this.contract = null;
     this.reverseMethods = {};
@@ -97,8 +100,9 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   async loadDetails() {
     this._loading = true;
+    const groupAbi = await this.loadAbi('IVerifiedGroup');
+    abiDecoder.addABI(groupAbi);
     this._details.invokePrefixes = await this.contract.methods.invokePrefixes().call();
-    this._details.proposals = await this.fetchAllProposals();
     this._details.configCount = await this.contract.methods.proposalConfigCount().call();
     this._details.configMedians = await this.contract.methods.getProposalConfig().call();
     this._details.myConfig = await this.contract.methods.getProposalConfig(app.accounts[0]).call();
@@ -110,26 +114,19 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
     this._loading = false;
   }
-  async fetchAllProposals() {
-    const count  = Number(await this.contract.methods.count().call());
-    const groupAbi = await this.loadAbi('IVerifiedGroup');
-    abiDecoder.addABI(groupAbi);
-    const out = [];
-    for(let i = 0; i < count; i++) {
-      const key = await this.contract.methods.atIndex(i).call();
-      const details = await this.contract.methods.details(key).call();
-      details.key = key;
-      details.dataDecoded = abiDecoder.decodeMethod(details.data);
-      out.push(details);
-    }
-    return out;
+  async proposalCount() {
+    return Number(await this.contract.methods.count().call());
   }
-  render() {
-    if(this._loading) return html`
-      <p>Loading...</p>
-    `;
+  async fetchProposal(index) {
+    const key = await this.contract.methods.atIndex(index).call();
+    const details = await this.contract.methods.details(key).call();
+    details.key = key;
+    details.dataDecoded = abiDecoder.decodeMethod(details.data);
+    return details;
+  }
+  renderProposals(proposals) {
     const proposalsTpl = [];
-    for(let proposal of this._details.proposals) {
+    for(let proposal of proposals) {
       const timeLeft = Number(proposal.endTime) - this._details.currentTime;
       const rawThreshold = proposal._threshold;
       const threshold = rawThreshold === 16 ? 100 : 50 + (rawThreshold - 1) * (50/15);
@@ -175,14 +172,34 @@ export class ElectionsByMedianDetails extends BaseElement {
             <dd>${proposal.passing ? 'Yes' : 'No'}</dd>
           </dl>
           ${timeLeft > 0 ? html`
-            <button @click="${this.vote}" data-key="${proposal.key}" data-supporting="true">Vote in Support</button>
-            <button @click="${this.vote}" data-key="${proposal.key}" data-supporting="false">Vote Against</button>
+            <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="true">Vote in Support</button>
+            <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="false">Vote Against</button>
           ` : proposal.passed && !proposal.processed ? html`
-            <button @click="${this.process}" data-key="${proposal.key}">Invoke Proposal Data</button>
+            <button @click="${this.process.bind(this)}" data-key="${proposal.key}">Invoke Proposal Data</button>
           ` : ''}
         </li>
       `);
     }
+    return html`
+      <ul class="proposals">
+        ${proposalsTpl}
+      </ul>
+    `;
+  }
+  renderEmpty() {
+    return html`
+      <p>No Proposals Yet!</p>
+    `;
+  }
+  renderLoading() {
+    return html`
+      <p>Loading...</p>
+    `;
+  }
+  render() {
+    if(this._loading) return html`
+      <p>Loading...</p>
+    `;
 
     const configMedians = this.proposalConfigView(this._details.configMedians);
     const myConfig = this.proposalConfigView(this._details.myConfig);
@@ -298,9 +315,14 @@ export class ElectionsByMedianDetails extends BaseElement {
           <button type="submit">Submit Proposal</button>
         </fieldset>
       </form>
-      <ul class="proposals">
-        ${proposalsTpl}
-      </ul>
+      <paginated-list
+        updateIndex="${this._updateProposals}"
+        .count=${this.proposalCount.bind(this)}
+        .fetchOne=${this.fetchProposal.bind(this)}
+        .renderer=${this.renderProposals.bind(this)}
+        .emptyRenderer=${this.renderEmpty.bind(this)}
+        .loadingRenderer=${this.renderLoading.bind(this)}
+      ></paginated-list>
     `;
   }
   async vote(event) {
@@ -308,7 +330,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     const key = event.target.attributes['data-key'].value;
     try {
       await this.send(this.contract.methods.vote(key, inSupport));
-      await this.loadDetails();
+      this._updateProposals++;
     } catch(error) {
       console.error(error);
       alert(error.reason);
@@ -323,7 +345,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     const invokeData = groupInterface.methods[this._newProposalMethod](...args).encodeABI();
     try {
       await this.send(this.contract.methods.propose(invokeData));
-      await this.loadDetails();
+      this._updateProposals++;
     } catch(error) {
       console.error(error);
       alert(error.reason);
@@ -333,7 +355,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     const key = event.target.attributes['data-key'].value;
     try {
       await this.send(this.contract.methods.process(key));
-      await this.loadDetails();
+      this._updateProposals++;
     } catch(error) {
       console.error(error);
       alert(error.reason);
