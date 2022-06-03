@@ -1,3 +1,6 @@
+import Web3 from "web3";
+import Web3Modal from "web3modal";
+import CoinbaseWalletSDK from "@coinbase/wallet-sdk";
 
 export class Web3App {
   constructor() {
@@ -36,7 +39,7 @@ export class Web3App {
     }
   }
   async connect() {
-    const web3Modal = this.web3Modal = new Web3Modal.default({
+    const web3Modal = this.web3Modal = new Web3Modal({
       cacheProvider: true,
       providerOptions: {
         coinbasewallet: {
