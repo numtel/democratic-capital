@@ -18,6 +18,7 @@ export class PaginatedList extends BaseElement {
   };
   constructor() {
     super();
+    this.updateIndex = 0;
     this.page = 1;
     this.perPage = 10;
     this._loading = true;

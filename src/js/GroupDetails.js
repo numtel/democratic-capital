@@ -2,6 +2,7 @@ import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {DeployChild} from './DeployChild.js';
+import {PaginatedList} from './PaginatedList.js';
 
 export class GroupDetails extends BaseElement {
   static properties = {
@@ -26,56 +27,90 @@ export class GroupDetails extends BaseElement {
     try {
       this._details.isMember = await this.contract.methods.isRegistered(app.accounts[0]).call();
       this._details.memberCount = Number(await this.contract.methods.registeredCount().call());
-      this._details.allowedContracts = await this.allowedContracts();
-      this._details.deployedChildren = await this.allFactoriesChildren();
+      this._details.factories =  [];
+      for(let typeName of Object.keys(DeployChild.types)) {
+        const factoryName = DeployChild.types[typeName].factory;
+        this._details.factories.push({
+          name: typeName,
+          factoryName,
+          count: await this.factoryCount(factoryName),
+        });
+      }
     } catch(error) {
       console.error(error);
       this._details.error = true;
     }
     this._loading = false;
   }
-  async allowedContracts() {
-    const out = [];
-    const count = Number(await this.contract.methods.allowedContractCount().call());
-    for(let i = 0; i < count; i++) {
-      const address = await this.contract.methods.allowedContractIndex(i).call();
-      const self = address === this.address;
-      const interfaceIdContract = await this.loadContract('IThisInterfaceId', address);
-      let interfaceId;
-      try {
-        interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
-      } catch(error) {
-        // Doesn't matter, just checking
-      }
-      let interfaceName;
-      if(interfaceId in window.config.interfaceIds) {
-        interfaceName = window.config.interfaceIds[interfaceId];
-      }
-
-      out.push({ address, self, interfaceId, interfaceName });
-    }
-    return out;
+  async allowedCount() {
+    return Number(await this.contract.methods.allowedContractCount().call());
   }
-  async allFactoriesChildren() {
-    const out = {};
-    for(let type of Object.keys(DeployChild.types)) {
-      out[type] = await this.factoryDeployedChildren(DeployChild.types[type].factory);
+  async fetchAllowed(index) {
+    const address = await this.contract.methods.allowedContractIndex(index).call();
+    const self = address === this.address;
+    const interfaceIdContract = await this.loadContract('IThisInterfaceId', address);
+    let interfaceId;
+    try {
+      interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
+    } catch(error) {
+      // Doesn't matter, just checking
     }
-    return out;
+    let interfaceName;
+    if(interfaceId in window.config.interfaceIds) {
+      interfaceName = window.config.interfaceIds[interfaceId];
+    }
+    return { address, self, interfaceId, interfaceName };
   }
-  async factoryDeployedChildren(factoryName) {
+  renderAllowed(allowed) {
+    return html`
+      <ul>
+        ${allowed.map(contract => html`
+          <li>
+            ${contract.interfaceName ? html`
+                <a @click="${this.route}"
+                    href="/group/${this.address}/${contract.interfaceName}/${contract.address}">
+                  ${contract.address} (${contract.interfaceName})
+                </a>
+            ` : html`
+              ${contract.address}
+              ${contract.self ? '(Self reference)' : ''}
+            `}
+          </li>
+        `)}
+      </ul>
+    `;
+  }
+  renderEmpty() {
+    return html`
+      <p>No Groups Yet!</p>
+    `;
+  }
+  renderLoading() {
+    return html`
+      <p>Loading...</p>
+    `;
+  }
+  async factoryCount(factoryName) {
     const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
-    const out = [];
-    let fetchError = false;
-    while(!fetchError) {
-      try {
-        out.push(
-          await factory.methods.deployedByGroup(this.address, out.length).call());
-      } catch(error) {
-        fetchError = true;
-      }
-    }
-    return out;
+    return Number(await factory.methods.groupCount(this.address).call());
+  }
+  async factoryFetch(factoryName, index) {
+    const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
+    return await factory.methods.deployedByGroup(this.address, index).call();
+  }
+  renderFactoryList(interfaceName, contracts) {
+    return html`
+      <ul>
+        ${contracts.map(address => html`
+          <li>
+            <a @click="${this.route}"
+                href="/group/${this.address}/${interfaceName}/${address}">
+              ${address}
+            </a>
+          </li>
+        `)}
+      </ul>
+    `;
   }
   async register() {
     const address = prompt('Account address?');
@@ -147,46 +182,28 @@ export class GroupDetails extends BaseElement {
           </dd>
           <dt>Allowed Contracts</dt>
           <dd>
-            <ul>
-              ${this._details.allowedContracts.map(contract => html`
-                <li>
-                  <dl>
-                    <dt>Address</dt>
-                    <dd>
-                      ${contract.address}
-                      ${contract.self ? '(Self reference)' : ''}
-                    </dd>
-                    ${contract.interfaceName ? html`
-                      <dt>Interface Type</dt>
-                      <dd>
-                        <a @click="${this.route}"
-                            href="/group/${this.address}/${contract.interfaceName}/${contract.address}">
-                          ${contract.interfaceName}
-                        </a>
-                      </dd>
-                    ` : ''}
-
-                  </dl>
-                </li>
-              `)}
-            </ul>
+            <paginated-list
+              .count=${this.allowedCount.bind(this)}
+              .fetchOne=${this.fetchAllowed.bind(this)}
+              .renderer=${this.renderAllowed.bind(this)}
+              .emptyRenderer=${this.renderEmpty.bind(this)}
+              .loadingRenderer=${this.renderLoading.bind(this)}
+            ></paginated-list>
           </dd>
           <dt>Deployed Children</dt>
           <dd>
             <ul>
-              ${Object.keys(this._details.deployedChildren).map(childType => html`
-                ${this._details.deployedChildren[childType].length > 0 ? html`
+              ${this._details.factories.map(factory => html`
+                ${factory.count > 0 ? html`
                   <li>
-                    <span>${childType}</span>
-                    <ul>
-                    ${this._details.deployedChildren[childType].map(childAddress => html`
-                      <li>
-                        <a @click="${this.route}" href="/group/${this.address}/${childType}/${childAddress}">
-                          ${childAddress}
-                        </a>
-                      </li>
-                    `)}
-                    </ul>
+                    <span>${factory.name}</span>
+                    <paginated-list
+                      .count=${this.factoryCount.bind(this, factory.factoryName)}
+                      .fetchOne=${this.factoryFetch.bind(this, factory.factoryName)}
+                      .renderer=${this.renderFactoryList.bind(this, factory.name)}
+                      .emptyRenderer=${this.renderEmpty.bind(this)}
+                      .loadingRenderer=${this.renderLoading.bind(this)}
+                    ></paginated-list>
                   </li>
                 ` : ''}
               `)}
