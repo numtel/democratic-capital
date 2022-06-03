@@ -34,6 +34,8 @@ export class Web3App {
           else resolve(accounts);
         });
       });
+      const header = document.querySelector('app-heading');
+      if(header) header.connected = true;
     } else {
       this.connected = false;
     }

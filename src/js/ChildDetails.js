@@ -2,6 +2,8 @@ import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {ElectionsByMedianDetails} from './ElectionsByMedianDetails.js';
+import {OpenRegistrationsDetails} from './OpenRegistrationsDetails.js';
+import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
 
 export class ChildDetails extends BaseElement {
   static properties = {
@@ -16,7 +18,17 @@ export class ChildDetails extends BaseElement {
       tpl: (parent) => html`
         <elections-by-median-details address="${parent.childAddress}"></elections-by-median-details>
       `
-    }
+    },
+    OpenRegistrations: {
+      tpl: (parent) => html`
+        <open-registrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}"></open-registrations-details>
+      `
+    },
+    OpenUnregistrations: {
+      tpl: (parent) => html`
+        <open-unregistrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}"></open-unregistrations-details>
+      `
+    },
   };
   constructor() {
     super();
@@ -32,14 +44,22 @@ export class ChildDetails extends BaseElement {
     this._loading = false;
   }
   render() {
+    if(this._loading) return html`
+      <p>Loading...</p>
+    `;
     return html`
-      <a @click="${this.route}" href="/">Home</a>
-      <a @click="${this.route}" href="/group/${this.groupAddress}">Group Details</a>
-      <h2>${this.childType} at ${this.childAddress}</h2>
+      <nav class="breadcrumbs">
+        <ol>
+          <li><a @click="${this.route}" href="/groups">Groups</a></li>
+          <li><a @click="${this.route}" href="/group/${this.groupAddress}">${this.ellipseAddress(this.groupAddress)}</a></li>
+          <li>${this.childType}: ${this.ellipseAddress(this.childAddress)}</li>
+        </ol>
+      </nav>
+      <h2>${this.childType} at <a href="${this.explorer(this.childAddress)}" @click="${this.open}">${this.ellipseAddress(this.childAddress)}</a></h2>
       <p>
         ${this._details.isAllowed
-          ? 'Contract allowed to invoke on behalf of group.'
-          : 'Contract is NOT allowed to invoke on behalf of group.'}
+          ? html`Contract allowed to invoke on behalf of group.`
+          : html`Contract is <strong>not</strong> allowed to invoke on behalf of group.`}
       </p>
       ${this.childType in ChildDetails.typeDetails
         ? ChildDetails.typeDetails[this.childType].tpl(this)

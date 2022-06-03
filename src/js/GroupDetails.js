@@ -25,15 +25,18 @@ export class GroupDetails extends BaseElement {
     this._loading = true;
     this._details.error = false;
     try {
-      this._details.isMember = await this.contract.methods.isRegistered(app.accounts[0]).call();
+      this._details.isMember = app.connected ? await this.contract.methods.isRegistered(app.accounts[0]).call() : false;
       this._details.memberCount = Number(await this.contract.methods.registeredCount().call());
       this._details.factories =  [];
+      this._details.hasChildren = false;
       for(let typeName of Object.keys(DeployChild.types)) {
         const factoryName = DeployChild.types[typeName].factory;
+        const count = await this.factoryCount(factoryName);
+        if(count) this._details.hasChildren = true;
         this._details.factories.push({
           name: typeName,
           factoryName,
-          count: await this.factoryCount(factoryName),
+          count,
         });
       }
     } catch(error) {
@@ -166,50 +169,53 @@ export class GroupDetails extends BaseElement {
           && this._details.allowedContracts
               .filter(x => x.address === app.accounts[0]).length > 0);
     return html`
-      <a @click="${this.route}" href="/">Home</a>
-      <a @click="${this.route}" href="/group/${this.address}/deploy-child">Deploy Child Contract</a>
-      <h2>Group: ${this.address}</h2>
+      <nav class="breadcrumbs">
+        <ol>
+          <li><a @click="${this.route}" href="/groups">Groups</a></li>
+          <li>${this.ellipseAddress(this.address)}</li>
+        </ol>
+      </nav>
+      <h2>Group <a href="${this.explorer(this.address)}" @click="${this.open}">${this.ellipseAddress(this.address)}</a></h2>
       ${this._loading ? html`
         <p>Loading...</p>
       ` : this._details.error ? html`
         <p>Invalid group</p>
       ` : html`
-        <dl>
-          <dt>Membership</dt>
-          <dd>
-            Count: ${this._details.memberCount},
-            ${this._details.isMember ? 'Account is Member' : 'Not a Member'}
-          </dd>
-          <dt>Allowed Contracts</dt>
-          <dd>
-            <paginated-list
-              .count=${this.allowedCount.bind(this)}
-              .fetchOne=${this.fetchAllowed.bind(this)}
-              .renderer=${this.renderAllowed.bind(this)}
-              .emptyRenderer=${this.renderEmpty.bind(this)}
-              .loadingRenderer=${this.renderLoading.bind(this)}
-            ></paginated-list>
-          </dd>
-          <dt>Deployed Children</dt>
-          <dd>
-            <ul>
-              ${this._details.factories.map(factory => html`
-                ${factory.count > 0 ? html`
-                  <li>
-                    <span>${factory.name}</span>
-                    <paginated-list
-                      .count=${this.factoryCount.bind(this, factory.factoryName)}
-                      .fetchOne=${this.factoryFetch.bind(this, factory.factoryName)}
-                      .renderer=${this.renderFactoryList.bind(this, factory.name)}
-                      .emptyRenderer=${this.renderEmpty.bind(this)}
-                      .loadingRenderer=${this.renderLoading.bind(this)}
-                    ></paginated-list>
-                  </li>
-                ` : ''}
-              `)}
-            </ul>
-          </dd>
-        </dl>
+        <p>
+          ${this._details.memberCount} ${this._details.memberCount === 1 ? 'member' : 'members'}
+          (${this._details.isMember ? 'Account is Member' : 'Not a Member'})
+        </p>
+        ${this._details.memberCount === 1 ? html`
+          <p class="notice">
+            When a group only has one member, that one member can perform any administrative action on the group contract directly.<br><br>Before another member is registered into the group, it is <strong>very</strong> important to allow a contract that has the capability to perform administrative actions, such as an elections contract or by allowing an individual's account as an allowed contract.
+          </p>
+        ` : ''}
+        <h3>Allowed Contracts</h3>
+        <paginated-list
+          .count=${this.allowedCount.bind(this)}
+          .fetchOne=${this.fetchAllowed.bind(this)}
+          .renderer=${this.renderAllowed.bind(this)}
+          .emptyRenderer=${this.renderEmpty.bind(this)}
+          .loadingRenderer=${this.renderLoading.bind(this)}
+        ></paginated-list>
+        <h3>Deployed Children</h3>
+        <button @click="${this.route}" href="/group/${this.address}/deploy-child">Deploy New Child Contract...</button>
+        ${this._details.hasChildren ? html`
+          ${this._details.factories.map(factory => html`
+            ${factory.count > 0 ? html`
+              <h4>${factory.name}</h4>
+              <paginated-list
+                .count=${this.factoryCount.bind(this, factory.factoryName)}
+                .fetchOne=${this.factoryFetch.bind(this, factory.factoryName)}
+                .renderer=${this.renderFactoryList.bind(this, factory.name)}
+                .emptyRenderer=${this.renderEmpty.bind(this)}
+                .loadingRenderer=${this.renderLoading.bind(this)}
+              ></paginated-list>
+            ` : ''}
+          `)}
+        ` : html`
+          <p>No Children yet!</p>
+        `}
         ${adminMode ? html`
           <h3>Admin Mode</h3>
           <button @click="${this.register}">Register user...</button>

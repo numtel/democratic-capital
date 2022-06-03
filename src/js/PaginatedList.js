@@ -52,17 +52,25 @@ export class PaginatedList extends BaseElement {
       `);
     }
     return html`
-      <select class="page" @change="${this.setPage}">
-        ${pageOptions}
-      </select>
-      <select class="perpage" @change="${this.setPerPage}">
-        ${[ 10, 25, 100 ].map(perPage => html`
-          <option selected="${ifDefined(this.perPage === perPage ? true : undefined)}">
-            ${perPage}
-          </option>
-        `)}
-      </select>
-      ${this.renderer(this._page)}
+      <div class="pagination">
+        <div class="page-options">
+          <label>Page #
+            <select class="page" @change="${this.setPage}">
+              ${pageOptions}
+            </select>
+          </label>
+          <label>Per Page
+            <select class="perpage" @change="${this.setPerPage}">
+              ${[ 10, 25, 100 ].map(perPage => html`
+                <option selected="${ifDefined(this.perPage === perPage ? true : undefined)}">
+                  ${perPage}
+                </option>
+              `)}
+            </select>
+          </label>
+        </div>
+        ${this.renderer(this._page)}
+      </div>
     `;
   }
   async update(changedProperties) {

@@ -74,7 +74,9 @@ export class NewElectionsByMedian extends BaseElement {
               `)}
             </select>
           </label>
-          <button @click="${this.addPrefix}">Add Prefix</button>
+          <div class="commands">
+            <button @click="${this.addPrefix}" class="secondary">Add Prefix</button>
+          </div>
         </fieldset>
         ${this.prefixes === '' ? html`
           <p>No prefixes defined, allow any proposals</p>
@@ -84,7 +86,7 @@ export class NewElectionsByMedian extends BaseElement {
           ${this.prefixes.split(',').map(prefix => html`
             <li>
               ${prefix}
-              <button @click="${this.removePrefix}" data-prefix="${prefix}">Remove</button>
+              <button @click="${this.removePrefix}" data-prefix="${prefix}" class="secondary">Remove</button>
             </li>
           `)}
           </ul>

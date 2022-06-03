@@ -105,7 +105,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._details.invokePrefixes = await this.contract.methods.invokePrefixes().call();
     this._details.configCount = await this.contract.methods.proposalConfigCount().call();
     this._details.configMedians = await this.contract.methods.getProposalConfig().call();
-    this._details.myConfig = await this.contract.methods.getProposalConfig(app.accounts[0]).call();
+    this._details.myConfig = app.connected ? await this.contract.methods.getProposalConfig(app.accounts[0]).call() : { _threshold: 0, _duration: 0, _minParticipation: 0 };
     if(Number(this._details.myConfig._threshold) > 0) {
       this._myCurThreshold = Number(this._details.myConfig._threshold);
       this._myCurDuration = Number(this._details.myConfig._duration);
@@ -116,6 +116,7 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   async update() {
     super.update();
+    await app.initialized;
     this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
   }
   async proposalCount() {
@@ -133,14 +134,14 @@ export class ElectionsByMedianDetails extends BaseElement {
     for(let proposal of proposals) {
       const timeLeft = Number(proposal.endTime) - this._details.currentTime;
       const rawThreshold = proposal._threshold;
+      const totalVoters = Number(proposal.supporting) + Number(proposal.against);
+      const supportLevel = totalVoters === 0 ? 0 : Number(proposal.supporting)
+        / (Number(proposal.supporting)+Number(proposal.against));
+      const votersRequired = Number(proposal.minVoters) - totalVoters;
       const threshold = rawThreshold === 16 ? 100 : 50 + (rawThreshold - 1) * (50/15);
       proposalsTpl.push(html`
         <li>
           <dl>
-            <dt>Start Time</dt>
-            <dd>${(new Date(proposal.startTime * 1000)).toString()}</dd>
-            <dt>End Time</dt>
-            <dd>${(new Date(proposal.endTime * 1000)).toString()}</dd>
             <dt>Time Remaining</dt>
             <dd>${timeLeft > 0 ? html`
               ${remaining(timeLeft)} remaining
@@ -150,30 +151,41 @@ export class ElectionsByMedianDetails extends BaseElement {
             <dt>Invoke Data</dt>
             <dd>
               ${proposal.dataDecoded.name}
-              <ul>
+              <ul class="invoke-params">
                 ${proposal.dataDecoded.params.map(param => html`
                   <li>
                     <span class="name">${param.name}</span>
-                    <span class="value">${param.value}</span>
+                    <span class="value">
+                      ${param.type === 'address' ? html`
+                        <a @click="${this.open}" href="${this.explorer(param.value)}">
+                          ${param.value}
+                        </a>
+                      ` : html`
+                        ${param.value}
+                      `}
+                    </span>
                     <span class="type">${param.type}</span>
                   </li>
                 `)}
               </ul>
             </dd>
-            <dt>Threshold</dt>
-            <dd>${threshold}%</dd>
-            <dt>Minimum Voters</dt>
-            <dd>${proposal.minVoters}</dd>
-            <dt>Processed</dt>
-            <dd>${proposal.processed ? 'Yes' : 'No'}</dd>
-            <dt>Votes Supporting</dt>
-            <dd>${proposal.supporting}</dd>
-            <dt>Votes Against</dt>
-            <dd>${proposal.against}</dd>
-            <dt>Proposal Passed</dt>
-            <dd>${proposal.passed ? 'Yes' : 'No'}</dd>
-            <dt>Proposal Passing</dt>
-            <dd>${proposal.passing ? 'Yes' : 'No'}</dd>
+            <dt>Status</dt>
+            <dd>
+              ${timeLeft > 0 ?
+                proposal.passing ? 'Majority and participation thresholds met'
+                  : 'Proposal will not pass with current support and participation levels'
+                : proposal.processed ? 'Proposal passed and already processed'
+                  : proposal.passed ? 'Proposal passed and awaiting processing'
+                    : 'Proposal failed'}
+            </dd>
+            <dt>Support Level</dt>
+            <dd>${Math.round(supportLevel* 10000) / 100}% (Minimum: ${Math.round(threshold * 100) / 100}%)</dd>
+            <dt>Participation Level</dt>
+            <dd>${votersRequired > 0 ? `${votersRequired} ${votersRequired === 1 ? 'more voter required to me participation threshold' : 'more voters required to meet participation threshold'}` : `${totalVoters} ${totalVoters === 1 ? 'voter' : 'voters'}`} (Minimum: ${proposal.minVoters})</dd>
+            <dt>Start Time</dt>
+            <dd>${(new Date(proposal.startTime * 1000)).toString()}</dd>
+            <dt>End Time</dt>
+            <dd>${(new Date(proposal.endTime * 1000)).toString()}</dd>
           </dl>
           ${timeLeft > 0 ? html`
             <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="true">Vote in Support</button>
@@ -225,7 +237,7 @@ export class ElectionsByMedianDetails extends BaseElement {
           ${this._details.configCount > 0 ? html`
             <ul>
               <li>Duration: ${configMedians.duration} days</li>
-              <li>Threshold: ${configMedians.threshold}%</li>
+              <li>Majority Threshold: ${configMedians.threshold}%</li>
               <li>Minimum Participation: ${configMedians.minParticipation}%</li>
             </ul>
           ` : html`
@@ -237,53 +249,55 @@ export class ElectionsByMedianDetails extends BaseElement {
           ${myConfig.duration > 0 ? html`
             <ul>
               <li>Duration: ${myConfig.duration} days</li>
-              <li>Threshold: ${myConfig.threshold}%</li>
+              <li>Majority Threshold: ${myConfig.threshold}%</li>
               <li>Minimum Participation: ${myConfig.minParticipation}%</li>
             </ul>
           ` : html`
             No Proposal Configuration Set
           `}
-          ${!this._showConfigOptions ? html`
-            <button @click="${this.configure}">Configure my Parameters</button>
-            ${myConfig.duration > 0 ? html`
-              <button @click="${this.unsetConfig}">Remove my configuration settings</button>
-            ` : ''}
-          ` : html`
-            <form @submit="${this.setConfig}">
-              <fieldset>
-                <legend>My Proposal Configuration Ballot</legend>
-                <div>
-                  <label>
-                    <span>Duration</span>
-                    <input type="range" name="Duration" min="1" max="16" step="1" value="${this._myCurDuration}" @change="${this.updateMyCur}">
-                  </label>
-                  <span class="preview">
-                    ${this._myCurDuration} ${this._myCurDuration === 1 ? 'day' : 'days'}
-                  </span>
-                </div>
-                <div>
-                  <label>
-                    <span>Threshold</span>
-                    <input type="range" name="Threshold" min="1" max="16" step="1" value="${this._myCurThreshold}" @change="${this.updateMyCur}">
-                  </label>
-                  <span class="preview">
-                    ${this._myCurThreshold === 16 ? 100 : 50 + (this._myCurThreshold - 1) * (50/15)}%
-                  </span>
-                </div>
-                <div>
-                  <label>
-                    <span>Minimum Participation</span>
-                    <input type="range" name="MinParticipation" min="1" max="16" step="1" value="${this._myCurMinParticipation}" @change="${this.updateMyCur}">
-                  </label>
-                  <span class="preview">
-                    ${((this._myCurMinParticipation - 1) / 15) * 100}%
-                  </span>
-                </div>
-                <button @click="${this.configure}">Cancel</button>
-                <button type="submit">Save Configuration</button>
-              </fieldset>
-            </form>
-          `}
+          <div>
+            ${!this._showConfigOptions ? html`
+              <button @click="${this.configure}">Configure my Parameters</button>
+              ${myConfig.duration > 0 ? html`
+                <button @click="${this.unsetConfig}" class="secondary">Remove my configuration settings</button>
+              ` : ''}
+            ` : html`
+              <form @submit="${this.setConfig}">
+                <fieldset>
+                  <legend>My Proposal Configuration Ballot</legend>
+                  <div>
+                    <label>
+                      <span>Duration</span>
+                      <input type="range" name="Duration" min="1" max="16" step="1" value="${this._myCurDuration}" @change="${this.updateMyCur}">
+                    </label>
+                    <span class="preview">
+                      ${this._myCurDuration} ${this._myCurDuration === 1 ? 'day' : 'days'}
+                    </span>
+                  </div>
+                  <div>
+                    <label>
+                      <span>Majority Threshold</span>
+                      <input type="range" name="Threshold" min="1" max="16" step="1" value="${this._myCurThreshold}" @change="${this.updateMyCur}">
+                    </label>
+                    <span class="preview">
+                      ${this._myCurThreshold === 16 ? 100 : Math.round((50 + (this._myCurThreshold - 1) * (50/15))* 100 )/100}%
+                    </span>
+                  </div>
+                  <div>
+                    <label>
+                      <span>Minimum Participation</span>
+                      <input type="range" name="MinParticipation" min="1" max="16" step="1" value="${this._myCurMinParticipation}" @change="${this.updateMyCur}">
+                    </label>
+                    <span class="preview">
+                      ${Math.round(((this._myCurMinParticipation - 1) / 15) * 10000) / 100}%
+                    </span>
+                  </div>
+                  <button type="submit">Save Configuration</button>
+                  <button @click="${this.configure}" class="secondary">Cancel</button>
+                </fieldset>
+              </form>
+            `}
+          </div>
         </dd>
       </dl>
       <h3>Proposals</h3>
@@ -316,7 +330,9 @@ export class ElectionsByMedianDetails extends BaseElement {
               </div>
             `)}
           ` : ''}
-          <button type="submit">Submit Proposal</button>
+          <div class="commands">
+            <button type="submit">Submit Proposal</button>
+          </div>
         </fieldset>
       </form>
       <paginated-list
@@ -343,6 +359,7 @@ export class ElectionsByMedianDetails extends BaseElement {
   async propose(event) {
     event.preventDefault();
     const proposalMethod = ElectionsByMedianDetails.proposalMethods[this._newProposalMethod];
+    if(!proposalMethod) return;
     const args = proposalMethod.args.map((arg, index) => event.target.elements['arg_' + index].value);
 
     const groupInterface = await this.loadContract('IVerifiedGroup');

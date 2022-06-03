@@ -12,15 +12,21 @@ export class AppRouter extends BaseElement {
   static routes = [
     { regex: /^\/group\/(0x[a-f0-9]{40})$/i,
       template: match => html`
-        <group-details address="${match[1]}"></group-details>` },
+        <main><group-details address="${match[1]}"></group-details></main>` },
     { regex: /^\/group\/(0x[a-f0-9]{40})\/deploy-child$/i,
       template: match => html`
-        <deploy-child groupAddress="${match[1]}"></deploy-child>` },
+        <main><deploy-child groupAddress="${match[1]}"></deploy-child></main>` },
     { regex: /^\/group\/(0x[a-f0-9]{40})\/([^\/]+)\/(0x[a-f0-9]{40})$/i,
       template: match => html`
-        <child-details groupAddress="${match[1]}" childType="${match[2]}" childAddress="${match[3]}"></child-details>` },
+        <main><child-details groupAddress="${match[1]}" childType="${match[2]}" childAddress="${match[3]}"></child-details></main>` },
+    { regex: /^\/groups$/,
+      template: () => html`<main><group-list></group-list></main>` },
+    { regex: /^\/verify$/,
+      template: () => html`<main><app-verify></app-verify></main>` },
+    { regex: /^\/docs/,
+      template: () => html`<main><app-docs></app-docs></main>` },
     { regex: /^\//, // catch all others
-      template: () => html`<group-list></group-list>` }
+      template: () => html`<app-home></app-home>` },
   ];
   constructor() {
     super();

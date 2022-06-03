@@ -62,27 +62,35 @@ export class DeployChild extends BaseElement {
   }
   render() {
     return html`
-      <a @click="${this.route}" href="/">Home</a>
-      <a @click="${this.route}" href="/group/${this.groupAddress}">Group Details</a>
-      <h2>Deploy a new child contract for group ${this.groupAddress}</h2>
+      <nav class="breadcrumbs">
+        <ol>
+          <li><a @click="${this.route}" href="/groups">Groups</a></li>
+          <li><a @click="${this.route}" href="/group/${this.groupAddress}">${this.ellipseAddress(this.groupAddress)}</a></li>
+          <li>Deploy New Child Contract</li>
+        </ol>
+      </nav>
+      <h2>Deploy New Child Contract for Group ${this.ellipseAddress(this.groupAddress)}</h2>
       ${this._loading ? html`
         <p>Loading...</p>
       ` : html`
         <form @submit=${this.submit}>
           <fieldset>
-            <legend>Select Contract Type to Deploy</legend>
+            <legend>Child Contract Options</legend>
             <label>
+              <span>Select Contract Type to Deploy</span>
               <select ${ref(this.selType)} @change="${this.selTypeChanged}">
                 ${Object.keys(DeployChild.types).map(typeName => html`
                   <option>${typeName}</option>
                 `)}
               </select>
             </label>
+            <div ${ref(this.childOptions)}>
+              ${DeployChild.types[this._selTypeValue].tpl}
+            </div>
+            <div class="commands">
+              <button type="submit">Deploy</button>
+            </div>
           </fieldset>
-          <div ${ref(this.childOptions)}>
-            ${DeployChild.types[this._selTypeValue].tpl}
-          </div>
-          <button type="submit">Deploy</button>
         </form>
       `}
     `;
