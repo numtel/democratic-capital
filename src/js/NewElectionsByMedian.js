@@ -13,7 +13,7 @@ export class NewElectionsByMedian extends BaseElement {
   static available = {
     register: 'address',
     unregister: 'address',
-    ban: 'address',
+    ban: 'address,uint256',
     setVerifications: 'address',
     allowContract: 'address',
     disallowContract: 'address',

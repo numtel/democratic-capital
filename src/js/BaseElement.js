@@ -14,9 +14,12 @@ export class BaseElement extends LitElement {
     window.history.pushState({}, '', newPath);
     document.querySelector('app-router').path = newPath;
   }
-  async loadContract(abiFilename, address) {
+  async loadAbi(abiFilename) {
     const response = await fetch('/' + abiFilename + '.abi');
-    const abi = await response.json();
+    return await response.json();
+  }
+  async loadContract(abiFilename, address) {
+    const abi = await this.loadAbi(abiFilename);
     await app.initialized;
     return new app.web3.eth.Contract(abi, address);
   }

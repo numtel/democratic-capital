@@ -1,4 +1,6 @@
 import {html, css} from 'lit';
+import {ifDefined} from 'lit/directives/if-defined.js';
+import abiDecoder from 'abi-decoder';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 
@@ -29,7 +31,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     ban: {
       args: [
         { type: 'address', note: 'User to ban' },
-        { type: 'timestamp', note: 'Ban expiration time' },
+        { type: 'uint256', note: 'Ban expiration time' },
       ],
       note: 'Ban a user from the group. They will not be able to register again using the same passport until the ban expires.',
     },
@@ -110,11 +112,14 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   async fetchAllProposals() {
     const count  = Number(await this.contract.methods.count().call());
+    const groupAbi = await this.loadAbi('IVerifiedGroup');
+    abiDecoder.addABI(groupAbi);
     const out = [];
     for(let i = 0; i < count; i++) {
       const key = await this.contract.methods.atIndex(i).call();
       const details = await this.contract.methods.details(key).call();
       details.key = key;
+      details.dataDecoded = abiDecoder.decodeMethod(details.data);
       out.push(details);
     }
     return out;
@@ -128,7 +133,6 @@ export class ElectionsByMedianDetails extends BaseElement {
       const timeLeft = Number(proposal.endTime) - this._details.currentTime;
       const rawThreshold = proposal._threshold;
       const threshold = rawThreshold === 16 ? 100 : 50 + (rawThreshold - 1) * (50/15);
-      const dataMethod = this.reverseMethods[proposal.data.slice(0, 10)];
       proposalsTpl.push(html`
         <li>
           <dl>
@@ -143,7 +147,18 @@ export class ElectionsByMedianDetails extends BaseElement {
               Election Completed
             `}
             <dt>Invoke Data</dt>
-            <dd>${dataMethod} ${proposal.data}</dd>
+            <dd>
+              ${proposal.dataDecoded.name}
+              <ul>
+                ${proposal.dataDecoded.params.map(param => html`
+                  <li>
+                    <span class="name">${param.name}</span>
+                    <span class="value">${param.value}</span>
+                    <span class="type">${param.type}</span>
+                  </li>
+                `)}
+              </ul>
+            </dd>
             <dt>Threshold</dt>
             <dd>${threshold}%</dd>
             <dt>Minimum Voters</dt>
@@ -168,6 +183,7 @@ export class ElectionsByMedianDetails extends BaseElement {
         </li>
       `);
     }
+
     const configMedians = this.proposalConfigView(this._details.configMedians);
     const myConfig = this.proposalConfigView(this._details.myConfig);
     const availableMethods = this._details.invokePrefixes.length > 0
@@ -259,7 +275,7 @@ export class ElectionsByMedianDetails extends BaseElement {
               <select @change="${this.setNewProposalMethod}">
                 <option></option>
                 ${availableMethods.map(method => html`
-                  <option>${method}</option>
+                  <option selected="${ifDefined(this._newProposalMethod === method ? true : undefined)}">${method}</option>
                 `)}
               </select>
             </label>
