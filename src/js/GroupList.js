@@ -1,61 +1,75 @@
 import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
+import {PaginatedList} from './PaginatedList.js';
 
 export class GroupList extends BaseElement {
   static properties = {
     _groups: {state: true},
     _loading: {state: true},
+    _updateList: {state:true},
   };
   constructor() {
     super();
     this._loading = true;
+    this._updateList = 0;
     this.contract = null;
-    this._groups = [];
   }
   async connectedCallback() {
     super.connectedCallback();
+    this._loading = true;
     this.contract = await this.loadContract(
       'VerifiedGroupFactory', window.config.contracts.VerifiedGroupFactory.address);
-    await this.fetchList();
+    this._loading = false;
   }
   render() {
     return html`
       <button @click="${this.createGroup}">Create New Group</button>
       ${this._loading ? html`
         <p>Loading...</p>
-      ` : this._groups.length === 0 ? html`
-        <p>No groups yet!</p>
       ` : html`
-        <ul>
-          ${this._groups.map(group => html`
-            <li><a @click="${this.route}" href="/group/${group}">${group}</a></li>
-          `)}
-        </ul>
+        <paginated-list
+          updateIndex="${this._updateList}"
+          .count=${this.groupCount.bind(this)}
+          .fetchOne=${this.fetchGroup.bind(this)}
+          .renderer=${this.renderGroups.bind(this)}
+          .emptyRenderer=${this.renderEmpty.bind(this)}
+          .loadingRenderer=${this.renderLoading.bind(this)}
+        ></paginated-list>
       `}
     `;
   }
-  // TODO pagination element
-  async fetchList() {
-    this._loading = true;
-    this._groups.splice(0, this._groups.length);
-    let fetchError = false;
-    while(!fetchError) {
-      try {
-        this._groups.push(
-          await this.contract.methods.groups(this._groups.length).call());
-      } catch(error) {
-        fetchError = true;
-      }
-    }
-    this._loading = false;
+  async groupCount() {
+    return this.contract.methods.count().call();
+  }
+  async fetchGroup(index) {
+    return await this.contract.methods.groups(index).call();
+  }
+  renderGroups(groups) {
+    return html`
+      <ul>
+        ${groups.map(group => html`
+          <li><a @click="${this.route}" href="/group/${group}">${group}</a></li>
+        `)}
+      </ul>
+    `;
+  }
+  renderEmpty() {
+    return html`
+      <p>No Groups Yet!</p>
+    `;
+  }
+  renderLoading() {
+    return html`
+      <p>Loading...</p>
+    `;
   }
   async createGroup() {
     const contract = await this.contract;
     try {
       await this.send(contract.methods.createGroup(
         window.config.contracts.MockVerification.address));
-      await this.fetchList();
+      this._updateList++;
     } catch(error) {
       console.error(error);
       alert(error.reason);
