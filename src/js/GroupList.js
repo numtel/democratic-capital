@@ -40,7 +40,7 @@ export class GroupList extends BaseElement {
     `;
   }
   async groupCount() {
-    return this.contract.methods.count().call();
+    return Number(await this.contract.methods.count().call());
   }
   async fetchGroup(index) {
     return await this.contract.methods.groups(index).call();
