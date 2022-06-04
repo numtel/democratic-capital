@@ -78,8 +78,7 @@ export class GroupList extends BaseElement {
         window.config.contracts.MockVerification.address, name));
       this._updateList++;
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
 }

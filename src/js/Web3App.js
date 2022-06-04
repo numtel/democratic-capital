@@ -16,7 +16,7 @@ export class Web3App {
     if(!this.web3 && localStorage.getItem("WEB3_CONNECT_CACHED_PROVIDER")) {
       await this.connect();
       return;
-    } else {
+    } else if(!this.web3) {
       // Connect to rpc directly if no wallet connected
       this.web3 = new Web3(window.config.rpc);
       this.web3.eth.handleRevert = true;

@@ -113,6 +113,10 @@ contract ElectionsByMedian {
     passing = elections[key].passing();
   }
 
+  function voteValue(address key, address voter) external view returns(uint8) {
+    return elections[key].votesByAccount[voter];
+  }
+
   function vote(address key, bool inSupport) external {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');

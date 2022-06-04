@@ -47,8 +47,7 @@ export class DeployChild extends BaseElement {
       const events = (await this.send(factory.methods.deployNew(...args))).events;
       await this.route('/group/' + this.groupAddress + '/' + this._selTypeValue + '/' + events.NewDeployment.returnValues.deployed);
     } catch(error) {
-      console.error(error);
-      alert(error.reason || error.message || error);
+      this.displayError(error);
     }
   }
   selType(select) {

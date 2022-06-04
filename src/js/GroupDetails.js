@@ -55,6 +55,8 @@ export class GroupDetails extends BaseElement {
     const interfaceIdContract = await this.loadContract('IThisInterfaceId', address);
     let interfaceId;
     try {
+      // estimateGas first because this error can be caught? metamask/web3js issue?
+      await interfaceIdContract.methods.thisInterfaceId().estimateGas();
       interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
     } catch(error) {
       // Doesn't matter, just checking
@@ -123,8 +125,7 @@ export class GroupDetails extends BaseElement {
         await this.send(this.contract.methods.register(address));
         await this.fetchDetails();
       } catch(error) {
-        console.error(error);
-        alert(error.reason);
+        this.displayError(error);
       }
     }
   }
@@ -135,8 +136,7 @@ export class GroupDetails extends BaseElement {
         await this.send(this.contract.methods.unregister(address));
         await this.fetchDetails();
       } catch(error) {
-        console.error(error);
-        alert(error.reason);
+        this.displayError(error);
       }
     }
   }
@@ -147,8 +147,7 @@ export class GroupDetails extends BaseElement {
         await this.send(this.contract.methods.allowContract(address));
         await this.fetchDetails();
       } catch(error) {
-        console.error(error);
-        alert(error.reason);
+        this.displayError(error);
       }
     }
   }
@@ -159,8 +158,7 @@ export class GroupDetails extends BaseElement {
         await this.send(this.contract.methods.disallowContract(address));
         await this.fetchDetails();
       } catch(error) {
-        console.error(error);
-        alert(error.reason);
+        this.displayError(error);
       }
     }
   }
@@ -171,8 +169,7 @@ export class GroupDetails extends BaseElement {
         await this.send(this.contract.methods.setName(name));
         await this.fetchDetails();
       } catch(error) {
-        console.error(error);
-        alert(error.reason);
+        this.displayError(error);
       }
     }
   }

@@ -13,6 +13,7 @@ export class BaseElement extends LitElement {
     const newPath = typeof event === 'string' ? event : event.target.attributes.href.value;
     window.history.pushState({}, '', newPath);
     document.querySelector('app-router').path = newPath;
+    window.scrollTo(0, 0);
   }
   open(event) {
     event.preventDefault && event.preventDefault();
@@ -47,15 +48,26 @@ export class BaseElement extends LitElement {
     }
     let retval;
     try {
-      retval = await method.send({ from: app.accounts[0], gas: 20000000 });
+      const gas = await method.estimateGas({ from: app.accounts[0] });
+      retval = await method.send({ from: app.accounts[0], gas });
     } catch(error) {
-      if(error.reason === 'Not Verified') {
+      const internalPrefix = 'Internal JSON-RPC error.\n';
+      if(error.message.startsWith(internalPrefix)) {
+        const parsed = JSON.parse(error.message.slice(internalPrefix.length));
+        error.reason = parsed.reason || (parsed.data && parsed.data.reason);
+      }
+      if(error.reason === 'Not Verified'
+          || (error.data && error.data.reason === 'Not Verified')) {
         this.route('/verify');
       } else {
         throw error;
       }
     }
     return retval;
+  }
+  displayError(error) {
+    console.error(error);
+    alert(error.reason || (error.data && error.data.reason) || error.message || error);
   }
 }
 

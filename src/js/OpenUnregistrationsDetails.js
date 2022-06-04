@@ -12,8 +12,7 @@ export class OpenUnregistrationsDetails extends BaseElement {
       await this.send(contract.methods.unregister());
       this.route('/group/' + this.groupAddress);
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
   render() {

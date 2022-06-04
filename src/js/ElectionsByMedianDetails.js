@@ -133,6 +133,9 @@ export class ElectionsByMedianDetails extends BaseElement {
     const details = await this.contract.methods.details(key).call();
     details.key = key;
     details.dataDecoded = abiDecoder.decodeMethod(details.data);
+    details.myVote = app.connected
+      ? Number(await this.contract.methods.voteValue(key, app.accounts[0]).call())
+      : null;
     return details;
   }
   renderProposals(proposals) {
@@ -183,6 +186,8 @@ export class ElectionsByMedianDetails extends BaseElement {
                 : proposal.processed ? 'Proposal passed and already processed'
                   : proposal.passed ? 'Proposal passed and awaiting processing'
                     : 'Proposal failed'}
+              ${proposal.myVote === 1 ? '(Voted in Support)' :
+                proposal.myVote === 2 ? '(Voted Against)' : ''}
             </dd>
             <dt>Support Level</dt>
             <dd>${Math.round(supportLevel* 10000) / 100}% (Minimum: ${Math.round(threshold * 100) / 100}%)</dd>
@@ -193,7 +198,7 @@ export class ElectionsByMedianDetails extends BaseElement {
             <dt>End Time</dt>
             <dd>${(new Date(proposal.endTime * 1000)).toString()}</dd>
           </dl>
-          ${timeLeft > 0 ? html`
+          ${timeLeft > 0 && proposal.myVote === 0 ? html`
             <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="true">Vote in Support</button>
             <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="false">Vote Against</button>
           ` : proposal.passed && !proposal.processed ? html`
@@ -358,8 +363,7 @@ export class ElectionsByMedianDetails extends BaseElement {
       await this.send(this.contract.methods.vote(key, inSupport));
       this._updateProposals++;
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
   async propose(event) {
@@ -374,8 +378,7 @@ export class ElectionsByMedianDetails extends BaseElement {
       await this.send(this.contract.methods.propose(invokeData));
       this._updateProposals++;
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
   async process(event) {
@@ -384,8 +387,7 @@ export class ElectionsByMedianDetails extends BaseElement {
       await this.send(this.contract.methods.process(key));
       this._updateProposals++;
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
   updateMyCur(event) {
@@ -401,8 +403,7 @@ export class ElectionsByMedianDetails extends BaseElement {
       await this.loadDetails();
       this._showConfigOptions = false;
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
   async unsetConfig(event) {
@@ -411,8 +412,7 @@ export class ElectionsByMedianDetails extends BaseElement {
       await this.send(this.contract.methods.unsetProposalConfig(app.accounts[0]));
       await this.loadDetails();
     } catch(error) {
-      console.error(error);
-      alert(error.reason);
+      this.displayError(error);
     }
   }
   configure(event) {

@@ -10,6 +10,7 @@ interface IElectionsByMedian {
     uint8 _threshold, uint minVoters, bool processed,
     uint supporting, uint against, bool passed, bool passing
   );
+  function voteValue(address key, address voter) external view returns(uint8);
   function vote(address key, bool inSupport) external;
   function process(address key) external;
   function setProposalConfig(

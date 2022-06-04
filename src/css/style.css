@@ -6,7 +6,7 @@
 body { background:#fff; font-family: Inter, sans-serif; margin:0; padding: 0; }
 a { color: #ff0420; }
 
-#test {background-image: url("masthead.svg"); background-repeat: no-repeat no-repeat; background-color: #eee; background-position: 0 0; background-size: cover; height: 250px;padding:140px 0 0 30px; }
+#test {background-image: url("masthead.svg"); background-repeat: no-repeat no-repeat; background-color: #eee; background-position: 0 0; background-size: cover; height: 250px;padding:140px 0 0 15px; margin: -20px -10px 0 -10px; }
 #test span { display:block; font-size: 30px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000; }
 header { position:sticky; background: #fff; top: 0; display: flex; justify-content:space-between; box-shadow: 0 0 7px #0007;}
 header h1 { font-weight: bold; margin:0; padding: 0 40px; font-size: 30px; line-height: 60px; text-transform:uppercase; font-style:italic; letter-spacing: -1px; background: linear-gradient(90deg, #ff0420, #ffe300); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
