@@ -7,6 +7,7 @@ using AddressSet for AddressSet.Set;
 contract VerifiedGroup {
   IVerification public verifications;
   uint public registeredCount;
+  string public name;
   mapping(address => uint) public joinedTimestamps;
   mapping(bytes32 => uint) public activeBans;
   AddressSet.Set allowedContracts;
@@ -15,6 +16,7 @@ contract VerifiedGroup {
   AddressSet.Set registrationHookSet;
   AddressSet.Set unregistrationHookSet;
 
+  event NameChanged(string oldName, string newName);
   event VerificationContractChanged(address indexed oldContract, address indexed newContract);
   event Registration(address indexed account);
   event Unregistered(address indexed account);
@@ -28,11 +30,12 @@ contract VerifiedGroup {
   event UnregisterHookSuccess(address indexed contractAddress, address indexed account);
   event UnregisterHookFailure(address indexed contractAddress, address indexed account);
 
-  constructor(address _verifications, address _firstAccount) {
+  constructor(address _verifications, address _firstAccount, string memory _name) {
     require(_verifications != address(0), 'Verifications cannot be 0 address');
     verifications = IVerification(_verifications);
 
     allowedContracts.insert(address(this));
+    name = _name;
 
     // Contract creator becomes first member automatically
     // in order to prevent any bots from taking over before it can start
@@ -64,6 +67,11 @@ contract VerifiedGroup {
   }
 
   // Functions that can be invoked by allowed contracts
+  function setName(string memory _name) external onlyAllowed {
+    emit NameChanged(name, _name);
+    name = _name;
+  }
+
   function register(address account) public onlyAllowed {
     require(isVerified(account), 'Not Verified');
     require(!isRegistered(account), 'Already Registered');

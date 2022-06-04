@@ -25,6 +25,7 @@ export class GroupDetails extends BaseElement {
     this._loading = true;
     this._details.error = false;
     try {
+      this._details.name = await this.contract.methods.name().call();
       this._details.isMember = app.connected ? await this.contract.methods.isRegistered(app.accounts[0]).call() : false;
       this._details.memberCount = Number(await this.contract.methods.registeredCount().call());
       this._details.factories =  [];
@@ -163,6 +164,18 @@ export class GroupDetails extends BaseElement {
       }
     }
   }
+  async setName() {
+    const name = prompt('New group name?');
+    if(name) {
+      try {
+        await this.send(this.contract.methods.setName(name));
+        await this.fetchDetails();
+      } catch(error) {
+        console.error(error);
+        alert(error.reason);
+      }
+    }
+  }
   render() {
     const adminMode = (this._details.isMember && this._details.memberCount === 1)
       || (this._details.allowedContracts
@@ -175,7 +188,7 @@ export class GroupDetails extends BaseElement {
           <li>${this.ellipseAddress(this.address)}</li>
         </ol>
       </nav>
-      <h2>Group <a href="${this.explorer(this.address)}" @click="${this.open}">${this.ellipseAddress(this.address)}</a></h2>
+      <h2>${this._details.name} <a href="${this.explorer(this.address)}" @click="${this.open}">${this.ellipseAddress(this.address)}</a></h2>
       ${this._loading ? html`
         <p>Loading...</p>
       ` : this._details.error ? html`
@@ -222,6 +235,7 @@ export class GroupDetails extends BaseElement {
           <button @click="${this.unregister}">Register user...</button>
           <button @click="${this.allowContract}">Allow Contract...</button>
           <button @click="${this.disallowContract}">Disallow Contract...</button>
+          <button @click="${this.setName}">Set Name...</button>
         ` : ''}
       `}
     `;

@@ -43,13 +43,18 @@ export class GroupList extends BaseElement {
     return Number(await this.contract.methods.count().call());
   }
   async fetchGroup(index) {
-    return await this.contract.methods.groups(index).call();
+    const address = await this.contract.methods.groups(index).call();
+    const group = await this.loadContract('IVerifiedGroup', address);
+    const name = await group.methods.name().call();
+    const memberCount = Number(await group.methods.registeredCount().call());
+    return { address, name, memberCount };
+
   }
   renderGroups(groups) {
     return html`
       <ul>
         ${groups.map(group => html`
-          <li><a @click="${this.route}" href="/group/${group}">${group}</a></li>
+          <li><a @click="${this.route}" href="/group/${group.address}">${group.name} (${this.ellipseAddress(group.address)}) ${group.memberCount} ${group.memberGroup === 1 ? 'member' : 'members'}</a></li>
         `)}
       </ul>
     `;
@@ -65,10 +70,12 @@ export class GroupList extends BaseElement {
     `;
   }
   async createGroup() {
+    const name = prompt('Group name?');
+    if(!name) return;
     const contract = await this.contract;
     try {
       await this.send(contract.methods.createGroup(
-        window.config.contracts.MockVerification.address));
+        window.config.contracts.MockVerification.address, name));
       this._updateList++;
     } catch(error) {
       console.error(error);

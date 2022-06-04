@@ -15,6 +15,7 @@ export class NewElectionsByMedian extends BaseElement {
     unregister: 'address',
     ban: 'address,uint256',
     setVerifications: 'address',
+    setName: 'string',
     allowContract: 'address',
     disallowContract: 'address',
     invoke: 'address,bytes',

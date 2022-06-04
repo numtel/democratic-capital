@@ -70,6 +70,9 @@ export class AppHome extends BaseElement {
         <p>Every user of Democratic Capital must verify as a unique human  on <a href="https://coinpassport.net/">Coinpassport</a>. This ensures that votes are fair and not determined solely by who has the biggest wallet.</p>
         <h3>Unlimited Groups</h3>
         <p>Create a group for your friends, or for the next great social movement. Either way, you'll have the ability to decide collectively which contracts with which to transact.</p>
+          <div class="commands">
+            <button @click="${this.route}" href="/groups">Browse Groups</button>
+          </div>
       </main>
     `;
   }
@@ -125,6 +128,7 @@ export class AppDocs extends BaseElement {
           </tr>
         </tbody>
       </table>
+      <p>It is expected that any group may have multiple elections contracts filtered to different methods in order to use different parameters for each type. For example, longer duration and higher majority threshold for elections of allowContract than for register.</p>
       <h3>Types of Elections</h3>
       <ul>
         <li>

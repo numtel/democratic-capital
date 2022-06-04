@@ -43,6 +43,12 @@ export class ElectionsByMedianDetails extends BaseElement {
       ],
       note: 'Change the contract address used for verification data.',
     },
+    setName: {
+      args: [
+        { type: 'string', note: 'Group Name' },
+      ],
+      note: 'Change the name label for the group.',
+    },
     allowContract: {
       args: [
         { type: 'address', note: 'Contract to Allow' },

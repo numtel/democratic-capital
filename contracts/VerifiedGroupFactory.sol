@@ -8,8 +8,8 @@ contract VerifiedGroupFactory {
 
   event NewGroup(address group);
 
-  function createGroup(address verifications) external {
-    VerifiedGroup newGroup = new VerifiedGroup(verifications, msg.sender);
+  function createGroup(address verifications, string memory name) external {
+    VerifiedGroup newGroup = new VerifiedGroup(verifications, msg.sender, name);
     groups.push(address(newGroup));
     emit NewGroup(address(newGroup));
   }

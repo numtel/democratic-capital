@@ -6,7 +6,8 @@
 body { background:#fff; font-family: Inter, sans-serif; margin:0; padding: 0; }
 a { color: #ff0420; }
 
-#test {background-image: url("masthead.svg"); background-repeat: no-repeat no-repeat; background-color: #eee; background-position: 0 0; background-size: cover; height: 250px; font-size: 30px; padding:140px 0 0 30px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000;}
+#test {background-image: url("masthead.svg"); background-repeat: no-repeat no-repeat; background-color: #eee; background-position: 0 0; background-size: cover; height: 250px;padding:140px 0 0 30px; }
+#test span { display:block; font-size: 30px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000; }
 header { position:sticky; background: #fff; top: 0; display: flex; justify-content:space-between; box-shadow: 0 0 7px #0007;}
 header h1 { font-weight: bold; margin:0; padding: 0 40px; font-size: 30px; line-height: 60px; text-transform:uppercase; font-style:italic; letter-spacing: -1px; background: linear-gradient(90deg, #ff0420, #ffe300); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 header h1 a { text-decoration: none; }
@@ -38,10 +39,12 @@ fieldset label span::after { content: ":"; }
 fieldset label input { width: 100%; }
 fieldset label input[type="range"] { max-width: 200px; }
 .commands { text-align:center; }
-button { margin: 10px 5px; padding: 10px; background:#d7041c; border: 0; color: #fff; font-weight: bold; cursor:pointer; border-radius:10px; font-size: 110%; }
-button.secondary { padding: 5px 10px; font-size: 100%; background: #666; }
+button { margin: 10px 5px; padding: 10px; background:#d7041c; border: 0; color: #fff; font-weight: bold; cursor:pointer; border-radius:10px; font-size: 110%; border-bottom: 3px solid #8a0918; }
+button.secondary { padding: 5px 10px; font-size: 100%; background: #666; border-bottom-color: #333;}
 button:hover { background: #ff0420; }
-button:active { background: #bf1023; }
+button.secondary:hover { background: #777; }
+button:active { background: #bf1023; border-bottom: 0; border-top:3px solid #eee; }
+button.secondary:active { background: #444; }
 
 .invoke-params { list-style:none; }
 .invoke-params .name { font-style: italic; }

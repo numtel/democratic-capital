@@ -2,6 +2,8 @@
 pragma solidity 0.8.13;
 
 interface IVerifiedGroup {
+  function name() external view returns(string memory);
+  function setName(string memory _name) external;
   function joinedTimestamps(address account) external view returns(uint);
   function registeredCount() external view returns(uint);
   function isVerified(address account) external view returns(bool);
