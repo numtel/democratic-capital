@@ -1,7 +1,6 @@
 import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
-import {DeployChild} from './DeployChild.js';
 import {PaginatedList} from './PaginatedList.js';
 
 export class GroupDetails extends BaseElement {
@@ -30,8 +29,8 @@ export class GroupDetails extends BaseElement {
       this._details.memberCount = Number(await this.contract.methods.registeredCount().call());
       this._details.factories =  [];
       this._details.hasChildren = false;
-      for(let typeName of Object.keys(DeployChild.types)) {
-        const factoryName = DeployChild.types[typeName].factory;
+      for(let typeName of Object.keys(this.childTypes)) {
+        const factoryName = this.childTypes[typeName].factory;
         const count = await this.factoryCount(factoryName);
         if(count) this._details.hasChildren = true;
         this._details.factories.push({
@@ -52,20 +51,8 @@ export class GroupDetails extends BaseElement {
   async fetchAllowed(index) {
     const address = await this.contract.methods.allowedContractIndex(index).call();
     const self = address === this.address;
-    const interfaceIdContract = await this.loadContract('IThisInterfaceId', address);
-    let interfaceId;
-    try {
-      // estimateGas first because this error can be caught? metamask/web3js issue?
-      await interfaceIdContract.methods.thisInterfaceId().estimateGas();
-      interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
-    } catch(error) {
-      // Doesn't matter, just checking
-    }
-    let interfaceName;
-    if(interfaceId in window.config.interfaceIds) {
-      interfaceName = window.config.interfaceIds[interfaceId];
-    }
-    return { address, self, interfaceId, interfaceName };
+    const interfaceName = await this.childType(address);
+    return { address, self, interfaceName };
   }
   renderAllowed(allowed) {
     return html`

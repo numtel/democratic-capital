@@ -12,25 +12,11 @@ export class DeployChild extends BaseElement {
     _loading: {state: true},
     _selTypeValue: {state: true},
   };
-  static types = {
-    ElectionsByMedian: {
-      factory: 'ElectionsByMedianFactory',
-      tpl: html`<new-elections-by-median></new-elections-by-median>`,
-    },
-    OpenRegistrations: {
-      factory: 'OpenRegistrationsFactory',
-      tpl: html`<new-open-registrations></new-open-registrations>`,
-    },
-    OpenUnregistrations: {
-      factory: 'OpenUnregistrationsFactory',
-      tpl: html`<new-open-unregistrations></new-open-unregistrations>`,
-    },
-  };
   constructor() {
     super();
     this._loading = true;
     this._selType = null;
-    this._selTypeValue = Object.keys(DeployChild.types)[0];
+    this._selTypeValue = Object.keys(this.childTypes)[0];
     this._childOptions = null;
   }
   async connectedCallback() {
@@ -42,7 +28,7 @@ export class DeployChild extends BaseElement {
     event.preventDefault();
     try {
       const args = [ this.groupAddress ].concat(this._childOptions.children[0].extractValues());
-      const factoryName = DeployChild.types[this._selTypeValue].factory;
+      const factoryName = this.childTypes[this._selTypeValue].factory;
       const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
       const events = (await this.send(factory.methods.deployNew(...args))).events;
       await this.route('/group/' + this.groupAddress + '/' + this._selTypeValue + '/' + events.NewDeployment.returnValues.deployed);
@@ -78,13 +64,13 @@ export class DeployChild extends BaseElement {
             <label>
               <span>Select Contract Type to Deploy</span>
               <select ${ref(this.selType)} @change="${this.selTypeChanged}">
-                ${Object.keys(DeployChild.types).map(typeName => html`
+                ${Object.keys(this.childTypes).map(typeName => html`
                   <option>${typeName}</option>
                 `)}
               </select>
             </label>
             <div ${ref(this.childOptions)}>
-              ${DeployChild.types[this._selTypeValue].tpl}
+              ${this.childTypes[this._selTypeValue].tpl}
             </div>
             <div class="commands">
               <button type="submit">Deploy</button>

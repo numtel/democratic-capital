@@ -1,7 +1,22 @@
 import {html, css, LitElement} from 'lit';
 import {app} from './Web3App.js';
+import abiDecoder from 'abi-decoder';
 
 export class BaseElement extends LitElement {
+  childTypes = {
+    ElectionsByMedian: {
+      factory: 'ElectionsByMedianFactory',
+      tpl: html`<new-elections-by-median></new-elections-by-median>`,
+    },
+    OpenRegistrations: {
+      factory: 'OpenRegistrationsFactory',
+      tpl: html`<new-open-registrations></new-open-registrations>`,
+    },
+    OpenUnregistrations: {
+      factory: 'OpenUnregistrationsFactory',
+      tpl: html`<new-open-unregistrations></new-open-unregistrations>`,
+    },
+  };
   constructor() {
     super();
   }
@@ -23,14 +38,57 @@ export class BaseElement extends LitElement {
   explorer(address) {
     return window.config.blockExplorer + '/address/' + address;
   }
-  async loadAbi(abiFilename) {
+  async loadAbi(abiFilename, onlyInvokable) {
     const response = await fetch('/' + abiFilename + '.abi');
-    return await response.json();
+    const abi = await response.json();
+    if(onlyInvokable) {
+      return abi.filter(method =>
+        method.stateMutability === 'nonpayable' && ('name' in method));
+    }
+    return abi;
+  }
+  async decodeAbiFunction(abiFilename, data) {
+    const groupAbi = await this.loadAbi(abiFilename);
+    abiDecoder.removeABI(abiDecoder.getABIs());
+    abiDecoder.addABI(groupAbi);
+    return abiDecoder.decodeMethod(data)
   }
   async loadContract(abiFilename, address) {
     const abi = await this.loadAbi(abiFilename);
     await app.initialized;
     return new app.web3.eth.Contract(abi, address);
+  }
+  async allGroupChildren(groupAddress) {
+    const out = {}
+    for(let typeName of Object.keys(this.childTypes)) {
+      const factoryName = this.childTypes[typeName].factory;
+      const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
+      const count = Number(await factory.methods.groupCount(groupAddress).call());
+      if(count) {
+        out[typeName] = [];
+        for(let i = 0; i < count; i++) {
+          const thisChild = await factory.methods.deployedByGroup(groupAddress, i).call();
+          out[typeName].push(thisChild);
+        }
+      }
+    }
+    return out;
+  }
+  async childType(address) {
+    const interfaceIdContract = await this.loadContract('IThisInterfaceId', address);
+    let interfaceId;
+    try {
+      // estimateGas first because this error can be caught? metamask/web3js issue?
+      await interfaceIdContract.methods.thisInterfaceId().estimateGas();
+      interfaceId = await interfaceIdContract.methods.thisInterfaceId().call();
+    } catch(error) {
+      // Doesn't matter, just checking
+    }
+    let interfaceName;
+    if(interfaceId in window.config.interfaceIds) {
+      interfaceName = window.config.interfaceIds[interfaceId];
+    }
+    return interfaceName;
   }
   isAddress(address) {
     return typeof address === 'string' && address.match(/^0x[a-f0-9]{40}$/i);

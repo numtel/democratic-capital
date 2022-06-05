@@ -1,6 +1,6 @@
 import {html, css} from 'lit';
 import {ifDefined} from 'lit/directives/if-defined.js';
-import abiDecoder from 'abi-decoder';
+import {ref} from 'lit/directives/ref.js';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {PaginatedList} from './PaginatedList.js';
@@ -15,59 +15,12 @@ export class ElectionsByMedianDetails extends BaseElement {
     _myCurThreshold: {state: true},
     _myCurMinParticipation: {state: true},
     _newProposalMethod: {state: true},
+    _proposalMethodLoading: {state: true},
     _updateProposals: {state: true},
-  };
-  static proposalMethods = {
-    register: {
-      args: [
-        { type: 'address', note: 'User to add' }
-      ],
-      note: 'Add a user to the group. (Must be verified on Coinpassport.)',
-    },
-    unregister: {
-      args: [
-        { type: 'address', note: 'User to remove' }
-      ],
-      note: 'Remove a user from the group.',
-    },
-    ban: {
-      args: [
-        { type: 'address', note: 'User to ban' },
-        { type: 'uint256', note: 'Ban expiration time' },
-      ],
-      note: 'Ban a user from the group. They will not be able to register again using the same passport until the ban expires.',
-    },
-    setVerifications: {
-      args: [
-        { type: 'address', note: 'Verification contract' },
-      ],
-      note: 'Change the contract address used for verification data.',
-    },
-    setName: {
-      args: [
-        { type: 'string', note: 'Group Name' },
-      ],
-      note: 'Change the name label for the group.',
-    },
-    allowContract: {
-      args: [
-        { type: 'address', note: 'Contract to Allow' },
-      ],
-      note: 'Allow a new contract access to invoke functions on behalf of the group. Audit this contract thoroughly before accepting it.',
-    },
-    disallowContract: {
-      args: [
-        { type: 'address', note: 'Contract to Disallow' },
-      ],
-      note: 'Disallow a contract that is currently allowed to invoke functions on behalf of the group.',
-    },
-    invoke: {
-      args: [
-        { type: 'address', note: 'Contract to call' },
-        { type: 'bytes', note: 'Data to send in call' },
-      ],
-      note: 'Invoke any contract from the group',
-    },
+    _selInvokeMethod: {state: true},
+    _invokeMethod: {state: true},
+    invokeMethods: {state: true},
+    firstArg: {state: true},
   };
   constructor() {
     super();
@@ -76,22 +29,28 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._myCurDuration = 1;
     this._myCurThreshold = 1;
     this._myCurMinParticipation = 1;
-    this._newProposalMethod = null;
+    this._newProposalMethod = '';
+    this._proposalMethodLoading = false;
     this._details = {};
     this._updateProposals = 0;
-    this.groupContract = null;
+    this.groupMethods = [];
+    this.groupChildren = {};
     this.contract = null;
     this.reverseMethods = {};
+    this.firstArg = '';
+    this.invokeMethods = [];
+    this._selInvokeMethod = null;
+    this._invokeMethod = '';
   }
   async connectedCallback() {
     super.connectedCallback();
     this._loading = true;
     this.contract = await this.loadContract('ElectionsByMedian', this.address);
-    this.reverseMethods = Object.keys(ElectionsByMedianDetails.proposalMethods)
-      .reduce((out, cur) => {
-        const args = ElectionsByMedianDetails.proposalMethods[cur].args.map(arg => arg.type);
-        const selector = app.web3.utils.sha3(`${cur}(${args.join(',')})`).slice(0, 10);
-        out[selector] = cur;
+    this.groupMethods = await this.loadAbi('VerifiedGroup', true);
+    this.groupChildren = await this.allGroupChildren(this.closest('child-details').groupAddress);
+    this.reverseMethods = this.groupMethods.reduce((out, method) => {
+        const selector = app.web3.eth.abi.encodeFunctionSignature(method);
+        out[selector] = method;
         return out;
       }, {});
     await this.loadDetails();
@@ -106,12 +65,12 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   async loadDetails() {
     this._loading = true;
-    const groupAbi = await this.loadAbi('IVerifiedGroup');
-    abiDecoder.addABI(groupAbi);
     this._details.invokePrefixes = await this.contract.methods.invokePrefixes().call();
     this._details.configCount = await this.contract.methods.proposalConfigCount().call();
     this._details.configMedians = await this.contract.methods.getProposalConfig().call();
-    this._details.myConfig = app.connected ? await this.contract.methods.getProposalConfig(app.accounts[0]).call() : { _threshold: 0, _duration: 0, _minParticipation: 0 };
+    this._details.myConfig = app.connected
+      ? await this.contract.methods.getProposalConfig(app.accounts[0]).call()
+      : { _threshold: 0, _duration: 0, _minParticipation: 0 };
     if(Number(this._details.myConfig._threshold) > 0) {
       this._myCurThreshold = Number(this._details.myConfig._threshold);
       this._myCurDuration = Number(this._details.myConfig._duration);
@@ -120,10 +79,23 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
     this._loading = false;
   }
-  async update() {
+  async update(changed) {
     super.update();
     await app.initialized;
     this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
+    if(changed.has('_newProposalMethod')) {
+      this._proposalMethodLoading = true;
+      this.firstArg = this._newProposalMethod.split(' ').length > 1
+        ? this._newProposalMethod.split(' ')[1].slice(1, -1) : false;
+      this.invokeMethods = [];
+      if(this.firstArg) {
+        const childType = await this.childType(this.firstArg);
+        if(childType) {
+          this.invokeMethods = await this.loadAbi(childType, true);
+        }
+      }
+      this._proposalMethodLoading = false;
+    }
   }
   async proposalCount() {
     return Number(await this.contract.methods.count().call());
@@ -132,7 +104,13 @@ export class ElectionsByMedianDetails extends BaseElement {
     const key = await this.contract.methods.atIndex(index).call();
     const details = await this.contract.methods.details(key).call();
     details.key = key;
-    details.dataDecoded = abiDecoder.decodeMethod(details.data);
+    details.dataDecoded = await this.decodeAbiFunction('IVerifiedGroup', details.data);
+    if(details.dataDecoded.name === 'invoke') {
+      details.invokeType = await this.childType(details.dataDecoded.params[0].value);
+      if(details.invokeType) {
+        details.invokeData = await this.decodeAbiFunction(details.invokeType, details.dataDecoded.params[1].value);
+      }
+    }
     details.myVote = app.connected
       ? Number(await this.contract.methods.voteValue(key, app.accounts[0]).call())
       : null;
@@ -163,17 +141,38 @@ export class ElectionsByMedianDetails extends BaseElement {
               <ul class="invoke-params">
                 ${proposal.dataDecoded.params.map(param => html`
                   <li>
-                    <span class="name">${param.name}</span>
-                    <span class="value">
-                      ${param.type === 'address' ? html`
-                        <a @click="${this.open}" href="${this.explorer(param.value)}">
+                    ${param.name === 'data' && proposal.invokeType ? html`
+                      <span class="invoke-name">${proposal.invokeData.name}</span>
+                      <ul class="invoke-params">
+                        ${proposal.invokeData.params.map(param => html`
+                          <li>
+                            <span class="name">${param.name}</span>
+                            <span class="value">
+                              ${param.type === 'address' ? html`
+                                <a @click="${this.open}" href="${this.explorer(param.value)}">
+                                  ${param.value}
+                                </a>
+                              ` : html`
+                                ${param.value}
+                              `}
+                            </span>
+                            <span class="type">${param.type}</span>
+                          </li>
+                        `)}
+                      </ul>
+                    ` : html`
+                      <span class="name">${param.name}</span>
+                      <span class="value">
+                        ${param.type === 'address' ? html`
+                          <a @click="${this.open}" href="${this.explorer(param.value)}">
+                            ${param.value}
+                          </a>
+                        ` : html`
                           ${param.value}
-                        </a>
-                      ` : html`
-                        ${param.value}
-                      `}
-                    </span>
-                    <span class="type">${param.type}</span>
+                        `}
+                      </span>
+                      <span class="type">${param.type} ${proposal.invokeType}</span>
+                    `}
                   </li>
                 `)}
               </ul>
@@ -190,9 +189,20 @@ export class ElectionsByMedianDetails extends BaseElement {
                 proposal.myVote === 2 ? '(Voted Against)' : ''}
             </dd>
             <dt>Support Level</dt>
-            <dd>${Math.round(supportLevel* 10000) / 100}% (Minimum: ${Math.round(threshold * 100) / 100}%)</dd>
+            <dd>
+              ${Math.round(supportLevel* 10000) / 100}%
+              (Minimum: ${Math.round(threshold * 100) / 100}%)
+            </dd>
             <dt>Participation Level</dt>
-            <dd>${votersRequired > 0 ? `${votersRequired} ${votersRequired === 1 ? 'more voter required to me participation threshold' : 'more voters required to meet participation threshold'}` : `${totalVoters} ${totalVoters === 1 ? 'voter' : 'voters'}`} (Minimum: ${proposal.minVoters})</dd>
+            <dd>
+              ${votersRequired > 0
+                ? `${votersRequired}
+                    ${votersRequired === 1
+                      ? 'more voter required to me participation threshold'
+                      : 'more voters required to meet participation threshold'}`
+                : `${totalVoters} ${totalVoters === 1 ? 'voter' : 'voters'}`}
+              (Minimum: ${proposal.minVoters})
+            </dd>
             <dt>Start Time</dt>
             <dd>${(new Date(proposal.startTime * 1000)).toString()}</dd>
             <dt>End Time</dt>
@@ -231,9 +241,16 @@ export class ElectionsByMedianDetails extends BaseElement {
     const configMedians = this.proposalConfigView(this._details.configMedians);
     const myConfig = this.proposalConfigView(this._details.myConfig);
     const availableMethods = this._details.invokePrefixes.length > 0
-      ? this._details.invokePrefixes.map(prefix => this.reverseMethods[prefix])
-      : Object.keys(ElectionsByMedianDetails.proposalMethods);
-    const proposalMethod = ElectionsByMedianDetails.proposalMethods[this._newProposalMethod];
+      ? this._details.invokePrefixes.map(prefix => {
+          let address;
+          if(prefix.length > 10) {
+            address = '0x' + prefix.slice(34);
+          }
+          return this.reverseMethods[prefix.slice(0, 10)].name + (address ? ` (${address})` : '');
+        })
+      : this.groupMethods.map(method => method.name);
+    const methodName = this._newProposalMethod.split(' ')[0];
+    const proposalMethod = this.groupMethods.filter(method => method.name === methodName);
     return html`
       <p>${this._details.invokePrefixes.length === 0
             ? 'Full invoke capability (no filter)'
@@ -326,21 +343,79 @@ export class ElectionsByMedianDetails extends BaseElement {
               </select>
             </label>
           </div>
-          ${proposalMethod ? html`
-            <p>${proposalMethod.note}</p>
-            ${proposalMethod.args.map((arg, index) => html`
-              <div>
-                <label>
-                  <span>${arg.note}</span>
-                  ${arg.type === 'address' ? html`
-                    <input required name="arg_${index}" pattern="^0x[a-fA-F0-9]{40}$">
-                  ` : html`
-                    <input required name="arg_${index}">
-                  `}
-                </label>
-              </div>
-            `)}
-          ` : ''}
+          ${this._proposalMethodLoading ? html`
+            <p>Loading...</p>
+          ` : html`
+            ${proposalMethod.length > 0 ? html`
+              ${proposalMethod[0].inputs.map((arg, index) => html`
+                <div>
+                  <label>
+                    <span>${arg.name}</span>
+                    ${index === 0 && this.firstArg ? html`
+                      <input name="${arg.name}" value="${this.firstArg}" disabled>
+                    ` : html`
+                      ${arg.type === 'address' ? html`
+                        <input required name="${arg.name}" pattern="^0x[a-fA-F0-9]{40}$">
+                      ` : html`
+                        <input required name="${arg.name}">
+                      `}
+                    `}
+                  </label>
+                </div>
+                ${proposalMethod[0].name === 'invoke' && index === 0 ? html`
+                  <div>
+                    <label>
+                      <span>Group Child Contracts</span>
+                      <select @change="${this.selContractChange}">
+                        <option value=""
+                         selected="${ifDefined(this.firstArg === '' ? true : undefined)}"
+                        >Select child contract...</option>
+                        ${Object.keys(this.groupChildren).map(childType => html`
+                          <optgroup label="${childType}">
+                            ${this.groupChildren[childType].map(thisChild => html`
+                              <option
+                               selected="${ifDefined(this.firstArg === thisChild ? true : undefined)}"
+                              >${thisChild}</option>
+                            `)}
+                          </optgroup>
+                        `)}
+                      </select>
+                    </label>
+                  </div>
+                ` : ''}
+              `)}
+              ${this.invokeMethods.length > 0 ? html`
+                <fieldset>
+                  <legend>Invoke Data Builder</legend>
+                  <div>
+                    <label>
+                      <span>Invoke Method</span>
+                      <select ${ref(this.setSelInvokeMethod)} @change="${this.setInvokeMethod}">
+                        <option value="">Choose Method...</option>
+                        ${this.invokeMethods.map(method => html`
+                          <option>${method.name}</option>
+                        `)}
+                      </select>
+                    </label>
+                  </div>
+                  ${this._invokeMethod && this.invokeMethods.filter(method => method.name === this._invokeMethod)[0].inputs.map((arg, index) => html`
+                    <div>
+                      <label>
+                        <span>${arg.name}</span>
+                        ${arg.type === 'address' ? html`
+                          <input required @change="${this.invokeParamChange}" name="invoke_${arg.name}" pattern="^0x[a-fA-F0-9]{40}$">
+                        ` : arg.type === 'bool' ? html`
+                          <input type="checkbox" @change="${this.invokeParamChange}" name="invoke_${arg.name}">
+                        ` : html`
+                          <input required @change="${this.invokeParamChange}" name="invoke_${arg.name}">
+                        `}
+                      </label>
+                    </div>
+                  `)}
+                </fieldset>
+              ` : ''}
+            ` : ''}
+          `}
           <div class="commands">
             <button type="submit">Submit Proposal</button>
           </div>
@@ -356,6 +431,16 @@ export class ElectionsByMedianDetails extends BaseElement {
       ></paginated-list>
     `;
   }
+  async selContractChange(event) {
+    this.firstArg = event.target.value;
+    if(this.firstArg) {
+      this._proposalMethodLoading = true;
+      const childType = event.target.selectedOptions[0].parentNode.label;
+      this._invokeMethod = '';
+      this.invokeMethods = await this.loadAbi(childType, true);
+      this._proposalMethodLoading = false;
+    }
+  }
   async vote(event) {
     const inSupport = event.target.attributes['data-supporting'].value === 'true';
     const key = event.target.attributes['data-key'].value;
@@ -368,12 +453,13 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   async propose(event) {
     event.preventDefault();
-    const proposalMethod = ElectionsByMedianDetails.proposalMethods[this._newProposalMethod];
+    const methodName = this._newProposalMethod.split(' ')[0];
+    const proposalMethod = this.groupMethods.filter(method => method.name === methodName);
+    const inputs = event.target.querySelectorAll('input');
+    const args = proposalMethod[0].inputs.map(input => event.target.querySelector(`input[name="${input.name}"]`).value);
     if(!proposalMethod) return;
-    const args = proposalMethod.args.map((arg, index) => event.target.elements['arg_' + index].value);
-
     const groupInterface = await this.loadContract('IVerifiedGroup');
-    const invokeData = groupInterface.methods[this._newProposalMethod](...args).encodeABI();
+    const invokeData = groupInterface.methods[methodName](...args).encodeABI();
     try {
       await this.send(this.contract.methods.propose(invokeData));
       this._updateProposals++;
@@ -420,6 +506,26 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   setNewProposalMethod(event) {
     this._newProposalMethod = event.target.value;
+  }
+  setSelInvokeMethod(select) {
+    this._selInvokeMethod = select;
+  }
+  setInvokeMethod(event) {
+    this._invokeMethod = event.target.value;
+    this.invokeParamChange(event);
+  }
+  invokeParamChange(event) {
+    const form = event.target.closest('form');
+    const args = Array.from(form.querySelectorAll('input[name^="invoke_"]')).map(input =>
+      input.type === 'checkbox' ? input.checked : input.value);
+    const invokeMethod = this.invokeMethods.filter(method => method.name === this._invokeMethod)[0];
+    if(args.length !== invokeMethod.inputs.length) return;
+    const dataInput = form.querySelector('input[name="data"]');
+    try {
+      dataInput.value = app.web3.eth.abi.encodeFunctionCall(invokeMethod, args);
+    } catch(error) {
+      this.displayError(error);
+    }
   }
 }
 customElements.define('elections-by-median-details', ElectionsByMedianDetails);

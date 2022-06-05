@@ -3,7 +3,6 @@ import {ifDefined} from 'lit/directives/if-defined.js';
 import {ref} from 'lit/directives/ref.js';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
-import {DeployChild} from './DeployChild.js';
 
 export class NewElectionsByMedian extends BaseElement {
   static properties = {
@@ -33,9 +32,7 @@ export class NewElectionsByMedian extends BaseElement {
   async connectedCallback() {
     super.connectedCallback();
     await app.initialized;
-    const groupAbi = await this.loadAbi('VerifiedGroup');
-    this._groupMethods = groupAbi.filter(method =>
-      method.stateMutability === 'nonpayable' && ('name' in method));
+    this._groupMethods = await this.loadAbi('VerifiedGroup', true);
     this._loading = false;
   }
   selAddPrefix(select) {
@@ -82,22 +79,8 @@ export class NewElectionsByMedian extends BaseElement {
     this._curAddPrefix = event.target.selectedOptions[0].label;
     if(this._curAddPrefix === 'invoke') {
       this._loading = true;
-      this._groupHasChildren = false;
-      this._groupChildren = {};
-      const groupAddress = this.closest('deploy-child').groupAddress;
-      for(let typeName of Object.keys(DeployChild.types)) {
-        const factoryName = DeployChild.types[typeName].factory;
-        const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
-        const count = Number(await factory.methods.groupCount(groupAddress).call());
-        if(count) {
-          this._groupHasChildren = true;
-          this._groupChildren[typeName] = [];
-          for(let i = 0; i < count; i++) {
-            const thisChild = await factory.methods.deployedByGroup(groupAddress, i).call();
-            this._groupChildren[typeName].push(thisChild);
-          }
-        }
-      }
+      this._groupChildren = await this.allGroupChildren(this.closest('deploy-child').groupAddress);
+      this._groupHasChildren = Object.keys(this._groupChildren).length > 0;
       this._loading = false;
     }
   }
