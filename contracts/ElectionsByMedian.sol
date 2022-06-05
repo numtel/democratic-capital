@@ -3,43 +3,20 @@ pragma solidity 0.8.13;
 
 import "./MedianOfSixteen.sol";
 using MedianOfSixteen for MedianOfSixteen.Data;
-import "./AddressSet.sol";
-using AddressSet for AddressSet.Set;
-import "./VoteSet.sol";
-using VoteSet for VoteSet.Data;
-import "./BytesLib.sol";
-using BytesLib for bytes;
 
 import "./IElectionsByMedian.sol";
-import "./IVerifiedGroup.sol";
+import "./ElectionBase.sol";
 
-contract ElectionsByMedian {
-  IVerifiedGroup public group;
+contract ElectionsByMedian is ElectionBase{
   MedianOfSixteen.Data duration;
   MedianOfSixteen.Data threshold;
   MedianOfSixteen.Data minParticipation;
-  mapping(address => VoteSet.Data) elections;
-  mapping(address => bytes) invokeData;
-  AddressSet.Set proposals;
-  bytes[] public allowedInvokePrefixes;
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
-  event ElectionProcessed(address key, bytes sent, bytes returned);
-  event NewElection(bytes data, address key);
-
-  constructor(address _group, bytes[] memory _allowedInvokePrefixes) {
-    group = IVerifiedGroup(_group);
-    allowedInvokePrefixes = _allowedInvokePrefixes;
-  }
-
-  // EIP-165
-  function supportsInterface(bytes4 interfaceId) external pure returns(bool) {
-    return interfaceId == thisInterfaceId();
-  }
-  function thisInterfaceId() public pure returns(bytes4) {
-    return type(IElectionsByMedian).interfaceId;
-  }
+  constructor(address _group, bytes[] memory _allowedInvokePrefixes)
+    ElectionBase( _allowedInvokePrefixes)
+    ChildBase(_group, type(IElectionsByMedian).interfaceId) {}
 
   // Lifecycle methods
   function onAllow() external {
@@ -48,94 +25,15 @@ contract ElectionsByMedian {
   }
 
   // General usage methods
-  function invokePrefixes() external view returns(bytes[] memory) {
-    return allowedInvokePrefixes;
-  }
   function propose(bytes memory data) external {
-    require(group.isRegistered(msg.sender), 'Not Registered');
-    require(group.isVerified(msg.sender), 'Not Verified');
     require(proposalConfigCount() > 0, 'Missing Proposal Config');
-    if(allowedInvokePrefixes.length > 0) {
-      bool foundAllowed = false;
-      for(uint i = 0; i < allowedInvokePrefixes.length; i++) {
-        if(data.length >= allowedInvokePrefixes[i].length) {
-          bytes memory dataPrefix = data.slice(0, allowedInvokePrefixes[i].length);
-          if(dataPrefix.equal(allowedInvokePrefixes[i])) {
-            foundAllowed = true;
-            break;
-          }
-        }
-      }
-      require(foundAllowed, 'Proposed Data Mismatch');
-    }
-
-    address key = address(uint160(uint256(keccak256(abi.encode(count(), data)))));
-    // Should never collide but can't be too safe
-    require(!proposals.exists(key));
-
-    emit NewElection(data, key);
-    proposals.insert(key);
-    invokeData[key] = data;
-    elections[key].startTime = block.timestamp;
-    elections[key].endTime = block.timestamp + (duration.median * SECONDS_PER_DAY);
-    elections[key].threshold = threshold.median;
-    // minVoters - 1: 0%, 16: 100% 6.67% each step
-    elections[key].minVoters = (group.registeredCount() * (minParticipation.median - 1)) / 15;
-    // At least one person must vote for an election to pass
-    if(elections[key].minVoters == 0) {
-      elections[key].minVoters = 1;
-    }
-  }
-
-  function count() public view returns(uint) {
-    return proposals.count();
-  }
-
-  function atIndex(uint index) external view returns(address) {
-    return proposals.keyList[index];
-  }
-
-  function details(address key) external view returns(
-    uint startTime, uint endTime, bytes memory data,
-    uint8 _threshold, uint minVoters, bool processed,
-    uint supporting, uint against, bool passed, bool passing
-  ) {
-    require(elections[key].endTime > 0, 'Not Found');
-    startTime = elections[key].startTime;
-    endTime = elections[key].endTime;
-    data = invokeData[key];
-    _threshold = elections[key].threshold;
-    minVoters = elections[key].minVoters;
-    processed = elections[key].processed;
-    supporting = elections[key].supporting;
-    against = elections[key].against;
-    passed = elections[key].passed();
-    passing = elections[key].passing();
-  }
-
-  function voteValue(address key, address voter) external view returns(uint8) {
-    return elections[key].votesByAccount[voter];
-  }
-
-  function vote(address key, bool inSupport) external {
-    require(group.isRegistered(msg.sender), 'Not Registered');
-    require(group.isVerified(msg.sender), 'Not Verified');
-    require(group.joinedTimestamps(msg.sender) < elections[key].startTime,
-      "Registered After Election Start");
-    elections[key].vote(msg.sender, inSupport, false);
-  }
-
-  function process(address key) external {
-    require(group.isRegistered(msg.sender), 'Not Registered');
-    require(group.isVerified(msg.sender), 'Not Verified');
-    require(elections[key].passed(), 'Election Not Passed');
-    require(elections[key].processed == false, 'Election Already Processed');
-    elections[key].processed = true;
-    (bool success, bytes memory returned) = address(group).call(invokeData[key]);
-    emit ElectionProcessed(key, invokeData[key], returned);
-    // TODO consider election processed even if invoke fails?
-    //  invoke condition could become valid at much later time?
-    require(success, 'Invoke Failed');
+    _propose(
+        data,
+      duration.median * SECONDS_PER_DAY,
+      threshold.median * 4096,
+      // minVoters - 1: 0%, 16: 100% 6.67% each step
+      (group.registeredCount() * (minParticipation.median - 1)) / 15
+    );
   }
 
   function setProposalConfig(

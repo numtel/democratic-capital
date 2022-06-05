@@ -9,7 +9,7 @@ exports.requiresVerified = async function({
   // Contract constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -45,7 +45,7 @@ exports.ban = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -77,7 +77,7 @@ exports.childContractInvokeAndHooks = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
   const testChild = await deployContract(accounts[0], 'TestChild',
     group.options.address);
 
@@ -128,7 +128,7 @@ exports.changeVerificationContract = async function({
   const mockVerification2 = await deployContract(accounts[0], 'MockVerification');
   await mockVerification1.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification1.options.address, accounts[0]);
+    mockVerification1.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

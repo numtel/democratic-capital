@@ -10,7 +10,7 @@ exports.configAndUnregistrationHook = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
     group.options.address, []);
 
@@ -56,7 +56,7 @@ exports.proposeWithFilter = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
   // XXX Is there a simpler way to get the function selector?
   const unregisterSelector = group.methods.unregister(accounts[0]).encodeABI().slice(0, 10);
   // These elections can only call the unregister method
@@ -101,7 +101,7 @@ exports.proposeWithoutFilter = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
     group.options.address, []);
@@ -137,7 +137,7 @@ exports.proposeMinThresholdFails = async function({
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[2], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0]);
+    mockVerification.options.address, accounts[0], '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
     group.options.address, []);
@@ -146,7 +146,7 @@ exports.proposeMinThresholdFails = async function({
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
   await group.sendFrom(accounts[0]).allowContract(elections.options.address);
   await group.sendFrom(accounts[0]).register(accounts[1]);
-  await elections.sendFrom(accounts[0]).setProposalConfig(1, 1, 1);
+  await elections.sendFrom(accounts[0]).setProposalConfig(1, 8, 1);
   // Give a few seconds so registrations aren't in same second as proposal
   await increaseTime(3);
 

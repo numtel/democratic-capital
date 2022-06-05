@@ -3,5 +3,5 @@ pragma solidity 0.8.13;
 
 // Create an ABI for the frontend
 interface IThisInterfaceId {
-  function thisInterfaceId() external pure returns(bytes4);
+  function thisInterfaceId() external view returns(bytes4);
 }

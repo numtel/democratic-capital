@@ -2,22 +2,11 @@
 pragma solidity 0.8.13;
 
 import "./IOpenRegistrations.sol";
-import "./IVerifiedGroup.sol";
+import "./ChildBase.sol";
 
-contract OpenRegistrations {
-  IVerifiedGroup public group;
-
-  constructor(address _group) {
-    group = IVerifiedGroup(_group);
-  }
-
-  // EIP-165
-  function supportsInterface(bytes4 interfaceId) external pure returns(bool) {
-    return interfaceId == thisInterfaceId();
-  }
-  function thisInterfaceId() public pure returns(bytes4) {
-    return type(IOpenRegistrations).interfaceId;
-  }
+contract OpenRegistrations is ChildBase {
+  constructor(address _group)
+    ChildBase(_group, type(IOpenRegistrations).interfaceId) {}
 
   function register() external {
     require(group.isVerified(msg.sender), 'Not Verified');

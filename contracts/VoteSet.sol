@@ -5,7 +5,7 @@ library VoteSet {
   struct Data {
     uint startTime;
     uint endTime;
-    uint8 threshold;
+    uint16 threshold;
     uint minVoters;
     bool processed;
     
@@ -38,10 +38,9 @@ library VoteSet {
 
   function passing(Data storage self) internal view returns(bool) {
     return ((self.against + self.supporting) >= self.minVoters)
-      // threshold - 1: 50%, 16: 100% 3.125% each step
-      && (self.threshold == 16
+      && (self.threshold == 0xffff
         // Special case in order to use exclusive greater than in lower levels
         ? self.against == 0
-        : (((self.supporting * 32) / (self.supporting + self.against)) > (self.threshold + 15)));
+        : (((self.supporting * 0xffff) / (self.supporting + self.against)) > self.threshold));
   }
 }

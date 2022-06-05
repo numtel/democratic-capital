@@ -120,7 +120,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     const proposalsTpl = [];
     for(let proposal of proposals) {
       const timeLeft = Number(proposal.endTime) - this._details.currentTime;
-      const rawThreshold = proposal._threshold;
+      const rawThreshold = proposal._threshold / 4096;
       const totalVoters = Number(proposal.supporting) + Number(proposal.against);
       const supportLevel = totalVoters === 0 ? 0 : Number(proposal.supporting)
         / (Number(proposal.supporting)+Number(proposal.against));
