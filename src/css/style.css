@@ -31,7 +31,7 @@ nav.breadcrumbs ol { list-style:none; padding-left: 0; max-width: 960px; margin:
 nav.breadcrumbs li { display: inline-block; }
 nav.breadcrumbs a::after { display: inline-block; color:#333; content: ">"; font-size: 80%; font-weight: bold; padding: 0 4px 0 6px;}
 
-.pagination {}
+.pagination { clear:both; }
 .pagination .page-options {display:flex; background:#f7f7f7; margin: 0 -10px; padding: 7px; border-width: 1px 0; border-color:#ddd; border-style: solid; justify-content:space-between;}
 .pagination>ul { list-style:none; padding:0; margin:0; }
 .pagination>ul>li { display:flex; justify-content: space-between; align-items:center; padding: 8px 5px; border-bottom: 1px solid #eee; }
@@ -59,7 +59,7 @@ button:hover { background: #f2001b; }
 button.secondary:hover { background: #777; }
 button:active { background: #bf1023; }
 button.secondary:active { background: #444; }
-button.right { float:right; }
+button.right { float:right; margin: 0 0 10px 0; }
 
 .invoke-params { list-style:none; }
 .invoke-params .name { font-style: italic; }

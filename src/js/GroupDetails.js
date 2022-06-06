@@ -10,12 +10,16 @@ export class GroupDetails extends BaseElement {
     address: {type: String},
     _loading: {state: true},
     _details: {state: true},
+    _selectedChildTypeIndex: {state: true},
+    _childrenUpdater: {state: true},
   };
   constructor() {
     super();
     this._loading = true;
     this._details = {};
     this.contract = null;
+    this._selectedChildTypeIndex = null;
+    this._childrenUpdater = 0;
   }
   async connectedCallback() {
     super.connectedCallback();
@@ -34,7 +38,12 @@ export class GroupDetails extends BaseElement {
       for(let typeName of Object.keys(this.childTypes)) {
         const factoryName = this.childTypes[typeName].factory;
         const count = await this.factoryCount(factoryName);
-        if(count) this._details.hasChildren = true;
+        if(count) {
+          this._details.hasChildren = true;
+          if(this._selectedChildTypeIndex === null) {
+            this._selectedChildTypeIndex = this._details.factories.length;
+          }
+        }
         this._details.factories.push({
           name: typeName,
           factoryName,
@@ -96,7 +105,7 @@ export class GroupDetails extends BaseElement {
     const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
     return Number(await factory.methods.groupCount(this.address).call());
   }
-  async factoryFetch(factoryName, interfaceName, index) {
+  async factoryFetch(factoryName, index) {
     const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
     const address = await factory.methods.deployedByGroup(this.address, index).call();
     const contract = await this.loadContract('ChildBase', address);
@@ -219,6 +228,10 @@ export class GroupDetails extends BaseElement {
       `}
     `;
   }
+  selectChildTypeIndex(event) {
+    this._selectedChildTypeIndex = event.target.value;
+    this._childrenUpdater++;
+  }
   tabSections() {
     const adminMode = (this._details.isMember && this._details.memberCount === 1)
       || (this._details.allowedContracts
@@ -239,18 +252,21 @@ export class GroupDetails extends BaseElement {
         render: () => html`
           <button class="right" @click="${this.route}" href="/group/${this.address}/deploy-child">Deploy New...</button>
           ${this._details.hasChildren ? html`
-            ${this._details.factories.map(factory => html`
-              ${factory.count > 0 ? html`
-                <h4>${factory.name}</h4>
-                <paginated-list
-                  .count=${this.factoryCount.bind(this, factory.factoryName)}
-                  .fetchOne=${this.factoryFetch.bind(this, factory.factoryName, factory.name)}
-                  .renderer=${this.renderFactoryList.bind(this, factory.name)}
-                  .emptyRenderer=${this.renderEmpty.bind(this)}
-                  .loadingRenderer=${this.renderLoading.bind(this)}
-                ></paginated-list>
-              ` : ''}
-            `)}
+            <select @change="${this.selectChildTypeIndex.bind(this)}">
+              ${this._details.factories.map((factory, index) => html`
+                ${factory.count > 0 && html`
+                  <option value="${index}">${factory.name}</option>
+                `}
+              `)}
+            </select>
+            <paginated-list
+              updateIndex="${this._childrenUpdater}"
+              .count=${this.factoryCount.bind(this, this._details.factories[this._selectedChildTypeIndex].factoryName)}
+              .fetchOne=${this.factoryFetch.bind(this, this._details.factories[this._selectedChildTypeIndex].factoryName)}
+              .renderer=${this.renderFactoryList.bind(this, this._details.factories[this._selectedChildTypeIndex].name)}
+              .emptyRenderer=${this.renderEmpty.bind(this)}
+              .loadingRenderer=${this.renderLoading.bind(this)}
+            ></paginated-list>
           ` : html`
             <p>No Children yet!</p>
           `}
