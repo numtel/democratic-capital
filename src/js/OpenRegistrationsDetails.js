@@ -4,7 +4,7 @@ import {BaseElement} from './BaseElement.js';
 export class OpenRegistrationsDetails extends BaseElement {
   static properties = {
     address: {type: String},
-    allowed: {type: Boolean},
+    allowed: {type: String},
     groupAddress: {type: String},
   };
   async register() {
@@ -25,7 +25,7 @@ export class OpenRegistrationsDetails extends BaseElement {
       <dd><a href="${this.explorer(this.address)}" @click="${this.open}">${this.address}</a></dd>
       <dt>Allowed to Invoke</dt>
       <dd>
-        ${this.allowed
+        ${this.allowed === 'true'
           ? html`Yes`
           : html`<strong>No</strong>`}
       </dd>

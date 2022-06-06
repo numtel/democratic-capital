@@ -10,10 +10,12 @@ contract ElectionsSimpleFactory is ChildFactory {
     bytes[] memory allowedInvokePrefixes,
     uint durationSeconds,
     uint16 threshold,
-    uint16 minParticipation
+    uint16 minParticipation,
+    string memory name
   ) external {
     requireMember(group);
-    ElectionsSimple newContract = new ElectionsSimple(group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation);
+    ElectionsSimple newContract = new ElectionsSimple(
+      group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation, name);
     deployedByGroup[group].push(address(newContract));
     emit NewDeployment(group, address(newContract));
   }

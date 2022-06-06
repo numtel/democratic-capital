@@ -6,11 +6,15 @@ export class NewOpenRegistrations extends BaseElement {
     super();
   }
   extractValues() {
-    return [];
+    return [this.querySelector('input[name="name"]').value];
   }
   render() {
     return html`
       <p>Allow registrations from any verified account.</p>
+      <label>
+        <span>Name</span>
+        <input name="name">
+      </label>
     `;
   }
 }

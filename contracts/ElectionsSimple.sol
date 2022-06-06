@@ -14,10 +14,11 @@ contract ElectionsSimple is ElectionBase {
     bytes[] memory _allowedInvokePrefixes,
     uint _durationSeconds,
     uint16 _threshold,
-    uint16 _minParticipation
+    uint16 _minParticipation,
+    string memory _name
   )
   ElectionBase( _allowedInvokePrefixes)
-  ChildBase(_group, type(IElectionsSimple).interfaceId) {
+  ChildBase(_group, type(IElectionsSimple).interfaceId, _name) {
     durationSeconds = _durationSeconds;
     threshold = _threshold;
     minParticipation = _minParticipation;

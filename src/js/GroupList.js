@@ -59,7 +59,15 @@ export class GroupList extends BaseElement {
     return html`
       <ul>
         ${groups.map(group => html`
-          <li><a @click="${this.route}" href="/group/${group.address}">${group.name} (${this.ellipseAddress(group.address)})</a> ${group.memberCount} ${group.memberCount === 1 ? 'member' : 'members'}</li>
+          <li>
+            <span>
+              <a @click="${this.route}" href="/group/${group.address}">${group.name}</a>
+              <span class="child-type">
+                ${group.memberCount} ${group.memberCount === 1 ? 'member' : 'members'}
+              </span>
+            </span>
+            <a @click="${this.open}" href="${this.explorer(group.address)}">${this.ellipseAddress(group.address)}</a>
+          </li>
         `)}
       </ul>
     `;

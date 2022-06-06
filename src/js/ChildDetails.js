@@ -47,6 +47,8 @@ export class ChildDetails extends BaseElement {
     this._loading = true;
     const groupContract = await this.loadContract('VerifiedGroup', this.groupAddress);
     this._details.isAllowed = await groupContract.methods.contractAllowed(this.childAddress).call();
+    const childContract = await this.loadContract(this.childTypeStr, this.childAddress);
+    this._details.name = await childContract.methods.name().call();
     
     this._loading = false;
   }
@@ -62,7 +64,7 @@ export class ChildDetails extends BaseElement {
           <li>${this.childTypeStr}: ${this.ellipseAddress(this.childAddress)}</li>
         </ol>
       </nav>
-      <h2>${this.childTypeStr}</h2>
+      <h2>${this._details.name} <span class="child-type">${this.childTypeStr}</span></h2>
       ${this.childTypeStr in ChildDetails.typeDetails
         ? ChildDetails.typeDetails[this.childTypeStr].tpl(this)
         : html`

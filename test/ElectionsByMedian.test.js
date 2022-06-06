@@ -12,7 +12,7 @@ exports.configAndUnregistrationHook = async function({
   const group = await deployContract(accounts[0], 'VerifiedGroup',
     mockVerification.options.address, accounts[0], '');
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
-    group.options.address, []);
+    group.options.address, [], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -61,7 +61,7 @@ exports.proposeWithFilter = async function({
   const unregisterSelector = group.methods.unregister(accounts[0]).encodeABI().slice(0, 10);
   // These elections can only call the unregister method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
-    group.options.address, [ unregisterSelector ]);
+    group.options.address, [ unregisterSelector ], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -104,7 +104,7 @@ exports.proposeWithoutFilter = async function({
     mockVerification.options.address, accounts[0], '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
-    group.options.address, []);
+    group.options.address, [], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -140,7 +140,7 @@ exports.proposeMinThresholdFails = async function({
     mockVerification.options.address, accounts[0], '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
-    group.options.address, []);
+    group.options.address, [], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

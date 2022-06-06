@@ -54,7 +54,9 @@ export class GroupDetails extends BaseElement {
     const address = await this.contract.methods.allowedContractIndex(index).call();
     const self = address === this.address;
     const interfaceName = await this.childType(address);
-    return { address, self, interfaceName };
+    const contract = await this.loadContract(interfaceName, address);
+    const name = await contract.methods.name().call();
+    return { address, self, interfaceName, name };
   }
   renderAllowed(allowed) {
     return html`
@@ -62,9 +64,15 @@ export class GroupDetails extends BaseElement {
         ${allowed.map(contract => html`
           <li>
             ${contract.interfaceName ? html`
-                <a @click="${this.route}"
-                    href="/group/${this.address}/${contract.interfaceName}/${contract.address}">
-                  ${contract.address} (${contract.interfaceName})
+                <span>
+                  <a @click="${this.route}"
+                      href="/group/${this.address}/${contract.interfaceName}/${contract.address}"
+                  >${contract.name}</a>
+                  <span class="child-type">${contract.interfaceName}</span>
+                </span>
+                <a @click="${this.open}"
+                    href="${this.explorer(contract.address)}">
+                 ${this.ellipseAddress(contract.address)}
                 </a>
             ` : html`
               ${contract.address}
@@ -88,18 +96,26 @@ export class GroupDetails extends BaseElement {
     const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
     return Number(await factory.methods.groupCount(this.address).call());
   }
-  async factoryFetch(factoryName, index) {
+  async factoryFetch(factoryName, interfaceName, index) {
     const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
-    return await factory.methods.deployedByGroup(this.address, index).call();
+    const address = await factory.methods.deployedByGroup(this.address, index).call();
+    const contract = await this.loadContract('ChildBase', address);
+    const name = await contract.methods.name().call();
+    return { address, name };
   }
   renderFactoryList(interfaceName, contracts) {
     return html`
       <ul>
-        ${contracts.map(address => html`
+        ${contracts.map(contract => html`
           <li>
-            <a @click="${this.route}"
-                href="/group/${this.address}/${interfaceName}/${address}">
-              ${address}
+            <span>
+              <a @click="${this.route}"
+                  href="/group/${this.address}/${interfaceName}/${contract.address}"
+              >${contract.name}</a>
+            </span>
+            <a @click="${this.open}"
+                href="${this.explorer(contract.address)}">
+             ${this.ellipseAddress(contract.address)}
             </a>
           </li>
         `)}
@@ -228,7 +244,7 @@ export class GroupDetails extends BaseElement {
                 <h4>${factory.name}</h4>
                 <paginated-list
                   .count=${this.factoryCount.bind(this, factory.factoryName)}
-                  .fetchOne=${this.factoryFetch.bind(this, factory.factoryName)}
+                  .fetchOne=${this.factoryFetch.bind(this, factory.factoryName, factory.name)}
                   .renderer=${this.renderFactoryList.bind(this, factory.name)}
                   .emptyRenderer=${this.renderEmpty.bind(this)}
                   .loadingRenderer=${this.renderLoading.bind(this)}

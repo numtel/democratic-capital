@@ -24,7 +24,7 @@ header button.walletToggle:hover .disconnect {display: inline; }
 span.tagline { display: block; background: #333; color: #fff; text-align: center; font-size: 18px; font-style:italic; font-weight: 400; padding: 10px; }
 
 h2 { max-width: 960px; margin: 20px auto 10px; }
-h2 a { font-size: 16px; color:#666; }
+.child-type { font-size: 75%; color:#666; }
 main { margin: 20px auto; background: #fff; border:1px solid #ddd; border-radius: 10px; box-shadow: 0 0 10px #0001; padding: 10px; max-width: 960px; }
 
 nav.breadcrumbs ol { list-style:none; padding-left: 0; max-width: 960px; margin: 20px auto; }

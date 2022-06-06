@@ -17,12 +17,16 @@ export class NewElectionsSimple extends BaseElement {
     this._participation = 0;
   }
   extractValues() {
-    return [ this.querySelector('invoke-prefixes-fieldset').extractPrefixes(), this._duration, this._threshold, this._participation ];
+    return [ this.querySelector('invoke-prefixes-fieldset').extractPrefixes(), this._duration, this._threshold, this._participation, this.querySelector('input[name="name"]').value ];
   }
   render() {
     return html`
       <p>Allow users to create proposals which call functions on the main group contract.</p>
       <p>The duration, majority threshold, and minimum participation parameters of these elections are fixed now during deployment.</p>
+      <label>
+        <span>Name</span>
+        <input name="name">
+      </label>
       <fieldset>
         <legend>Election Parameters</legend>
         <div class="preview">

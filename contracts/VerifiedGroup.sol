@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
-import "./IVerifiedGroup.sol";
+import "./ChildBase.sol";
 import "./AddressSet.sol";
 using AddressSet for AddressSet.Set;
 
-contract VerifiedGroup {
+contract VerifiedGroup is ChildBase {
   IVerification public verifications;
   uint public registeredCount;
-  string public name;
   mapping(address => uint) public joinedTimestamps;
   mapping(bytes32 => uint) public activeBans;
   AddressSet.Set allowedContracts;
@@ -24,7 +23,6 @@ contract VerifiedGroup {
   mapping(address => Comment[]) public comments;
 
   event NewComment(address indexed item, string text);
-  event NameChanged(string oldName, string newName);
   event VerificationContractChanged(address indexed oldContract, address indexed newContract);
   event Registration(address indexed account);
   event Unregistered(address indexed account);
@@ -38,23 +36,23 @@ contract VerifiedGroup {
   event UnregisterHookSuccess(address indexed contractAddress, address indexed account);
   event UnregisterHookFailure(address indexed contractAddress, address indexed account);
 
-  constructor(address _verifications, address _firstAccount, string memory _name) {
+  constructor(
+    address _verifications,
+    address _firstAccount,
+    string memory _name
+  ) ChildBase(
+    address(this),
+    type(IVerifiedGroup).interfaceId,
+    _name
+  ){
     require(_verifications != address(0), 'Verifications cannot be 0 address');
     verifications = IVerification(_verifications);
 
     allowedContracts.insert(address(this));
-    name = _name;
 
     // Contract creator becomes first member automatically
     // in order to prevent any bots from taking over before it can start
     register(_firstAccount);
-  }
-  // EIP-165
-  function supportsInterface(bytes4 interfaceId) external pure returns(bool) {
-    return interfaceId == thisInterfaceId();
-  }
-  function thisInterfaceId() public pure returns(bytes4) {
-    return type(IVerifiedGroup).interfaceId;
   }
 
   // General use view functions
@@ -94,11 +92,6 @@ contract VerifiedGroup {
   }
 
   // Functions that can be invoked by allowed contracts
-  function setName(string memory _name) external onlyAllowed {
-    emit NameChanged(name, _name);
-    name = _name;
-  }
-
   function register(address account) public onlyAllowed {
     require(isVerified(account), 'Not Verified');
     require(!isRegistered(account), 'Already Registered');

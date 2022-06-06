@@ -2,22 +2,11 @@
 pragma solidity 0.8.13;
 
 import "./IOpenUnregistrations.sol";
-import "./IVerifiedGroup.sol";
+import "./ChildBase.sol";
 
-contract OpenUnregistrations {
-  IVerifiedGroup public group;
-
-  constructor(address _group) {
-    group = IVerifiedGroup(_group);
-  }
-
-  // EIP-165
-  function supportsInterface(bytes4 interfaceId) external pure returns(bool) {
-    return interfaceId == thisInterfaceId();
-  }
-  function thisInterfaceId() public pure returns(bytes4) {
-    return type(IOpenUnregistrations).interfaceId;
-  }
+contract OpenUnregistrations is ChildBase {
+  constructor(address _group, string memory _name)
+    ChildBase(_group, type(IOpenUnregistrations).interfaceId, _name) {}
 
   function unregister() external {
     group.unregister(msg.sender);

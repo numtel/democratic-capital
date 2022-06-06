@@ -14,9 +14,13 @@ contract ElectionsByMedian is ElectionBase {
 
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
-  constructor(address _group, bytes[] memory _allowedInvokePrefixes)
+  constructor(
+    address _group,
+    bytes[] memory _allowedInvokePrefixes,
+    string memory _name
+  )
     ElectionBase( _allowedInvokePrefixes)
-    ChildBase(_group, type(IElectionsByMedian).interfaceId) {}
+    ChildBase(_group, type(IElectionsByMedian).interfaceId, _name) {}
 
   // Lifecycle methods
   function onAllow() external {
