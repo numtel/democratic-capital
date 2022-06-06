@@ -2,6 +2,7 @@ import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {GroupComments} from './GroupComments.js'
+import {remaining} from './utils.js';
 
 export class ProposalDetails extends BaseElement {
   static properties = {
@@ -47,12 +48,12 @@ export class ProposalDetails extends BaseElement {
     `;
     const proposal = this._details;
     const timeLeft = Number(proposal.endTime) - this._details.currentTime;
-    const rawThreshold = proposal._threshold / 4096;
+    const rawThreshold = proposal._threshold / 0xffff;
     const totalVoters = Number(proposal.supporting) + Number(proposal.against);
     const supportLevel = totalVoters === 0 ? 0 : Number(proposal.supporting)
       / (Number(proposal.supporting)+Number(proposal.against));
     const votersRequired = Number(proposal.minVoters) - totalVoters;
-    const threshold = rawThreshold === 16 ? 100 : 50 + (rawThreshold - 1) * (50/15);
+    const threshold = rawThreshold * 100;
     return html`
       <nav class="breadcrumbs">
         <ol>
@@ -135,7 +136,7 @@ export class ProposalDetails extends BaseElement {
             ${votersRequired > 0
               ? `${votersRequired}
                   ${votersRequired === 1
-                    ? 'more voter required to me participation threshold'
+                    ? 'more voter required to meet participation threshold'
                     : 'more voters required to meet participation threshold'}`
               : `${totalVoters} ${totalVoters === 1 ? 'voter' : 'voters'}`}
             (Minimum: ${proposal.minVoters})
@@ -176,22 +177,3 @@ export class ProposalDetails extends BaseElement {
   }
 }
 customElements.define('proposal-details', ProposalDetails);
-
-function remaining(seconds) {
-  const units = [
-    { value: 1, unit: 'second' },
-    { value: 60, unit: 'minute' },
-    { value: 60 * 60, unit: 'hour' },
-    { value: 60 * 60 * 24, unit: 'day' },
-  ];
-  let remaining = seconds;
-  let out = [];
-  for(let i = units.length - 1; i >= 0;  i--) {
-    if(remaining >= units[i].value) {
-      const count = Math.floor(remaining / units[i].value);
-      out.push(count.toString(10) + ' ' + units[i].unit + (count !== 1 ? 's' : ''));
-      remaining = remaining - (count * units[i].value);
-    }
-  }
-  return out.join(', ');
-}

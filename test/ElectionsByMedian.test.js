@@ -146,7 +146,7 @@ exports.proposeMinThresholdFails = async function({
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
   await group.sendFrom(accounts[0]).allowContract(elections.options.address);
   await group.sendFrom(accounts[0]).register(accounts[1]);
-  await elections.sendFrom(accounts[0]).setProposalConfig(1, 8, 1);
+  await elections.sendFrom(accounts[0]).setProposalConfig(1, 1, 1);
   // Give a few seconds so registrations aren't in same second as proposal
   await increaseTime(3);
 

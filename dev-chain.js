@@ -47,6 +47,11 @@ const contracts = {
     abi: 'ElectionsByMedianFactory.abi',
     constructorArgs: [],
   },
+  ElectionsSimpleFactory: {
+    instance: null,
+    abi: 'ElectionsSimpleFactory.abi',
+    constructorArgs: [],
+  },
   OpenRegistrationsFactory: {
     instance: null,
     abi: 'OpenRegistrationsFactory.abi',

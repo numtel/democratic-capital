@@ -177,7 +177,7 @@ export class GroupDetails extends BaseElement {
         <h2>${this._details.name || this.address}</h2>
         ${this._details.memberCount === 1 ? html`
           <p class="notice">
-            When a group only has one member, that one member can perform any administrative action on the group contract directly.<br><br>Before another member is registered into the group, it is <strong>very</strong> important to allow a contract that has the capability to perform administrative actions, such as an elections contract or by allowing an individual's account as an allowed contract.
+            This group only has one member. When a group only has one member, that person can perform any administrative action on the group contract directly.<br><br>Before another member is registered into the group, it is <strong>very</strong> important to allow a contract that has the capability to perform administrative actions, such as an elections contract or by allowing an individual's account as an allowed contract.
           </p>
         ` : ''}
 

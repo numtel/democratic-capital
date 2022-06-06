@@ -7,7 +7,7 @@ using MedianOfSixteen for MedianOfSixteen.Data;
 import "./IElectionsByMedian.sol";
 import "./ElectionBase.sol";
 
-contract ElectionsByMedian is ElectionBase{
+contract ElectionsByMedian is ElectionBase {
   MedianOfSixteen.Data duration;
   MedianOfSixteen.Data threshold;
   MedianOfSixteen.Data minParticipation;
@@ -30,7 +30,7 @@ contract ElectionsByMedian is ElectionBase{
     _propose(
         data,
       duration.median * SECONDS_PER_DAY,
-      threshold.median * 4096,
+      ((threshold.median - 1) * 2185) + 0x7fff,
       // minVoters - 1: 0%, 16: 100% 6.67% each step
       (group.registeredCount() * (minParticipation.median - 1)) / 15
     );

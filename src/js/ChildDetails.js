@@ -2,6 +2,7 @@ import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {ElectionsByMedianDetails} from './ElectionsByMedianDetails.js';
+import {ElectionsSimpleDetails} from './ElectionsSimpleDetails.js';
 import {OpenRegistrationsDetails} from './OpenRegistrationsDetails.js';
 import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
 import {GroupComments} from './GroupComments.js'
@@ -18,6 +19,11 @@ export class ChildDetails extends BaseElement {
     ElectionsByMedian: {
       tpl: (parent) => html`
         <elections-by-median-details address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></elections-by-median-details>
+      `
+    },
+    ElectionsSimple: {
+      tpl: (parent) => html`
+        <elections-simple-details address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></elections-simple-details>
       `
     },
     OpenRegistrations: {

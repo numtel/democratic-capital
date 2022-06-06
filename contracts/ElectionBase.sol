@@ -61,7 +61,6 @@ abstract contract ElectionBase is ChildBase {
     elections[key].startTime = block.timestamp;
     elections[key].endTime = block.timestamp + durationSeconds;
     elections[key].threshold = threshold;
-    // minVoters - 1: 0%, 16: 100% 6.67% each step
     elections[key].minVoters = minVoters;
     // At least one person must vote for an election to pass
     if(elections[key].minVoters == 0) {

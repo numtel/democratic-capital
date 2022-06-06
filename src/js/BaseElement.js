@@ -8,6 +8,10 @@ export class BaseElement extends LitElement {
       factory: 'ElectionsByMedianFactory',
       tpl: html`<new-elections-by-median></new-elections-by-median>`,
     },
+    ElectionsSimple: {
+      factory: 'ElectionsSimpleFactory',
+      tpl: html`<new-elections-simple></new-elections-simple>`,
+    },
     OpenRegistrations: {
       factory: 'OpenRegistrationsFactory',
       tpl: html`<new-open-registrations></new-open-registrations>`,

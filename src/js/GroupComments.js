@@ -49,7 +49,7 @@ export class GroupComments extends BaseElement {
   }
   renderEmpty() {
     return html`
-      <p>No Contracts Yet!</p>
+      <p>No Comments Yet!</p>
     `;
   }
   renderLoading() {

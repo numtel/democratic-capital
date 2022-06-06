@@ -20,7 +20,7 @@ export class AppRouter extends BaseElement {
     { regex: /^\/group\/(0x[a-f0-9]{40})\/([^\/]+)\/(0x[a-f0-9]{40})$/i,
       template: match => html`
         <child-details groupAddress="${match[1]}" childTypeStr="${match[2]}" childAddress="${match[3]}"></child-details>` },
-    { regex: /^\/group\/(0x[a-f0-9]{40})\/(ElectionsByMedian)\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})$/i,
+    { regex: /^\/group\/(0x[a-f0-9]{40})\/([^\/]+)\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})$/i,
       template: match => html`
         <proposal-details groupAddress="${match[1]}" childTypeStr="${match[2]}" childAddress="${match[3]}" proposalAddress="${match[4]}"></proposal-details>` },
     { regex: /^\/groups$/,

@@ -3,6 +3,7 @@ import {ref} from 'lit/directives/ref.js';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {NewElectionsByMedian} from './NewElectionsByMedian.js';
+import {NewElectionsSimple} from './NewElectionsSimple.js';
 import {NewOpenRegistrations} from './NewOpenRegistrations.js';
 import {NewOpenUnregistrations} from './NewOpenUnregistrations.js';
 
