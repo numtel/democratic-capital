@@ -132,7 +132,7 @@ export class GroupDetails extends BaseElement {
     `;
   }
   async register() {
-    const address = prompt('Account address?');
+    const address = (prompt('Account address?') || '').trim();
     if(this.isAddress(address)) {
       try {
         await this.send(this.contract.methods.register(address));
@@ -143,7 +143,7 @@ export class GroupDetails extends BaseElement {
     }
   }
   async unregister() {
-    const address = prompt('Account address?');
+    const address = (prompt('Account address?') || '').trim();
     if(this.isAddress(address)) {
       try {
         await this.send(this.contract.methods.unregister(address));
@@ -154,7 +154,7 @@ export class GroupDetails extends BaseElement {
     }
   }
   async allowContract() {
-    const address = prompt('Contract address?');
+    const address = (prompt('Contract address?') || '').trim();
     if(this.isAddress(address)) {
       try {
         await this.send(this.contract.methods.allowContract(address));
@@ -165,7 +165,7 @@ export class GroupDetails extends BaseElement {
     }
   }
   async disallowContract() {
-    const address = prompt('Contract address?');
+    const address = (prompt('Contract address?') || '').trim();
     if(this.isAddress(address)) {
       try {
         await this.send(this.contract.methods.disallowContract(address));

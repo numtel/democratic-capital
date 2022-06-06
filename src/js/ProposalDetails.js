@@ -11,12 +11,14 @@ export class ProposalDetails extends BaseElement {
     childTypeStr: {type: String},
     childAddress: {type: String},
     _loading: {state: true},
+    _error: {state: true},
     _details: {state: true},
   };
   constructor() {
     super();
     this._details = {};
     this._loading = true;
+    this._error = false;
   }
   async connectedCallback() {
     super.connectedCallback();
@@ -27,24 +29,32 @@ export class ProposalDetails extends BaseElement {
   }
   async fetchProposal() {
     this._loading = true;
-    const details = await this.contract.methods.details(this.proposalAddress).call();
-    details.dataDecoded = await this.decodeAbiFunction('IVerifiedGroup', details.data);
-    if(details.dataDecoded.name === 'invoke') {
-      details.invokeType = await this.childType(details.dataDecoded.params[0].value);
-      if(details.invokeType) {
-        details.invokeData = await this.decodeAbiFunction(details.invokeType, details.dataDecoded.params[1].value);
+    try {
+      const details = await this.contract.methods.details(this.proposalAddress).call();
+      details.dataDecoded = await this.decodeAbiFunction('IVerifiedGroup', details.data);
+      if(details.dataDecoded.name === 'invoke') {
+        details.invokeType = await this.childType(details.dataDecoded.params[0].value);
+        if(details.invokeType) {
+          details.invokeData = await this.decodeAbiFunction(details.invokeType, details.dataDecoded.params[1].value);
+        }
       }
+      details.myVote = app.connected
+        ? Number(await this.contract.methods.voteValue(this.proposalAddress, app.accounts[0]).call())
+        : null;
+      this._details = details;
+      this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
+    } catch(error) {
+      console.error(error);
+      this._error = true;
     }
-    details.myVote = app.connected
-      ? Number(await this.contract.methods.voteValue(this.proposalAddress, app.accounts[0]).call())
-      : null;
-    this._details = details;
-    this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
     this._loading = false;
   }
   render() {
     if(this._loading) return html`
       <main><p>Loading...</p></main>
+    `;
+    if(this._error) return html`
+      <main><p>Invalid Proposal!</p></main>
     `;
     const proposal = this._details;
     const timeLeft = Number(proposal.endTime) - this._details.currentTime;

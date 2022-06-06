@@ -13,6 +13,7 @@ export class ChildDetails extends BaseElement {
     childTypeStr: {type: String},
     childAddress: {type: String},
     _loading: {state: true},
+    _error: {state: true},
     _details: {state: true},
   };
   static typeDetails = {
@@ -40,21 +41,30 @@ export class ChildDetails extends BaseElement {
   constructor() {
     super();
     this._loading = true;
+    this._error = false;
     this._details = {};
   }
   async connectedCallback() {
     super.connectedCallback();
     this._loading = true;
-    const groupContract = await this.loadContract('VerifiedGroup', this.groupAddress);
-    this._details.isAllowed = await groupContract.methods.contractAllowed(this.childAddress).call();
-    const childContract = await this.loadContract(this.childTypeStr, this.childAddress);
-    this._details.name = await childContract.methods.name().call();
+    try {
+      const groupContract = await this.loadContract('VerifiedGroup', this.groupAddress);
+      this._details.isAllowed = await groupContract.methods.contractAllowed(this.childAddress).call();
+      const childContract = await this.loadContract(this.childTypeStr, this.childAddress);
+      this._details.name = await childContract.methods.name().call();
+    } catch(error) {
+      console.error(error);
+      this._error = true;
+    }
     
     this._loading = false;
   }
   render() {
     if(this._loading) return html`
       <main><p>Loading...</p></main>
+    `;
+    if(this._error) return html`
+      <main><p>Invalid Contract!</p></main>
     `;
     return html`
       <nav class="breadcrumbs">

@@ -9,6 +9,10 @@ contract ElectionsSimple is ElectionBase {
   uint16 public threshold;
   uint16 public minParticipation;
 
+  event DurationChanged(uint oldDuration, uint newDuration);
+  event ThresholdChanged(uint16 oldThreshold, uint16 newThreshold);
+  event MinParticipationChanged(uint16 oldMinParticipation, uint16 newMinParticipation);
+
   constructor(
     address _group,
     bytes[] memory _allowedInvokePrefixes,
@@ -31,5 +35,20 @@ contract ElectionsSimple is ElectionBase {
       threshold,
       (group.registeredCount() * minParticipation) / 0xffff
     );
+  }
+  function setDuration(uint _durationSeconds) external {
+    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    emit DurationChanged(durationSeconds, _durationSeconds);
+    durationSeconds = _durationSeconds;
+  }
+  function setThreshold(uint16 _threshold) external {
+    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    emit ThresholdChanged(threshold, _threshold);
+    threshold = _threshold;
+  }
+  function setMinParticipation(uint16 _minParticipation) external {
+    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    emit MinParticipationChanged(minParticipation, _minParticipation);
+    minParticipation = _minParticipation;
   }
 }

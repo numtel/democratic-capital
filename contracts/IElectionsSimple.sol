@@ -13,4 +13,7 @@ interface IElectionsSimple {
   function voteValue(address key, address voter) external view returns(uint8);
   function vote(address key, bool inSupport) external;
   function process(address key) external;
+  function setDuration(uint _durationSeconds) external;
+  function setThreshold(uint16 _threshold) external;
+  function setMinParticipation(uint16 _minParticipation) external;
 }
