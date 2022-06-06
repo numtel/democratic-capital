@@ -4,6 +4,7 @@ import {app} from './Web3App.js';
 import {ElectionsByMedianDetails} from './ElectionsByMedianDetails.js';
 import {OpenRegistrationsDetails} from './OpenRegistrationsDetails.js';
 import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
+import {GroupComments} from './GroupComments.js'
 
 export class ChildDetails extends BaseElement {
   static properties = {
@@ -72,6 +73,7 @@ export class ChildDetails extends BaseElement {
             </dd>
           </main>
         `}
+        <group-comments groupAddress="${this.groupAddress}" itemAddress="${this.childAddress}"></group-comments>
     `;
   }
 }

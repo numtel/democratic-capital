@@ -3,6 +3,7 @@ import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {PaginatedList} from './PaginatedList.js';
 import {AppTabs} from './AppTabs.js';
+import {GroupComments} from './GroupComments.js'
 
 export class GroupDetails extends BaseElement {
   static properties = {
@@ -198,6 +199,7 @@ export class GroupDetails extends BaseElement {
         <main>
           <app-tabs .tabs=${this.tabSections()}></app-tabs>
         </main>
+        <group-comments groupAddress="${this.address}" itemAddress="${this.address}"></group-comments>
       `}
     `;
   }

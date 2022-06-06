@@ -85,3 +85,6 @@ span.preview { vertical-align: top; }
 .proposal-not-passing { color: #d00; }
 .proposal-waiting { color:#0c0; }
 
+textarea { width: 100%; font-family: Inter, sans-serif; }
+ul.comments li { display: block; }
+ul.comments .meta { display: flex; justify-content: space-between; border-bottom: 1px solid #ddd; margin-bottom: 10px; padding-bottom: 10px; }

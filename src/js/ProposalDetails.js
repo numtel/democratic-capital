@@ -1,6 +1,7 @@
 import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
+import {GroupComments} from './GroupComments.js'
 
 export class ProposalDetails extends BaseElement {
   static properties = {
@@ -153,6 +154,7 @@ export class ProposalDetails extends BaseElement {
           <button @click="${this.process.bind(this)}">Invoke Proposal Data</button>
         ` : ''}
       </div>
+      <group-comments groupAddress="${this.groupAddress}" itemAddress="${this.proposalAddress}"></group-comments>
     `;
   }
   async vote(event) {

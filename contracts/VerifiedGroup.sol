@@ -16,7 +16,14 @@ contract VerifiedGroup {
   mapping(address => bytes4) public unregistrationHooks;
   AddressSet.Set registrationHookSet;
   AddressSet.Set unregistrationHookSet;
+  struct Comment {
+    string text;
+    address author;
+    uint timestamp;
+  }
+  mapping(address => Comment[]) public comments;
 
+  event NewComment(address indexed item, string text);
   event NameChanged(string oldName, string newName);
   event VerificationContractChanged(address indexed oldContract, address indexed newContract);
   event Registration(address indexed account);
@@ -72,6 +79,18 @@ contract VerifiedGroup {
 
   function allowedContractIndex(uint index) external view returns(address) {
     return allowedContracts.keyList[index];
+  }
+
+  function commentCount(address item) external view returns(uint) {
+    return comments[item].length;
+  }
+
+  // Functions that can be invoked by members
+  function postComment(address item, string memory text) external {
+    require(isVerified(msg.sender), 'Not Verified');
+    require(isRegistered(msg.sender), 'Not Registered');
+    comments[item].push(Comment(text, msg.sender, block.timestamp));
+    emit NewComment(item, text);
   }
 
   // Functions that can be invoked by allowed contracts
