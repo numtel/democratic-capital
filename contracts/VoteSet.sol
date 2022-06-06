@@ -8,7 +8,7 @@ library VoteSet {
     uint16 threshold;
     uint minVoters;
     bool processed;
-    
+
     // 0: not voted, 1: in support, 2: against
     mapping(address => uint8) votesByAccount;
     uint supporting;
