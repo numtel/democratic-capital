@@ -25,6 +25,7 @@ export class NewElectionsByMedian extends BaseElement {
     this._inputData = null;
     this._groupChildren = {};
     this._groupMethods = [];
+    this.reverseMethods = {};
     this._groupHasChildren = false;
     this._selContract = null;
     this._selContractValue = '';
@@ -33,6 +34,11 @@ export class NewElectionsByMedian extends BaseElement {
     super.connectedCallback();
     await app.initialized;
     this._groupMethods = await this.loadAbi('VerifiedGroup', true);
+    this.reverseMethods = this._groupMethods.reduce((out, method) => {
+        const selector = app.web3.eth.abi.encodeFunctionSignature(method);
+        out[selector] = method;
+        return out;
+      }, {});
     this._loading = false;
   }
   selAddPrefix(select) {
@@ -93,7 +99,7 @@ export class NewElectionsByMedian extends BaseElement {
       <p>The duration, majority threshold, and minimum participation parameters of these elections are set by the median values specified by each user.</p>
       <fieldset>
         <legend>Allowed Invoke Prefixes</legend>
-        <fieldset>
+        <fieldset class="horizontal">
           <legend>Add New Prefix</legend>
           ${this._loading ? html`
             <p>Loading...</p>
@@ -116,13 +122,19 @@ export class NewElectionsByMedian extends BaseElement {
               <label>
                 <span>Contract</span>
                 <select ${ref(this.selContract)} @change="${this.selContractChange}">
-                  <option value="">Any Contract</option>
-                  <option value="other">Other (specify below)</option>
+                  <option value=""
+                     selected="${ifDefined(this._selContractValue === '' ? true : undefined)}"
+                  >Any Contract</option>
+                  <option value="other"
+                     selected="${ifDefined(this._selContractValue === 'other' ? true : undefined)}"
+                  >Other</option>
                   ${this._groupHasChildren ? html`
                     ${Object.keys(this._groupChildren).map(childType => html`
                       <optgroup label="${childType}">
                         ${this._groupChildren[childType].map(thisChild => html`
-                          <option>${thisChild}</option>
+                          <option
+                           selected="${ifDefined(this._selContractValue === thisChild ? true : undefined)}"
+                          >${thisChild}</option>
                         `)}
                       </optgroup>
                     `)}
@@ -136,23 +148,34 @@ export class NewElectionsByMedian extends BaseElement {
                 </label>
               ` : ''}
             ` : ''}
-            <div class="commands">
-              <button @click="${this.addPrefix}" class="secondary">Add Prefix</button>
-            </div>
+            <button class="right secondary" @click="${this.addPrefix}">Add Prefix</button>
           `}
         </fieldset>
         ${this.prefixes === '' ? html`
           <p>No prefixes defined, allow any proposals</p>
         ` : html`
-          <p>Elections through this contract will only be allowed to invoke the following methods:</p>
+          <div class="pagination">
+          <div class="page-options">
+            Elections through this contract will only be allowed to invoke the following methods:
+          </div>
           <ul>
           ${this.prefixes.split(',').map(prefix => html`
             <li>
-              ${prefix}
-              <button @click="${this.removePrefix}" data-prefix="${prefix}" class="secondary">Remove</button>
+              <span>
+              ${this.reverseMethods[prefix.slice(0,10)].name}
+              ${prefix.length > 10 && this.reverseMethods[prefix.slice(0,10)].name === 'invoke' ? html`
+                (
+                <a href="${this.explorer('0x' + prefix.slice(34))}" @click="${this.route}">
+                  ${this.ellipseAddress('0x' + prefix.slice(34))}
+                </a>
+                )
+              ` :''}
+              </span>
+              <button @click="${this.removePrefix}" data-prefix="${prefix}" class="secondary right">Remove</button>
             </li>
           `)}
           </ul>
+          </div>
         `}
       </fieldset>
     `;

@@ -8,7 +8,7 @@ import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
 export class ChildDetails extends BaseElement {
   static properties = {
     groupAddress: {type: String},
-    childType: {type: String},
+    childTypeStr: {type: String},
     childAddress: {type: String},
     _loading: {state: true},
     _details: {state: true},
@@ -16,17 +16,17 @@ export class ChildDetails extends BaseElement {
   static typeDetails = {
     ElectionsByMedian: {
       tpl: (parent) => html`
-        <elections-by-median-details address="${parent.childAddress}"></elections-by-median-details>
+        <elections-by-median-details address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></elections-by-median-details>
       `
     },
     OpenRegistrations: {
       tpl: (parent) => html`
-        <open-registrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}"></open-registrations-details>
+        <open-registrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></open-registrations-details>
       `
     },
     OpenUnregistrations: {
       tpl: (parent) => html`
-        <open-unregistrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}"></open-unregistrations-details>
+        <open-unregistrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></open-unregistrations-details>
       `
     },
   };
@@ -45,25 +45,33 @@ export class ChildDetails extends BaseElement {
   }
   render() {
     if(this._loading) return html`
-      <p>Loading...</p>
+      <main><p>Loading...</p></main>
     `;
     return html`
       <nav class="breadcrumbs">
         <ol>
           <li><a @click="${this.route}" href="/groups">Groups</a></li>
           <li><a @click="${this.route}" href="/group/${this.groupAddress}">${this.ellipseAddress(this.groupAddress)}</a></li>
-          <li>${this.childType}: ${this.ellipseAddress(this.childAddress)}</li>
+          <li>${this.childTypeStr}: ${this.ellipseAddress(this.childAddress)}</li>
         </ol>
       </nav>
-      <h2>${this.childType} at <a href="${this.explorer(this.childAddress)}" @click="${this.open}">${this.ellipseAddress(this.childAddress)}</a></h2>
-      <p>
-        ${this._details.isAllowed
-          ? html`Contract allowed to invoke on behalf of group.`
-          : html`Contract is <strong>not</strong> allowed to invoke on behalf of group.`}
-      </p>
-      ${this.childType in ChildDetails.typeDetails
-        ? ChildDetails.typeDetails[this.childType].tpl(this)
-        : html`<p>There are no specific details for this type of child contract.</p>`}
+      <h2>${this.childTypeStr}</h2>
+      ${this.childTypeStr in ChildDetails.typeDetails
+        ? ChildDetails.typeDetails[this.childTypeStr].tpl(this)
+        : html`
+          <main>
+            <h3>Overview</h3>
+            <dl>
+            <dt>Contract</dt>
+            <dd><a href="${this.explorer(this.childAddress)}" @click="${this.open}">${this.childAddress}</a></dd>
+            <dt>Allowed to Invoke</dt>
+            <dd>
+              ${this._details.isAllowed
+                ? html`Yes`
+                : html`<strong>No</strong>`}
+            </dd>
+          </main>
+        `}
     `;
   }
 }

@@ -24,18 +24,23 @@ export class GroupList extends BaseElement {
   }
   render() {
     return html`
-      <button @click="${this.createGroup}">Create New Group</button>
       ${this._loading ? html`
-        <p>Loading...</p>
+        <main><p>Loading...</p></main>
       ` : html`
-        <paginated-list
-          updateIndex="${this._updateList}"
-          .count=${this.groupCount.bind(this)}
-          .fetchOne=${this.fetchGroup.bind(this)}
-          .renderer=${this.renderGroups.bind(this)}
-          .emptyRenderer=${this.renderEmpty.bind(this)}
-          .loadingRenderer=${this.renderLoading.bind(this)}
-        ></paginated-list>
+        <h2>
+          <button class="right" @click="${this.createGroup}">Create New Group</button>
+          All Groups
+        </h2>
+        <main>
+          <paginated-list
+            updateIndex="${this._updateList}"
+            .count=${this.groupCount.bind(this)}
+            .fetchOne=${this.fetchGroup.bind(this)}
+            .renderer=${this.renderGroups.bind(this)}
+            .emptyRenderer=${this.renderEmpty.bind(this)}
+            .loadingRenderer=${this.renderLoading.bind(this)}
+          ></paginated-list>
+        </main>
       `}
     `;
   }
@@ -54,7 +59,7 @@ export class GroupList extends BaseElement {
     return html`
       <ul>
         ${groups.map(group => html`
-          <li><a @click="${this.route}" href="/group/${group.address}">${group.name} (${this.ellipseAddress(group.address)}) ${group.memberCount} ${group.memberGroup === 1 ? 'member' : 'members'}</a></li>
+          <li><a @click="${this.route}" href="/group/${group.address}">${group.name} (${this.ellipseAddress(group.address)})</a> ${group.memberCount} ${group.memberCount === 1 ? 'member' : 'members'}</li>
         `)}
       </ul>
     `;

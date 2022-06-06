@@ -54,13 +54,13 @@ export class DeployChild extends BaseElement {
           <li>Deploy New Child Contract</li>
         </ol>
       </nav>
-      <h2>Deploy New Child Contract for Group ${this.ellipseAddress(this.groupAddress)}</h2>
+      <h2>Deploy New Child Contract</h2>
+      <main>
       ${this._loading ? html`
         <p>Loading...</p>
       ` : html`
         <form @submit=${this.submit}>
           <fieldset>
-            <legend>Child Contract Options</legend>
             <label>
               <span>Select Contract Type to Deploy</span>
               <select ${ref(this.selType)} @change="${this.selTypeChanged}">
@@ -78,6 +78,7 @@ export class DeployChild extends BaseElement {
           </fieldset>
         </form>
       `}
+      </main>
     `;
   }
 }

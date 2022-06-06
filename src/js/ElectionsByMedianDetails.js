@@ -4,10 +4,12 @@ import {ref} from 'lit/directives/ref.js';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {PaginatedList} from './PaginatedList.js';
+import {AppTabs} from './AppTabs.js';
 
 export class ElectionsByMedianDetails extends BaseElement {
   static properties = {
     address: {type: String},
+    allowed: {type: String},
     _loading: {state: true},
     _details: {state: true},
     _showConfigOptions: {state: true},
@@ -24,6 +26,7 @@ export class ElectionsByMedianDetails extends BaseElement {
   };
   constructor() {
     super();
+    this.allowed = false;
     this._loading = true;
     this._showConfigOptions = false;
     this._myCurDuration = 1;
@@ -34,6 +37,7 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._details = {};
     this._updateProposals = 0;
     this.groupMethods = [];
+    this.groupAddress = null;
     this.groupChildren = {};
     this.contract = null;
     this.reverseMethods = {};
@@ -47,7 +51,8 @@ export class ElectionsByMedianDetails extends BaseElement {
     this._loading = true;
     this.contract = await this.loadContract('ElectionsByMedian', this.address);
     this.groupMethods = await this.loadAbi('VerifiedGroup', true);
-    this.groupChildren = await this.allGroupChildren(this.closest('child-details').groupAddress);
+    this.groupAddress = this.closest('child-details').groupAddress;
+    this.groupChildren = await this.allGroupChildren(this.groupAddress);
     this.reverseMethods = this.groupMethods.reduce((out, method) => {
         const selector = app.web3.eth.abi.encodeFunctionSignature(method);
         out[selector] = method;
@@ -59,14 +64,14 @@ export class ElectionsByMedianDetails extends BaseElement {
     const rawThreshold = Number(raw._threshold);
     return {
       duration: Number(raw._duration),
-      threshold: rawThreshold === 16 ? 100 : 50 + (rawThreshold - 1) * (50/15),
-      minParticipation: ((Number(raw._minParticipation) - 1) / 15) * 100,
+      threshold: rawThreshold === 16 ? 100 : Math.round((50 + (rawThreshold - 1) * (50/15)) * 100) / 100,
+      minParticipation: Math.round(((Number(raw._minParticipation) - 1) / 15) * 10000) / 100,
     }
   }
   async loadDetails() {
     this._loading = true;
     this._details.invokePrefixes = await this.contract.methods.invokePrefixes().call();
-    this._details.configCount = await this.contract.methods.proposalConfigCount().call();
+    this._details.configCount = Number(await this.contract.methods.proposalConfigCount().call());
     this._details.configMedians = await this.contract.methods.getProposalConfig().call();
     this._details.myConfig = app.connected
       ? await this.contract.methods.getProposalConfig(app.accounts[0]).call()
@@ -128,92 +133,48 @@ export class ElectionsByMedianDetails extends BaseElement {
       const threshold = rawThreshold === 16 ? 100 : 50 + (rawThreshold - 1) * (50/15);
       proposalsTpl.push(html`
         <li>
-          <dl>
-            <dt>Time Remaining</dt>
-            <dd>${timeLeft > 0 ? html`
+          <div>
+            <a href="${window.location.pathname + '/' + proposal.key}" @click="${this.route}">${this.ellipseAddress(proposal.key)}</a>
+          </div>
+          <div class="details">
+            ${timeLeft > 0 ? html`
               ${remaining(timeLeft)} remaining
             ` : html`
               Election Completed
             `}
-            <dt>Invoke Data</dt>
-            <dd>
-              ${proposal.dataDecoded.name}
-              <ul class="invoke-params">
-                ${proposal.dataDecoded.params.map(param => html`
-                  <li>
-                    ${param.name === 'data' && proposal.invokeType ? html`
-                      <span class="invoke-name">${proposal.invokeData.name}</span>
-                      <ul class="invoke-params">
-                        ${proposal.invokeData.params.map(param => html`
-                          <li>
-                            <span class="name">${param.name}</span>
-                            <span class="value">
-                              ${param.type === 'address' ? html`
-                                <a @click="${this.open}" href="${this.explorer(param.value)}">
-                                  ${param.value}
-                                </a>
-                              ` : html`
-                                ${param.value}
-                              `}
-                            </span>
-                            <span class="type">${param.type}</span>
-                          </li>
-                        `)}
-                      </ul>
-                    ` : html`
-                      <span class="name">${param.name}</span>
-                      <span class="value">
-                        ${param.type === 'address' ? html`
-                          <a @click="${this.open}" href="${this.explorer(param.value)}">
-                            ${param.value}
-                          </a>
-                        ` : html`
-                          ${param.value}
-                        `}
-                      </span>
-                      <span class="type">${param.type} ${proposal.invokeType}</span>
-                    `}
-                  </li>
-                `)}
-              </ul>
-            </dd>
-            <dt>Status</dt>
-            <dd>
+            <br>
               ${timeLeft > 0 ?
-                proposal.passing ? 'Majority and participation thresholds met'
-                  : 'Proposal will not pass with current support and participation levels'
-                : proposal.processed ? 'Proposal passed and already processed'
-                  : proposal.passed ? 'Proposal passed and awaiting processing'
-                    : 'Proposal failed'}
+                  proposal.passing ? html`<span class="proposal-passing">Majority and participation thresholds met</span>`
+                    : html`<span class="proposal-not-passing">Proposal will not pass with current support and participation levels</span>`
+                  : proposal.processed ? html`<span class="proposal-completed">Proposal passed and already processed</span>`
+                    : proposal.passed ? html`<span class="proposal-waiting">Proposal passed and awaiting processing</span>`
+                      : html`<span class="proposal-failed">Proposal failed</span>`}
               ${proposal.myVote === 1 ? '(Voted in Support)' :
                 proposal.myVote === 2 ? '(Voted Against)' : ''}
-            </dd>
-            <dt>Support Level</dt>
-            <dd>
-              ${Math.round(supportLevel* 10000) / 100}%
-              (Minimum: ${Math.round(threshold * 100) / 100}%)
-            </dd>
-            <dt>Participation Level</dt>
-            <dd>
-              ${votersRequired > 0
-                ? `${votersRequired}
-                    ${votersRequired === 1
-                      ? 'more voter required to me participation threshold'
-                      : 'more voters required to meet participation threshold'}`
-                : `${totalVoters} ${totalVoters === 1 ? 'voter' : 'voters'}`}
-              (Minimum: ${proposal.minVoters})
-            </dd>
-            <dt>Start Time</dt>
-            <dd>${(new Date(proposal.startTime * 1000)).toString()}</dd>
-            <dt>End Time</dt>
-            <dd>${(new Date(proposal.endTime * 1000)).toString()}</dd>
-          </dl>
-          ${timeLeft > 0 && proposal.myVote === 0 ? html`
-            <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="true">Vote in Support</button>
-            <button @click="${this.vote.bind(this)}" data-key="${proposal.key}" data-supporting="false">Vote Against</button>
-          ` : proposal.passed && !proposal.processed ? html`
-            <button @click="${this.process.bind(this)}" data-key="${proposal.key}">Invoke Proposal Data</button>
-          ` : ''}
+            <br>
+              ${proposal.dataDecoded.name}
+                ${proposal.dataDecoded.params.map(param => html`
+                    ${param.name === 'data' && proposal.invokeType ? html`
+                      <span class="invoke-name">${proposal.invokeData.name}</span>
+                        ${proposal.invokeData.params.map(param => html`
+                            ${param.name}
+                              ${param.type === 'address' ? html`
+                                <a @click="${this.open}" href="${this.explorer(param.value)}">${this.ellipseAddress(param.value)}</a>
+                              ` : html`
+                                <span class="invoke-value">${param.value}</span>
+                              `}
+                        `)}
+                    ` : html`
+                      ${param.name}
+                        ${param.type === 'address' ? html`
+                          <a @click="${this.open}" href="${this.explorer(param.value)}">${this.ellipseAddress(param.value)}</a>
+                        ` : html`
+                          <span class="invoke-value">${param.value}</span>
+                        `}
+                      ${proposal.invokeType}
+                    `}
+                `)}
+          </div>
         </li>
       `);
     }
@@ -235,7 +196,7 @@ export class ElectionsByMedianDetails extends BaseElement {
   }
   render() {
     if(this._loading) return html`
-      <p>Loading...</p>
+      <main><p>Loading...</p></main>
     `;
 
     const configMedians = this.proposalConfigView(this._details.configMedians);
@@ -249,22 +210,31 @@ export class ElectionsByMedianDetails extends BaseElement {
           return this.reverseMethods[prefix.slice(0, 10)].name + (address ? ` (${address})` : '');
         })
       : this.groupMethods.map(method => method.name);
-    const methodName = this._newProposalMethod.split(' ')[0];
-    const proposalMethod = this.groupMethods.filter(method => method.name === methodName);
     return html`
-      <p>${this._details.invokePrefixes.length === 0
-            ? 'Full invoke capability (no filter)'
-            : 'Available Methods: ' + availableMethods.join(', ')}
-      </p>
-      <h3>Parameters</h3>
-      <dl class="parameters">
-        <dt>Number of Users with Configured Parameters</dt>
-        <dd>${this._details.configCount}</dd>
-        <dt>Median Proposal Configuration Parameters</dt>
+      <main>
+      <h3>Overview</h3>
+      <dl>
+      <dt>Contract</dt>
+      <dd><a href="${this.explorer(this.address)}" @click="${this.open}">${this.address}</a></dd>
+      <dt>Allowed to Invoke</dt>
+      <dd>
+        ${this.allowed === 'true'
+          ? html`Yes`
+          : html`<strong>No</strong>`}
+      </dd>
+      <dt>Available Methods</dt>
+      <dd>
+        ${this._details.invokePrefixes.length === 0
+              ? 'Full invoke capability (no filter)'
+              : 'Available Methods: ' + availableMethods.join(', ')}
+      </dd>
+        <dt>Parameter Ballots</dt>
+        <dd>${this._details.configCount} ${this._details.configCount === 1 ? 'user has' : 'users have'} cast a parameter ballot</dd>
+        <dt>Median Parameters</dt>
         <dd>
           ${this._details.configCount > 0 ? html`
-            <ul>
-              <li>Duration: ${configMedians.duration} days</li>
+            <ul class="parameters">
+              <li>Duration: ${configMedians.duration} ${configMedians.duration === 1 ? 'day' : 'days'}</li>
               <li>Majority Threshold: ${configMedians.threshold}%</li>
               <li>Minimum Participation: ${configMedians.minParticipation}%</li>
             </ul>
@@ -272,18 +242,18 @@ export class ElectionsByMedianDetails extends BaseElement {
             No Proposal Configuration Set
           `}
         </dd>
-        <dt>My Proposal Configuration Parameters</dt>
+        <dt>My Parameters</dt>
         <dd>
           ${myConfig.duration > 0 ? html`
-            <ul>
-              <li>Duration: ${myConfig.duration} days</li>
+            <ul class="parameters">
+              <li>Duration: ${myConfig.duration}  ${myConfig.duration === 1 ? 'day' : 'days'}</li>
               <li>Majority Threshold: ${myConfig.threshold}%</li>
               <li>Minimum Participation: ${myConfig.minParticipation}%</li>
             </ul>
           ` : html`
             No Proposal Configuration Set
           `}
-          <div>
+          <div class="spaced">
             ${!this._showConfigOptions ? html`
               <button @click="${this.configure}">Configure my Parameters</button>
               ${myConfig.duration > 0 ? html`
@@ -328,108 +298,127 @@ export class ElectionsByMedianDetails extends BaseElement {
           </div>
         </dd>
       </dl>
-      <h3>Proposals</h3>
-      <form @submit="${this.propose}">
-        <fieldset>
-          <legend>Submit New Proposal</legend>
-          <div>
-            <label>
-              <span>Method to Invoke</span>
-              <select @change="${this.setNewProposalMethod}">
-                <option></option>
-                ${availableMethods.map(method => html`
-                  <option selected="${ifDefined(this._newProposalMethod === method ? true : undefined)}">${method}</option>
-                `)}
-              </select>
-            </label>
-          </div>
-          ${this._proposalMethodLoading ? html`
-            <p>Loading...</p>
-          ` : html`
-            ${proposalMethod.length > 0 ? html`
-              ${proposalMethod[0].inputs.map((arg, index) => html`
-                <div>
-                  <label>
-                    <span>${arg.name}</span>
-                    ${index === 0 && this.firstArg ? html`
-                      <input name="${arg.name}" value="${this.firstArg}" disabled>
-                    ` : html`
-                      ${arg.type === 'address' ? html`
-                        <input required name="${arg.name}" pattern="^0x[a-fA-F0-9]{40}$">
-                      ` : html`
-                        <input required name="${arg.name}">
-                      `}
-                    `}
-                  </label>
-                </div>
-                ${proposalMethod[0].name === 'invoke' && index === 0 ? html`
-                  <div>
-                    <label>
-                      <span>Group Child Contracts</span>
-                      <select @change="${this.selContractChange}">
-                        <option value=""
-                         selected="${ifDefined(this.firstArg === '' ? true : undefined)}"
-                        >Select child contract...</option>
-                        ${Object.keys(this.groupChildren).map(childType => html`
-                          <optgroup label="${childType}">
-                            ${this.groupChildren[childType].map(thisChild => html`
-                              <option
-                               selected="${ifDefined(this.firstArg === thisChild ? true : undefined)}"
-                              >${thisChild}</option>
-                            `)}
-                          </optgroup>
-                        `)}
-                      </select>
-                    </label>
-                  </div>
-                ` : ''}
-              `)}
-              ${this.invokeMethods.length > 0 ? html`
-                <fieldset>
-                  <legend>Invoke Data Builder</legend>
-                  <div>
-                    <label>
-                      <span>Invoke Method</span>
-                      <select ${ref(this.setSelInvokeMethod)} @change="${this.setInvokeMethod}">
-                        <option value="">Choose Method...</option>
-                        ${this.invokeMethods.map(method => html`
-                          <option>${method.name}</option>
-                        `)}
-                      </select>
-                    </label>
-                  </div>
-                  ${this._invokeMethod && this.invokeMethods.filter(method => method.name === this._invokeMethod)[0].inputs.map((arg, index) => html`
+      </main>
+      <main>
+        <app-tabs .tabs=${this.proposalTabs(availableMethods)}></app-tabs>
+      </main>
+    `;
+  }
+  proposalTabs(availableMethods) {
+    const methodName = this._newProposalMethod.split(' ')[0];
+    const proposalMethod = this.groupMethods.filter(method => method.name === methodName);
+    return [
+      { name: 'Existing Proposals',
+        render: () => html`
+          <paginated-list
+            updateIndex="${this._updateProposals}"
+            .count=${this.proposalCount.bind(this)}
+            .fetchOne=${this.fetchProposal.bind(this)}
+            .renderer=${this.renderProposals.bind(this)}
+            .emptyRenderer=${this.renderEmpty.bind(this)}
+            .loadingRenderer=${this.renderLoading.bind(this)}
+          ></paginated-list>
+        `},
+      { name: 'Submit New Proposal',
+        render: () => html`
+          <form @submit="${this.propose.bind(this)}">
+            <fieldset>
+              <div>
+                <label>
+                  <span>Method to Invoke</span>
+                  <select @change="${this.setNewProposalMethod.bind(this)}">
+                    <option></option>
+                    ${availableMethods.map(method => html`
+                      <option selected="${ifDefined(this._newProposalMethod === method ? true : undefined)}">${method}</option>
+                    `)}
+                  </select>
+                </label>
+              </div>
+              ${this._proposalMethodLoading ? html`
+                <p>Loading...</p>
+              ` : html`
+                ${proposalMethod.length > 0 ? html`
+                  ${proposalMethod[0].inputs.map((arg, index) => html`
                     <div>
                       <label>
                         <span>${arg.name}</span>
-                        ${arg.type === 'address' ? html`
-                          <input required @change="${this.invokeParamChange}" name="invoke_${arg.name}" pattern="^0x[a-fA-F0-9]{40}$">
-                        ` : arg.type === 'bool' ? html`
-                          <input type="checkbox" @change="${this.invokeParamChange}" name="invoke_${arg.name}">
+                        ${index === 0 && this.firstArg ? html`
+                          <input name="${arg.name}" value="${this.firstArg}" disabled>
                         ` : html`
-                          <input required @change="${this.invokeParamChange}" name="invoke_${arg.name}">
+                          ${arg.type === 'address' ? html`
+                            <input required name="${arg.name}" pattern="^0x[a-fA-F0-9]{40}$">
+                          ` : html`
+                            <input required name="${arg.name}">
+                          `}
                         `}
                       </label>
                     </div>
+                    ${proposalMethod[0].name === 'invoke' && index === 0 ? html`
+                      <div>
+                        <label>
+                          <span>Group Child Contracts</span>
+                          <select @change="${this.selContractChange.bind(this)}">
+                            <option value=""
+                             selected="${ifDefined(this.firstArg === '' ? true : undefined)}"
+                            >Select child contract...</option>
+                            <optgroup label="VerifiedGroup">
+                              <option
+                               selected="${ifDefined(this.firstArg === this.groupAddress ? true : undefined)}"
+                              >${this.groupAddress}</option>
+                            </optgroup>
+                            ${Object.keys(this.groupChildren).map(childType => html`
+                              <optgroup label="${childType}">
+                                ${this.groupChildren[childType].map(thisChild => html`
+                                  <option
+                                   selected="${ifDefined(this.firstArg === thisChild ? true : undefined)}"
+                                  >${thisChild}</option>
+                                `)}
+                              </optgroup>
+                            `)}
+                          </select>
+                        </label>
+                      </div>
+                    ` : ''}
                   `)}
-                </fieldset>
-              ` : ''}
-            ` : ''}
-          `}
-          <div class="commands">
-            <button type="submit">Submit Proposal</button>
-          </div>
-        </fieldset>
-      </form>
-      <paginated-list
-        updateIndex="${this._updateProposals}"
-        .count=${this.proposalCount.bind(this)}
-        .fetchOne=${this.fetchProposal.bind(this)}
-        .renderer=${this.renderProposals.bind(this)}
-        .emptyRenderer=${this.renderEmpty.bind(this)}
-        .loadingRenderer=${this.renderLoading.bind(this)}
-      ></paginated-list>
-    `;
+                  ${this.invokeMethods.length > 0 ? html`
+                    <fieldset>
+                      <div>
+                        <label>
+                          <span>Invoke Method</span>
+                          <select ${ref(this.setSelInvokeMethod)} @change="${this.setInvokeMethod.bind(this)}">
+                            <option value="">Choose Method...</option>
+                            ${this.invokeMethods.map(method => html`
+                              <option>${method.name}</option>
+                            `)}
+                          </select>
+                        </label>
+                      </div>
+                      ${this._invokeMethod && this.invokeMethods.filter(method => method.name === this._invokeMethod)[0].inputs.map((arg, index) => html`
+                        <div>
+                          <label>
+                            <span>${arg.name}</span>
+                            ${arg.type === 'address' ? html`
+                              <input required @change="${this.invokeParamChange.bind(this)}" name="invoke_${arg.name}" pattern="^0x[a-fA-F0-9]{40}$">
+                            ` : arg.type === 'bool' ? html`
+                              <input type="checkbox" @change="${this.invokeParamChange.bind(this)}" name="invoke_${arg.name}">
+                            ` : html`
+                              <input required @change="${this.invokeParamChange.bind(this)}" name="invoke_${arg.name}">
+                            `}
+                          </label>
+                        </div>
+                      `)}
+                    </fieldset>
+                  ` : ''}
+                ` : ''}
+              `}
+              <div class="commands">
+                <button type="submit">Submit Proposal</button>
+              </div>
+            </fieldset>
+          </form>
+        `
+      }
+    ];
   }
   async selContractChange(event) {
     this.firstArg = event.target.value;
@@ -439,16 +428,6 @@ export class ElectionsByMedianDetails extends BaseElement {
       this._invokeMethod = '';
       this.invokeMethods = await this.loadAbi(childType, true);
       this._proposalMethodLoading = false;
-    }
-  }
-  async vote(event) {
-    const inSupport = event.target.attributes['data-supporting'].value === 'true';
-    const key = event.target.attributes['data-key'].value;
-    try {
-      await this.send(this.contract.methods.vote(key, inSupport));
-      this._updateProposals++;
-    } catch(error) {
-      this.displayError(error);
     }
   }
   async propose(event) {
@@ -461,17 +440,8 @@ export class ElectionsByMedianDetails extends BaseElement {
     const groupInterface = await this.loadContract('IVerifiedGroup');
     const invokeData = groupInterface.methods[methodName](...args).encodeABI();
     try {
-      await this.send(this.contract.methods.propose(invokeData));
-      this._updateProposals++;
-    } catch(error) {
-      this.displayError(error);
-    }
-  }
-  async process(event) {
-    const key = event.target.attributes['data-key'].value;
-    try {
-      await this.send(this.contract.methods.process(key));
-      this._updateProposals++;
+      const events = (await this.send(this.contract.methods.propose(invokeData))).events;
+      await this.route(window.location.pathname + '/' + events.NewElection.returnValues.key);
     } catch(error) {
       this.displayError(error);
     }

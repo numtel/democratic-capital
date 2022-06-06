@@ -2,6 +2,7 @@ import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {PaginatedList} from './PaginatedList.js';
+import {AppTabs} from './AppTabs.js';
 
 export class GroupDetails extends BaseElement {
   static properties = {
@@ -66,7 +67,6 @@ export class GroupDetails extends BaseElement {
                 </a>
             ` : html`
               ${contract.address}
-              ${contract.self ? '(Self reference)' : ''}
             `}
           </li>
         `)}
@@ -161,10 +161,6 @@ export class GroupDetails extends BaseElement {
     }
   }
   render() {
-    const adminMode = (this._details.isMember && this._details.memberCount === 1)
-      || (this._details.allowedContracts
-          && this._details.allowedContracts
-              .filter(x => x.address === app.accounts[0]).length > 0);
     return html`
       <nav class="breadcrumbs">
         <ol>
@@ -172,57 +168,89 @@ export class GroupDetails extends BaseElement {
           <li>${this.ellipseAddress(this.address)}</li>
         </ol>
       </nav>
-      <h2>${this._details.name} <a href="${this.explorer(this.address)}" @click="${this.open}">${this.ellipseAddress(this.address)}</a></h2>
       ${this._loading ? html`
-        <p>Loading...</p>
+        <main><p>Loading...</p></main>
       ` : this._details.error ? html`
-        <p>Invalid group</p>
+        <main><p>Invalid group</p></main>
       ` : html`
-        <p>
-          ${this._details.memberCount} ${this._details.memberCount === 1 ? 'member' : 'members'}
-          (${this._details.isMember ? 'Account is Member' : 'Not a Member'})
-        </p>
+        <h2>${this._details.name || this.address}</h2>
         ${this._details.memberCount === 1 ? html`
           <p class="notice">
             When a group only has one member, that one member can perform any administrative action on the group contract directly.<br><br>Before another member is registered into the group, it is <strong>very</strong> important to allow a contract that has the capability to perform administrative actions, such as an elections contract or by allowing an individual's account as an allowed contract.
           </p>
         ` : ''}
-        <h3>Allowed Contracts</h3>
-        <paginated-list
-          .count=${this.allowedCount.bind(this)}
-          .fetchOne=${this.fetchAllowed.bind(this)}
-          .renderer=${this.renderAllowed.bind(this)}
-          .emptyRenderer=${this.renderEmpty.bind(this)}
-          .loadingRenderer=${this.renderLoading.bind(this)}
-        ></paginated-list>
-        <h3>Deployed Children</h3>
-        <button @click="${this.route}" href="/group/${this.address}/deploy-child">Deploy New Child Contract...</button>
-        ${this._details.hasChildren ? html`
-          ${this._details.factories.map(factory => html`
-            ${factory.count > 0 ? html`
-              <h4>${factory.name}</h4>
-              <paginated-list
-                .count=${this.factoryCount.bind(this, factory.factoryName)}
-                .fetchOne=${this.factoryFetch.bind(this, factory.factoryName)}
-                .renderer=${this.renderFactoryList.bind(this, factory.name)}
-                .emptyRenderer=${this.renderEmpty.bind(this)}
-                .loadingRenderer=${this.renderLoading.bind(this)}
-              ></paginated-list>
-            ` : ''}
-          `)}
-        ` : html`
-          <p>No Children yet!</p>
-        `}
-        ${adminMode ? html`
-          <h3>Admin Mode</h3>
-          <button @click="${this.register}">Register user...</button>
-          <button @click="${this.unregister}">Register user...</button>
-          <button @click="${this.allowContract}">Allow Contract...</button>
-          <button @click="${this.disallowContract}">Disallow Contract...</button>
-          <button @click="${this.setName}">Set Name...</button>
-        ` : ''}
+
+        <main>
+        <h3>Overview</h3>
+        <dl>
+        <dt>Contract</dt>
+        <dd><a href="${this.explorer(this.address)}" @click="${this.open}">${this.address}</a></dd>
+        <dt>Member Count</dt>
+        <dd>
+          ${this._details.memberCount} ${this._details.memberCount === 1 ? 'member' : 'members'}
+        </dd>
+        <dt>Connected As Member</dt>
+        <dd>
+          ${this._details.isMember ? 'Account is Member' : 'Not a Member'}
+        </dd>
+        </dl>
+        </main>
+        <main>
+          <app-tabs .tabs=${this.tabSections()}></app-tabs>
+        </main>
       `}
     `;
+  }
+  tabSections() {
+    const adminMode = (this._details.isMember && this._details.memberCount === 1)
+      || (this._details.allowedContracts
+          && this._details.allowedContracts
+              .filter(x => x.address === app.accounts[0]).length > 0);
+    const tabs = [
+      { name: 'Allowed Contracts',
+        render: () => html`
+          <paginated-list
+            .count=${this.allowedCount.bind(this)}
+            .fetchOne=${this.fetchAllowed.bind(this)}
+            .renderer=${this.renderAllowed.bind(this)}
+            .emptyRenderer=${this.renderEmpty.bind(this)}
+            .loadingRenderer=${this.renderLoading.bind(this)}
+          ></paginated-list>
+      `},
+      { name: 'Deployed Children',
+        render: () => html`
+          <button class="right" @click="${this.route}" href="/group/${this.address}/deploy-child">Deploy New...</button>
+          ${this._details.hasChildren ? html`
+            ${this._details.factories.map(factory => html`
+              ${factory.count > 0 ? html`
+                <h4>${factory.name}</h4>
+                <paginated-list
+                  .count=${this.factoryCount.bind(this, factory.factoryName)}
+                  .fetchOne=${this.factoryFetch.bind(this, factory.factoryName)}
+                  .renderer=${this.renderFactoryList.bind(this, factory.name)}
+                  .emptyRenderer=${this.renderEmpty.bind(this)}
+                  .loadingRenderer=${this.renderLoading.bind(this)}
+                ></paginated-list>
+              ` : ''}
+            `)}
+          ` : html`
+            <p>No Children yet!</p>
+          `}
+        `},
+    ];
+    if(adminMode) {
+      tabs.push({
+        name: 'Adminstrator',
+        render: () => html`
+          <button @click="${this.register.bind(this)}">Register user...</button>
+          <button @click="${this.unregister.bind(this)}">Unregister user...</button>
+          <button @click="${this.allowContract.bind(this)}">Allow Contract...</button>
+          <button @click="${this.disallowContract.bind(this)}">Disallow Contract...</button>
+          <button @click="${this.setName.bind(this)}">Set Name...</button>
+        `
+      });
+    }
+    return tabs;
   }
 }
 customElements.define('group-details', GroupDetails);

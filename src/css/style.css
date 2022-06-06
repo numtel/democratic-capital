@@ -3,54 +3,85 @@
 
 * { box-sizing: border-box; }
 
-body { background:#fff; font-family: Inter, sans-serif; margin:0; padding: 0; }
+body { background:#f5f5f5; font-family: Inter, sans-serif; margin:0; padding: 0; }
 a { color: #ff0420; }
 
 #test {background-image: url("masthead.svg"); background-repeat: no-repeat no-repeat; background-color: #eee; background-position: 0 0; background-size: cover; height: 250px;padding:140px 0 0 15px; margin: -20px -10px 0 -10px; }
 #test span { display:block; font-size: 30px; font-weight: bold; color: #fff; text-shadow: 0 0 3px #000; }
-header { position:sticky; background: #fff; top: 0; display: flex; justify-content:space-between; box-shadow: 0 0 7px #0007;}
-header h1 { font-weight: bold; margin:0; padding: 0 40px; font-size: 30px; line-height: 60px; text-transform:uppercase; font-style:italic; letter-spacing: -1px; background: linear-gradient(90deg, #ff0420, #ffe300); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+header { position:sticky; background: #fff; top: 0; display: flex; justify-content:space-between; box-shadow: 0 0 7px #0002;}
+header h1 { font-weight: bold; margin:0 10px 0 0; padding: 0 10px; font-size: 30px; line-height: 50px; letter-spacing: -1px; background: linear-gradient(90deg, #ff0420, #ffe300); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 header h1 a { text-decoration: none; }
 
 header nav {display: flex;}
 header nav ul { list-style:none; margin: 0; padding: 0; display: flex; }
 
-header nav ul a { display: block; line-height: 60px; padding:0 20px; font-size: 14px; font-weight:500; text-decoration: none; color: #333; }
+header nav ul a { display: block; line-height: 50px; padding:0 20px; font-size: 14px; font-weight:500; text-decoration: none; color: #333; }
+header nav ul a.active { line-height:48px; border-bottom: 2px solid #bf1023; }
 header nav ul a:hover { color: #000; text-decoration: underline; }
 header button.walletToggle .disconnect { display: none; }
 header button.walletToggle:hover .address { display: none; }
 header button.walletToggle:hover .disconnect {display: inline; }
 span.tagline { display: block; background: #333; color: #fff; text-align: center; font-size: 18px; font-style:italic; font-weight: 400; padding: 10px; }
 
-main { margin: 0 auto; padding: 20px 10px; max-width: 960px; background: #eeed; }
+h2 { max-width: 960px; margin: 20px auto 10px; }
+h2 a { font-size: 16px; color:#666; }
+main { margin: 20px auto; background: #fff; border:1px solid #ddd; border-radius: 10px; box-shadow: 0 0 10px #0001; padding: 10px; max-width: 960px; }
 
-nav.breadcrumbs ol { list-style:none; padding-left: 0; }
+nav.breadcrumbs ol { list-style:none; padding-left: 0; max-width: 960px; margin: 20px auto; }
 nav.breadcrumbs li { display: inline-block; }
 nav.breadcrumbs a::after { display: inline-block; color:#333; content: ">"; font-size: 80%; font-weight: bold; padding: 0 4px 0 6px;}
 
 .pagination {}
-.pagination .page-options {display:flex; background:#fff; padding: 3px; justify-content:space-between;}
+.pagination .page-options {display:flex; background:#f7f7f7; margin: 0 -10px; padding: 7px; border-width: 1px 0; border-color:#ddd; border-style: solid; justify-content:space-between;}
 .pagination>ul { list-style:none; padding:0; margin:0; }
-.pagination>ul>li { padding: 5px; border-bottom: 1px solid #aaa; }
+.pagination>ul>li { display:flex; justify-content: space-between; align-items:center; padding: 8px 5px; border-bottom: 1px solid #eee; }
+.pagination .details { flex: 1; padding-left: 15px; }
 
-fieldset { margin: 20px; }
+fieldset { margin: 0; border:0; padding: 0;}
+fieldset.horizontal { display:flex; background:#f7f7f7; margin: 0 -10px; padding: 7px 10px; border-width: 1px 0; border-color:#ddd; border-style: solid; }
+fieldset.horizontal legend { display:none; }
+fieldset.horizontal label { margin-right: 10px;}
+legend, h3 { font-size: 20px; border-bottom: 1px solid #ccc; margin: 0 -10px 10px -10px; display:block; width: calc(100% + 20px); padding: 3px 8px; }
+fieldset label { display:block; padding: 8px 0; }
 fieldset label span { display: block; font-size: 90%; }
 fieldset label span::after { content: ":"; }
 fieldset label input { width: 100%; }
 fieldset label input[type="checkbox"] { width: auto; }
 fieldset label input[type="range"] { max-width: 200px; }
-.commands { text-align:center; }
-button { margin: 10px 5px; padding: 10px; background:#d7041c; border: 0; color: #fff; font-weight: bold; cursor:pointer; border-radius:10px; font-size: 110%; border-bottom: 3px solid #8a0918; }
-button.secondary { padding: 5px 10px; font-size: 100%; background: #666; border-bottom-color: #333;}
-button:hover { background: #ff0420; }
+.commands { text-align:center;  margin-bottom: 20px; }
+button { margin: 5px; padding: 4px 8px; background:#d7041c; border: 0; color: #fff; font-weight: bold; cursor:pointer; border-radius:10px; font-size: 15px; }
+button.secondary { padding: 5px 10px; font-size: 100%; background: #666;}
+button:hover { background: #f2001b; }
 button.secondary:hover { background: #777; }
-button:active { background: #bf1023; border-bottom: 0; border-top:3px solid #eee; }
+button:active { background: #bf1023; }
 button.secondary:active { background: #444; }
+button.right { float:right; }
 
 .invoke-params { list-style:none; }
 .invoke-params .name { font-style: italic; }
+.invoke-params .value, .invoke-value { word-wrap:anywhere; }
 .invoke-params .type { font-size: 80%; }
 
-p.notice { margin: 15px; padding: 15px; background:#fcc8; }
+p.notice { margin: 15px auto; max-width: 960px; padding: 15px; background:#fcc8; box-shadow:0 0 8px #0001; border-radius: 10px; }
 
 td { padding: 3px; }
+
+dt { float:left; width: 200px; padding-top: 10px; clear:left; }
+dt::after { content: ":" }
+dd { margin: 0; padding: 10px; border-bottom: 1px solid #ddd; }
+
+ul.tabs { list-style:none; display: flex; margin:0; padding:0; border-bottom: 1px solid #ddd; margin: -10px -10px 10px -10px; }
+ul.tabs li { }
+ul.tabs button { background: none; color: #333; border-radius: 0; padding: 10px; margin: 0 10px; }
+ul.tabs button.active { border-bottom: 2px solid #bf1023; color:#bf1023; }
+
+ul.parameters { display: flex; margin: 0; padding: 0 0 0 10px; }
+ul.parameters li { margin-left: 30px; }
+ul.parameters li:first-child { margin-left: 0; }
+div.spaced { padding: 8px 0 0 190px; }
+span.preview { vertical-align: top; }
+
+.proposal-passing { color: #090; }
+.proposal-not-passing { color: #d00; }
+.proposal-waiting { color:#0c0; }
+

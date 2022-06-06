@@ -55,6 +55,12 @@ Start [Parcel](https://parceljs.org/) with the following command:
 $ npm run dev
 ```
 
+Vim users may need to set the following in order to use Parcel's Hot Module Reloading:
+
+```
+:set backupcopy=yes
+```
+
 ## Testing Contracts
 
 ```

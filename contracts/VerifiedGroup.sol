@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import "./IVerifiedGroup.sol";
 import "./AddressSet.sol";
 using AddressSet for AddressSet.Set;
 
@@ -40,6 +41,13 @@ contract VerifiedGroup {
     // Contract creator becomes first member automatically
     // in order to prevent any bots from taking over before it can start
     register(_firstAccount);
+  }
+  // EIP-165
+  function supportsInterface(bytes4 interfaceId) external pure returns(bool) {
+    return interfaceId == thisInterfaceId();
+  }
+  function thisInterfaceId() public pure returns(bytes4) {
+    return type(IVerifiedGroup).interfaceId;
   }
 
   // General use view functions

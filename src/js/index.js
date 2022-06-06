@@ -6,15 +6,26 @@ import {app} from './Web3App.js';
 export class AppHeading extends BaseElement {
   static properties = {
     connected: {type: Boolean, reflect: true},
+    path: {type: String, reflect: true},
   };
   constructor() {
     super();
     this.connected = false;
+    this.path = window.location.pathname;
+    this.popstate = this.popstate.bind(this);
   }
   async connectedCallback() {
     super.connectedCallback();
     await app.initialized;
     this.connected = app.connected;
+    window.addEventListener('popstate', this.popstate);
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    window.removeEventListener('popstate', this.popstate);
+  }
+  popstate(event) {
+    this.path = window.location.pathname;
   }
   render() {
     return html`
@@ -23,10 +34,10 @@ export class AppHeading extends BaseElement {
           <h1><a @click="${this.route}" href="/">Democratic Capital</a></h1>
           <ul>
             <li>
-              <a @click="${this.route}" href="/groups">Groups</a>
+              <a @click="${this.route}" class="${this.path.startsWith('/group') ? 'active' : ''}" href="/groups">Groups</a>
             </li>
             <li>
-              <a @click="${this.route}" href="/docs">Documentation</a>
+              <a @click="${this.route}" class="${this.path.startsWith('/docs') ? 'active' : ''}" href="/docs">Documentation</a>
             </li>
             <li>
               <a @click="${this.open}" href="https://github.com/numtel/democratic-capital">Github</a>

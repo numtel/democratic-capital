@@ -28,6 +28,7 @@ export class BaseElement extends LitElement {
     const newPath = typeof event === 'string' ? event : event.target.attributes.href.value;
     window.history.pushState({}, '', newPath);
     document.querySelector('app-router').path = newPath;
+    document.querySelector('app-heading').path = newPath;
     window.scrollTo(0, 0);
   }
   open(event) {
@@ -115,8 +116,10 @@ export class BaseElement extends LitElement {
         error.reason = parsed.reason || (parsed.data && parsed.data.reason);
       }
       if(error.reason === 'Not Verified'
+          || error.message.indexOf('Not Verified') !== -1
           || (error.data && error.data.reason === 'Not Verified')) {
         this.route('/verify');
+        throw error;
       } else {
         throw error;
       }
