@@ -52,6 +52,11 @@ const contracts = {
     abi: 'ElectionsSimpleFactory.abi',
     constructorArgs: [],
   },
+  ElectionsSimpleQuadraticFactory: {
+    instance: null,
+    abi: 'ElectionsSimpleQuadraticFactory.abi',
+    constructorArgs: [],
+  },
   OpenRegistrationsFactory: {
     instance: null,
     abi: 'OpenRegistrationsFactory.abi',
@@ -60,6 +65,11 @@ const contracts = {
   OpenUnregistrationsFactory: {
     instance: null,
     abi: 'OpenUnregistrationsFactory.abi',
+    constructorArgs: [],
+  },
+  ERC20MintableFactory: {
+    instance: null,
+    abi: 'ERC20MintableFactory.abi',
     constructorArgs: [],
   },
 };

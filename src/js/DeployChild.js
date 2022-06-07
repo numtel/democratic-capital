@@ -4,8 +4,10 @@ import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {NewElectionsByMedian} from './NewElectionsByMedian.js';
 import {NewElectionsSimple} from './NewElectionsSimple.js';
+import {NewElectionsSimpleQuadratic} from './NewElectionsSimpleQuadratic.js';
 import {NewOpenRegistrations} from './NewOpenRegistrations.js';
 import {NewOpenUnregistrations} from './NewOpenUnregistrations.js';
+import {NewERC20Mintable} from './NewERC20Mintable.js';
 
 export class DeployChild extends BaseElement {
   static properties = {

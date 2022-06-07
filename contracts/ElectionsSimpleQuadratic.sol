@@ -75,29 +75,33 @@ contract ElectionsSimpleQuadratic is ElectionBase {
   }
 
   function setDuration(uint _durationSeconds) external {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    allowed();
     emit DurationChanged(durationSeconds, _durationSeconds);
     durationSeconds = _durationSeconds;
   }
   function setThreshold(uint16 _threshold) external {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    allowed();
     emit ThresholdChanged(threshold, _threshold);
     threshold = _threshold;
   }
   function setMinParticipation(uint16 _minParticipation) external {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    allowed();
     emit MinParticipationChanged(minParticipation, _minParticipation);
     minParticipation = _minParticipation;
   }
   function setQuadraticToken(address _quadraticToken) external {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    allowed();
     emit QuadraticTokenChanged(quadraticToken, _quadraticToken);
     quadraticToken = _quadraticToken;
   }
   function setQuadraticMultiplier(uint _quadraticMultiplier) external {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    allowed();
     emit QuadraticMultiplierChanged(quadraticMultiplier, _quadraticMultiplier);
     quadraticMultiplier = _quadraticMultiplier;
+  }
+
+  function allowed() view internal {
+    require(group.contractAllowed(msg.sender), 'Invalid Caller');
   }
 
   // From: https://github.com/Uniswap/v2-core/blob/v1.0.1/contracts/libraries/Math.sol

@@ -12,6 +12,10 @@ export class BaseElement extends LitElement {
       factory: 'ElectionsSimpleFactory',
       tpl: html`<new-elections-simple></new-elections-simple>`,
     },
+    ElectionsSimpleQuadratic: {
+      factory: 'ElectionsSimpleQuadraticFactory',
+      tpl: html`<new-elections-simple-quadratic></new-elections-simple-quadratic>`,
+    },
     OpenRegistrations: {
       factory: 'OpenRegistrationsFactory',
       tpl: html`<new-open-registrations></new-open-registrations>`,
@@ -19,6 +23,10 @@ export class BaseElement extends LitElement {
     OpenUnregistrations: {
       factory: 'OpenUnregistrationsFactory',
       tpl: html`<new-open-unregistrations></new-open-unregistrations>`,
+    },
+    ERC20Mintable: {
+      factory: 'ERC20MintableFactory',
+      tpl: html`<new-erc20-mintable></new-erc20-mintable>`,
     },
   };
   constructor() {
