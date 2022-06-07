@@ -13,17 +13,25 @@ export class ProposalDetails extends BaseElement {
     _loading: {state: true},
     _error: {state: true},
     _details: {state: true},
+    hasQuadratic: {state: true},
+    quadraticToken: {state: true},
+    _quadraticSpend: {state: true},
   };
   constructor() {
     super();
     this._details = {};
     this._loading = true;
     this._error = false;
+    this.hasQuadratic = false;
+    this.quadraticToken = null;
+    this._quadraticSpend = null;
   }
   async connectedCallback() {
     super.connectedCallback();
     this._loading = true;
-    this.contract = await this.loadContract('ElectionsByMedian', this.childAddress);
+    this.contract = await this.loadContract(this.childTypeStr, this.childAddress);
+    this.hasQuadratic = 'voteQuadratic' in this.contract.methods;
+    this._quadraticSpend = new app.web3.utils.BN(0);
     await this.fetchProposal();
     this._loading = false;
   }
@@ -43,6 +51,16 @@ export class ProposalDetails extends BaseElement {
         : null;
       this._details = details;
       this._details.currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
+      if(this.hasQuadratic) {
+        this._details.quadraticMultiplier = new app.web3.utils.BN(await this.contract.methods.quadraticMultiplier().call());
+        const tokenAddress = await this.contract.methods.quadraticToken().call();
+        this.quadraticToken = await this.loadContract('IERC20', tokenAddress);
+        this._details.tokenSymbol = await this.quadraticToken.methods.symbol().call();
+        this._details.tokenDecimals = Number(await this.quadraticToken.methods.decimals().call());
+        this._details.tokenBalance = new app.web3.utils.BN(await this.quadraticToken.methods.balanceOf(app.accounts[0]).call());
+        this._details.tokenBalanceFP = this._details.tokenBalance.div((new app.web3.utils.BN(10)).pow(new app.web3.utils.BN(this._details.tokenDecimals)));
+        this._details.allowance = new app.web3.utils.BN(await this.quadraticToken.methods.allowance(app.accounts[0], this.contract.options.address).call());
+      }
     } catch(error) {
       console.error(error);
       this._error = true;
@@ -157,21 +175,75 @@ export class ProposalDetails extends BaseElement {
           <dd>${(new Date(proposal.endTime * 1000)).toString()}</dd>
         </dl>
       </main>
-      <div class="commands">
-        ${timeLeft > 0 && proposal.myVote === 0 ? html`
-          <button @click="${this.vote.bind(this)}" data-supporting="true">Vote in Support</button>
-          <button @click="${this.vote.bind(this)}" data-supporting="false">Vote Against</button>
-        ` : proposal.passed && !proposal.processed ? html`
+      ${timeLeft > 0 && proposal.myVote === 0 ? html`
+        ${this.hasQuadratic ? html`
+          <main>
+            <h3>Submit Ballot</h3>
+            <dl>
+              <dt>My Balance</dt>
+              <dd>${this._details.tokenBalanceFP.toString(10)} ${this._details.tokenSymbol}</dd>
+              <dt>Amount to Spend</dt>
+              <dd>
+                <input value="${this._quadraticSpend.div((new app.web3.utils.BN(10)).pow(new app.web3.utils.BN(this._details.tokenDecimals)))}" @change="${this.setQuadraticSpend}">
+                <span class="preview">${this.votePowerStr(this._quadraticSpend)}</span>
+              </dd>
+              <div class="commands">
+                ${this._quadraticSpend.gt(this._details.tokenBalance) ? html`
+                  <p>Insufficient Balance!</p>
+                ` : this._details.allowance.gte(this._quadraticSpend) ? html`
+                  <button @click="${this.vote.bind(this)}" data-supporting="true">Vote in Support</button>
+                  <button @click="${this.vote.bind(this)}" data-supporting="false">Vote Against</button>
+                ` : html`
+                  <button @click="${this.approve.bind(this)}">Approve Spend</button>
+                `}
+              </div>
+            </dl>
+          </main>
+        ` : html`
+          <div class="commands">
+            <button @click="${this.vote.bind(this)}" data-supporting="true">Vote in Support</button>
+            <button @click="${this.vote.bind(this)}" data-supporting="false">Vote Against</button>
+          </div>
+        `}
+      ` : proposal.passed && !proposal.processed ? html`
+        <div class="commands">
           <button @click="${this.process.bind(this)}">Invoke Proposal Data</button>
-        ` : ''}
-      </div>
+        </div>
+      ` : ''}
       <group-comments groupAddress="${this.groupAddress}" itemAddress="${this.proposalAddress}"></group-comments>
     `;
+  }
+  setQuadraticSpend(event) {
+    try {
+      const value = new app.web3.utils.BN(event.target.value);
+      this._quadraticSpend = value.mul((new app.web3.utils.BN(10)).pow(new app.web3.utils.BN(this._details.tokenDecimals)));
+    } catch(error) {
+      this.displayError(error);
+    }
+  }
+  votePower(amount) {
+    return Math.floor(Math.sqrt(this._quadraticSpend.div(this._details.quadraticMultiplier).toNumber() + 1));
+  }
+  votePowerStr(amount) {
+    const value = this.votePower(amount);
+    return `${value} ${value === 1 ? 'vote' : 'votes'}`;
+  }
+  async approve(event) {
+    try {
+      await this.send(this.quadraticToken.methods.approve(this.childAddress, this._quadraticSpend));
+      await this.fetchProposal();
+    } catch(error) {
+      this.displayError(error);
+    }
   }
   async vote(event) {
     const inSupport = event.target.attributes['data-supporting'].value === 'true';
     try {
-      await this.send(this.contract.methods.vote(this.proposalAddress, inSupport));
+      if(this.hasQuadratic) {
+        await this.send(this.contract.methods.voteQuadratic(this.proposalAddress, inSupport, this._quadraticSpend));
+      } else {
+        await this.send(this.contract.methods.vote(this.proposalAddress, inSupport));
+      }
       await this.fetchProposal();
     } catch(error) {
       this.displayError(error);

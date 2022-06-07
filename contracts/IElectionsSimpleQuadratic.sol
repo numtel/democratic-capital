@@ -2,6 +2,8 @@
 pragma solidity 0.8.13;
 
 interface IElectionsSimpleQuadratic {
+  function quadraticToken() external view returns(address);
+  function quadraticMultiplier() external view returns(uint);
   function propose(bytes memory data) external;
   function count() external view returns(uint);
   function atIndex(uint index) external view returns(address);

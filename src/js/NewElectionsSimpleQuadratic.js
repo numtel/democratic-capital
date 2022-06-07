@@ -48,7 +48,7 @@ export class NewElectionsSimpleQuadratic extends BaseElement {
         <li>Quadratic votes get one power free so to vote with a power of 4, a voter must supply 15 times the quadratic multiplier. (square root of 16 is 4)</li>
       </ul>
       <p>Therefore, a quadratic multiplier of 5000000 for a USDC token will require 5 USDC per quadratic unit.</p>
-      <p>Resulting in a payment of 60 USDC (15 * 5) to vote with a power of 4 votes.</p>
+      <p>Resulting in a payment of 75 USDC (15 * 5) to vote with a power of 4 votes.</p>
 
       <fieldset>
         <legend>Election Parameters</legend>
