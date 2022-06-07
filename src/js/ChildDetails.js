@@ -3,6 +3,7 @@ import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {ElectionsByMedianDetails} from './ElectionsByMedianDetails.js';
 import {ElectionsSimpleDetails} from './ElectionsSimpleDetails.js';
+import {ElectionsSimpleQuadraticDetails} from './ElectionsSimpleQuadraticDetails.js';
 import {OpenRegistrationsDetails} from './OpenRegistrationsDetails.js';
 import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
 import {GroupComments} from './GroupComments.js'
@@ -25,6 +26,11 @@ export class ChildDetails extends BaseElement {
     ElectionsSimple: {
       tpl: (parent) => html`
         <elections-simple-details address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></elections-simple-details>
+      `
+    },
+    ElectionsSimpleQuadratic: {
+      tpl: (parent) => html`
+        <elections-simple-quadratic-details address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></elections-simple-quadratic-details>
       `
     },
     OpenRegistrations: {

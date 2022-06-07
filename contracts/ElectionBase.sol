@@ -51,7 +51,7 @@ abstract contract ElectionBase is ChildBase {
       require(foundAllowed, 'Proposed Data Mismatch');
     }
 
-    address key = address(uint160(uint256(keccak256(abi.encode(count(), data)))));
+    address key = address(uint160(uint256(keccak256(abi.encode(address(this), count(), data)))));
     // Should never collide but can't be too safe
     require(!proposals.exists(key));
 
