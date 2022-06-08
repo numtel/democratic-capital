@@ -35,8 +35,10 @@ abstract contract ElectionBase is ChildBase {
     uint16 threshold,
     uint minVoters
   ) internal {
-    require(group.isRegistered(msg.sender), 'Not Registered');
-    require(group.isVerified(msg.sender), 'Not Verified');
+    if(!group.contractAllowed(msg.sender)) {
+      require(group.isRegistered(msg.sender), 'Not Registered');
+      require(group.isVerified(msg.sender), 'Not Verified');
+    }
     if(allowedInvokePrefixes.length > 0) {
       bool foundAllowed = false;
       for(uint i = 0; i < allowedInvokePrefixes.length; i++) {

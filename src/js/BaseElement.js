@@ -32,6 +32,10 @@ export class BaseElement extends LitElement {
       factory: 'MemberTokenEmissionsFactory',
       tpl: parent => html`<new-member-token-emissions groupAddress="${parent.groupAddress}"></new-member-token-emissions>`,
     },
+    RegistrationsByElection: {
+      factory: 'RegistrationsByElectionFactory',
+      tpl: parent => html`<new-registrations-by-election groupAddress="${parent.groupAddress}"></new-registrations-by-election>`,
+    },
   };
   constructor() {
     super();

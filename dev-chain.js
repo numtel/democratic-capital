@@ -77,6 +77,11 @@ const contracts = {
     abi: 'MemberTokenEmissionsFactory.abi',
     constructorArgs: [],
   },
+  RegistrationsByElectionFactory: {
+    instance: null,
+    abi: 'RegistrationsByElectionFactory.abi',
+    constructorArgs: [],
+  },
 };
 
 
