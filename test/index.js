@@ -36,8 +36,9 @@ async function deployContract(account, contractName, ...args) {
   const abi = JSON.parse(fs.readFileSync(
     `${BUILD_DIR}${contractName}.abi`, { encoding: 'utf8' }));
   const contract = new web3.eth.Contract(abi);
-  const deployed = await contract.deploy({ data: bytecode, arguments: args })
-    .send({ from: account, gas: GAS_AMOUNT });
+  const method = contract.deploy({ data: bytecode, arguments: args });
+  const gas = await method.estimateGas();
+  const deployed = await method.send({ from: account, gas });
 
   deployed.sendFrom = (address) => Object.keys(deployed.methods)
     .reduce((out, cur) => {

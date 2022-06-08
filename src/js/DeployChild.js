@@ -11,6 +11,7 @@ import {NewERC20Mintable} from './NewERC20Mintable.js';
 import {NewMemberTokenEmissions} from './NewMemberTokenEmissions.js';
 import {NewRegistrationsByElection} from './NewRegistrationsByElection.js';
 import {NewRegistrationsByFee} from './NewRegistrationsByFee.js';
+import {NewFundraiser} from './NewFundraiser.js';
 
 export class DeployChild extends BaseElement {
   static properties = {

@@ -40,6 +40,10 @@ export class BaseElement extends LitElement {
       factory: 'RegistrationsByFeeFactory',
       tpl: parent => html`<new-registrations-by-fee groupAddress="${parent.groupAddress}"></new-registrations-by-fee>`,
     },
+    Fundraiser: {
+      factory: 'FundraiserFactory',
+      tpl: parent => html`<new-fundraiser groupAddress="${parent.groupAddress}"></new-fundraiser>`,
+    },
   };
   constructor() {
     super();

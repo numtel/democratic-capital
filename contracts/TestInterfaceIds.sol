@@ -11,6 +11,7 @@ import "./IERC20Mintable.sol";
 import "./IMemberTokenEmissions.sol";
 import "./IRegistrationsByElection.sol";
 import "./IRegistrationsByFee.sol";
+import "./IFundraiser.sol";
 
 /*
   Maintain a list of child contract interfaceIds for the frontend
@@ -27,4 +28,5 @@ contract TestInterfaceIds {
   bytes4 public MemberTokenEmissions = type(IMemberTokenEmissions).interfaceId;
   bytes4 public RegistrationsByElection = type(IRegistrationsByElection).interfaceId;
   bytes4 public RegistrationsByFee = type(IRegistrationsByFee).interfaceId;
+  bytes4 public Fundraiser = type(IFundraiser).interfaceId;
 }
