@@ -23,6 +23,7 @@ contract RegistrationsByElection is ChildBase {
 
   function register() external {
     require(group.isVerified(msg.sender), 'Not Verified');
+    require(!group.isRegistered(msg.sender), 'Already Registered');
     IElection electionContract = IElection(elections);
     electionContract.propose(abi.encodeWithSelector(SELECTOR, msg.sender));
   }
