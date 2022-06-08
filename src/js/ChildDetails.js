@@ -8,6 +8,7 @@ import {OpenRegistrationsDetails} from './OpenRegistrationsDetails.js';
 import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
 import {MemberTokenEmissionsDetails} from './MemberTokenEmissionsDetails.js';
 import {RegistrationsByElectionsDetails} from './RegistrationsByElectionDetails.js';
+import {RegistrationsByFeeDetails} from './RegistrationsByFeeDetails.js';
 import {GroupComments} from './GroupComments.js'
 
 export class ChildDetails extends BaseElement {
@@ -53,6 +54,11 @@ export class ChildDetails extends BaseElement {
     RegistrationsByElection: {
       tpl: (parent) => html`
         <registrations-by-election-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></registrations-by-election-details>
+      `
+    },
+    RegistrationsByFee: {
+      tpl: (parent) => html`
+        <registrations-by-fee-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></registrations-by-fee-details>
       `
     },
   };

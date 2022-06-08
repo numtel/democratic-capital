@@ -10,6 +10,7 @@ import "./IVerifiedGroup.sol";
 import "./IERC20Mintable.sol";
 import "./IMemberTokenEmissions.sol";
 import "./IRegistrationsByElection.sol";
+import "./IRegistrationsByFee.sol";
 
 /*
   Maintain a list of child contract interfaceIds for the frontend
@@ -25,4 +26,5 @@ contract TestInterfaceIds {
   bytes4 public ERC20Mintable = type(IERC20Mintable).interfaceId;
   bytes4 public MemberTokenEmissions = type(IMemberTokenEmissions).interfaceId;
   bytes4 public RegistrationsByElection = type(IRegistrationsByElection).interfaceId;
+  bytes4 public RegistrationsByFee = type(IRegistrationsByFee).interfaceId;
 }

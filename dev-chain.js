@@ -82,6 +82,11 @@ const contracts = {
     abi: 'RegistrationsByElectionFactory.abi',
     constructorArgs: [],
   },
+  RegistrationsByFeeFactory: {
+    instance: null,
+    abi: 'RegistrationsByFeeFactory.abi',
+    constructorArgs: [],
+  },
 };
 
 
