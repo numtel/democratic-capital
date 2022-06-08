@@ -8,6 +8,7 @@ import {NewElectionsSimpleQuadratic} from './NewElectionsSimpleQuadratic.js';
 import {NewOpenRegistrations} from './NewOpenRegistrations.js';
 import {NewOpenUnregistrations} from './NewOpenUnregistrations.js';
 import {NewERC20Mintable} from './NewERC20Mintable.js';
+import {NewMemberTokenEmissions} from './NewMemberTokenEmissions.js';
 
 export class DeployChild extends BaseElement {
   static properties = {
@@ -73,7 +74,7 @@ export class DeployChild extends BaseElement {
               </select>
             </label>
             <div ${ref(this.childOptions)}>
-              ${this.childTypes[this._selTypeValue].tpl}
+              ${this.childTypes[this._selTypeValue].tpl(this)}
             </div>
             <div class="commands">
               <button type="submit">Deploy</button>

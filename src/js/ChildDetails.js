@@ -6,6 +6,7 @@ import {ElectionsSimpleDetails} from './ElectionsSimpleDetails.js';
 import {ElectionsSimpleQuadraticDetails} from './ElectionsSimpleQuadraticDetails.js';
 import {OpenRegistrationsDetails} from './OpenRegistrationsDetails.js';
 import {OpenUnregistrationsDetails} from './OpenUnregistrationsDetails.js';
+import {MemberTokenEmissionsDetails} from './MemberTokenEmissionsDetails.js';
 import {GroupComments} from './GroupComments.js'
 
 export class ChildDetails extends BaseElement {
@@ -41,6 +42,11 @@ export class ChildDetails extends BaseElement {
     OpenUnregistrations: {
       tpl: (parent) => html`
         <open-unregistrations-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></open-unregistrations-details>
+      `
+    },
+    MemberTokenEmissions: {
+      tpl: (parent) => html`
+        <member-token-emissions-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></member-token-emissions-details>
       `
     },
   };

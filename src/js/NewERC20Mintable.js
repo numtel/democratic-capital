@@ -2,9 +2,6 @@ import {html, css} from 'lit';
 import {BaseElement} from './BaseElement.js';
 
 export class NewERC20Mintable extends BaseElement {
-  static properties = {
-    groupAddress: {type: String},
-  };
   constructor() {
     super();
   }

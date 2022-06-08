@@ -8,6 +8,7 @@ import "./IOpenRegistrations.sol";
 import "./IOpenUnregistrations.sol";
 import "./IVerifiedGroup.sol";
 import "./IERC20Mintable.sol";
+import "./IMemberTokenEmissions.sol";
 
 /*
   Maintain a list of child contract interfaceIds for the frontend
@@ -21,4 +22,5 @@ contract TestInterfaceIds {
   bytes4 public OpenUnregistrations = type(IOpenUnregistrations).interfaceId;
   bytes4 public VerifiedGroup = type(IVerifiedGroup).interfaceId;
   bytes4 public ERC20Mintable = type(IERC20Mintable).interfaceId;
+  bytes4 public MemberTokenEmissions = type(IMemberTokenEmissions).interfaceId;
 }

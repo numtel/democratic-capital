@@ -6,27 +6,31 @@ export class BaseElement extends LitElement {
   childTypes = {
     ElectionsByMedian: {
       factory: 'ElectionsByMedianFactory',
-      tpl: html`<new-elections-by-median></new-elections-by-median>`,
+      tpl: parent => html`<new-elections-by-median groupAddress="${parent.groupAddress}"></new-elections-by-median>`,
     },
     ElectionsSimple: {
       factory: 'ElectionsSimpleFactory',
-      tpl: html`<new-elections-simple></new-elections-simple>`,
+      tpl: parent => html`<new-elections-simple groupAddress="${parent.groupAddress}"></new-elections-simple>`,
     },
     ElectionsSimpleQuadratic: {
       factory: 'ElectionsSimpleQuadraticFactory',
-      tpl: html`<new-elections-simple-quadratic></new-elections-simple-quadratic>`,
+      tpl: parent => html`<new-elections-simple-quadratic groupAddress="${parent.groupAddress}"></new-elections-simple-quadratic>`,
     },
     OpenRegistrations: {
       factory: 'OpenRegistrationsFactory',
-      tpl: html`<new-open-registrations></new-open-registrations>`,
+      tpl: parent => html`<new-open-registrations></new-open-registrations>`,
     },
     OpenUnregistrations: {
       factory: 'OpenUnregistrationsFactory',
-      tpl: html`<new-open-unregistrations></new-open-unregistrations>`,
+      tpl: parent => html`<new-open-unregistrations></new-open-unregistrations>`,
     },
     ERC20Mintable: {
       factory: 'ERC20MintableFactory',
-      tpl: html`<new-erc20-mintable></new-erc20-mintable>`,
+      tpl: parent => html`<new-erc20-mintable></new-erc20-mintable>`,
+    },
+    MemberTokenEmissions: {
+      factory: 'MemberTokenEmissionsFactory',
+      tpl: parent => html`<new-member-token-emissions groupAddress="${parent.groupAddress}"></new-member-token-emissions>`,
     },
   };
   constructor() {
@@ -74,15 +78,22 @@ export class BaseElement extends LitElement {
   async allGroupChildren(groupAddress) {
     const out = {}
     for(let typeName of Object.keys(this.childTypes)) {
-      const factoryName = this.childTypes[typeName].factory;
-      const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
-      const count = Number(await factory.methods.groupCount(groupAddress).call());
-      if(count) {
-        out[typeName] = [];
-        for(let i = 0; i < count; i++) {
-          const thisChild = await factory.methods.deployedByGroup(groupAddress, i).call();
-          out[typeName].push(thisChild);
-        }
+      const children = await this.childrenOfType(groupAddress, typeName);
+      if(children.length) {
+        out[typeName] = children;
+      }
+    }
+    return out;
+  }
+  async childrenOfType(groupAddress, typeName) {
+    const out = [];
+    const factoryName = this.childTypes[typeName].factory;
+    const factory = await this.loadContract(factoryName, window.config.contracts[factoryName].address);
+    const count = Number(await factory.methods.groupCount(groupAddress).call());
+    if(count) {
+      for(let i = 0; i < count; i++) {
+        const thisChild = await factory.methods.deployedByGroup(groupAddress, i).call();
+        out.push(thisChild);
       }
     }
     return out;
