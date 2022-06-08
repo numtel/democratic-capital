@@ -30,6 +30,8 @@ export class MemberTokenEmissionsDetails extends BaseElement {
   async loadDetails() {
     this._loading = true;
     try {
+    this._details.periodLength = Number(await this.contract.methods.emissionPeriodSeconds().call());
+    this._details.emissionAmount = await this.contract.methods.emissionAmount().call();
     this._details.available = await this.contract.methods.availableEmissions(app.accounts[0]).call();
     this._details.lastCollected = Number(await this.contract.methods.lastCollected(app.accounts[0]).call());
     } catch(error) {
@@ -55,6 +57,10 @@ export class MemberTokenEmissionsDetails extends BaseElement {
           ? html`Yes`
           : html`<strong>No</strong>`}
       </dd>
+      <dt>Emission Period Length</dt>
+      <dd>${remaining(this._details.periodLength)}</dd>
+      <dt>Emission Amount</dt>
+      <dd>${this._details.emissionAmount}</dd>
       <dt>Available Emissions</dt>
       <dd>${this._details.available}</dd>
       <dt>Last Collected</dt>
