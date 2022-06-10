@@ -2,8 +2,9 @@
 pragma solidity 0.8.13;
 
 import "./IERC20LiquidityPool.sol";
-import "./safeTransferLibrary.sol";
+import "./safeTransfer.sol";
 import "./ERC20Mintable.sol";
+import "./IERC20.sol";
 
 contract ERC20LiquidityPool is ERC20Mintable {
   address[2] public tokens;
@@ -13,7 +14,7 @@ contract ERC20LiquidityPool is ERC20Mintable {
 
   uint private unlocked = 1;
   modifier lock() {
-    require(unlocked == 1, 'UniswapV2: LOCKED');
+    require(unlocked == 1, 'LOCKED');
     unlocked = 0;
     _;
     unlocked = 1;
@@ -32,6 +33,12 @@ contract ERC20LiquidityPool is ERC20Mintable {
     thisInterfaceId = type(IERC20LiquidityPool).interfaceId;
   }
 
+  // Helper function to reduce RPC requests
+  function getReserves() external view returns(uint reserve0, uint reserve1) {
+    reserve0 = reserves[0];
+    reserve1 = reserves[1];
+  }
+
   // function mint() fom parent ERC20Mintable allows the group
   //  the ability to dilute liquidity
 
@@ -45,22 +52,11 @@ contract ERC20LiquidityPool is ERC20Mintable {
       amount1ToTake = amount1;
     } else {
       // Use input amounts as maximum in current reserve ratio
-      if(reserves[0] < reserves[1]) {
-        // Take all of amount1, use part of amount0
-        amount0ToTake = (amount1 * reserves[0]) / reserves[1];
-        amount1ToTake = amount1;
-        if(amount0ToTake > amount0) {
-          amount0ToTake = amount0;
-          amount1ToTake = (amount0 * reserves[1]) / reserves[0];
-        }
-      } else {
-        // Take all of amount0, use part of amount1
+      amount0ToTake = (amount1 * reserves[0]) / reserves[1];
+      amount1ToTake = amount1;
+      if(amount0ToTake > amount0) {
         amount0ToTake = amount0;
         amount1ToTake = (amount0 * reserves[1]) / reserves[0];
-        if(amount1ToTake > amount1) {
-          amount0ToTake = (amount1 * reserves[0]) / reserves[1];
-          amount1ToTake = amount1;
-        }
       }
     }
     reserves[0] += amount0ToTake;
@@ -86,18 +82,22 @@ contract ERC20LiquidityPool is ERC20Mintable {
     safeTransfer.invoke(tokens[1], msg.sender, amount1);
   }
 
-  function swap(uint8 fromToken, uint amountIn, uint minReceived) external lock returns(uint amountOut) {
+  function swapRoute(uint8 fromToken, address recipient) external lock returns(uint amountOut) {
     require(fromToken == 0 || fromToken == 1, "Invalid fromToken");
-    require(amountIn > 0, "Invalid Amount");
     uint8 toToken = fromToken == 0 ? 1 : 0;
 
-    reserves[fromToken] += amountIn;
-    amountOut = (amountIn * reserves[toToken]) / reserves[fromToken];
-    require(amountOut >= minReceived, "Rate Too Low");
+    uint balance0 = IERC20(tokens[0]).balanceOf(address(this));
+    uint balance1 = IERC20(tokens[1]).balanceOf(address(this));
+    uint[2] memory diff;
+    diff[0] = balance0 - reserves[0];
+    diff[1] = balance1 - reserves[1];
+    require(diff[fromToken] > 0, 'Input Too Low');
+
+    reserves[fromToken] += diff[fromToken];
+    amountOut = (diff[fromToken] * reserves[toToken]) / reserves[fromToken];
     reserves[toToken] -= amountOut;
 
-    safeTransfer.invokeFrom(tokens[fromToken], msg.sender, address(this), amountIn);
-    safeTransfer.invoke(tokens[toToken], msg.sender, amountOut);
+    safeTransfer.invoke(tokens[toToken], recipient, amountOut);
   }
 
 

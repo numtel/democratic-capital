@@ -30,6 +30,22 @@ function increaseTime(seconds) {
   })
 }
 
+async function loadContract(contractName, address) {
+  const abi = JSON.parse(fs.readFileSync(
+    `${BUILD_DIR}${contractName}.abi`, { encoding: 'utf8' }));
+  const deployed = new web3.eth.Contract(abi, address);
+  deployed.sendFrom = (address) => Object.keys(deployed.methods)
+    .reduce((out, cur) => {
+      out[cur] = function() {
+        return deployed.methods[cur].apply(null, arguments)
+          .send({ from: address, gas: GAS_AMOUNT });
+      }
+      return out;
+    }, {});
+
+  return deployed;
+}
+
 async function deployContract(account, contractName, ...args) {
   const bytecode = fs.readFileSync(
     `${BUILD_DIR}${contractName}.bin`, { encoding: 'utf8' });
@@ -92,7 +108,7 @@ const cases = fs.readdirSync(__dirname)
       try {
         await theseCases[caseName]({
           // Supply test context as options object in first argument to case
-          web3, accounts, increaseTime, deployContract, BURN_ACCOUNT,
+          web3, accounts, increaseTime, deployContract, loadContract, BURN_ACCOUNT,
           throws,
         });
       } catch(error) {

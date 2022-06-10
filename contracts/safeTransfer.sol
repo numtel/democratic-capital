@@ -7,10 +7,10 @@ library safeTransfer {
 
   function invoke(address token, address to, uint value) internal {
     (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR_TRANSFER, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FAILED');
+    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FAILED');
   }
   function invokeFrom(address token, address from, address to, uint value) internal {
     (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, from, to, value));
-    require(success && (data.length == 0 || abi.decode(data, (bool))), 'UniswapV2: TRANSFER_FROM_FAILED');
+    require(success && (data.length == 0 || abi.decode(data, (bool))), 'TRANSFER_FROM_FAILED');
   }
 }
