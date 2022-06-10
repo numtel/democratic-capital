@@ -87,14 +87,13 @@ contract ERC20LiquidityPool is ERC20Mintable {
   }
 
   function swap(uint8 fromToken, uint amountIn, uint minReceived) external lock returns(uint amountOut) {
-    uint8 toToken = fromToken == 0 ? 1 : fromToken == 1 ? 0 : 2;
-    require(tokens[toToken] != address(0), "Invalid fromToken");
+    require(fromToken == 0 || fromToken == 1, "Invalid fromToken");
     require(amountIn > 0, "Invalid Amount");
-    require(reserves[fromToken] >= amountIn, "Reserves Too Low");
-    amountOut = (amountIn * reserves[toToken]) / reserves[fromToken];
-    require(amountOut >= minReceived, "Rate Too Low");
+    uint8 toToken = fromToken == 0 ? 1 : 0;
 
     reserves[fromToken] += amountIn;
+    amountOut = (amountIn * reserves[toToken]) / reserves[fromToken];
+    require(amountOut >= minReceived, "Rate Too Low");
     reserves[toToken] -= amountOut;
 
     safeTransfer.invokeFrom(tokens[fromToken], msg.sender, address(this), amountIn);

@@ -63,18 +63,19 @@ exports.swap = async function({
   const BN = web3.utils.BN;
   const inputs = [
   // account index, input 0, 1, swapFromToken, amountIn, minReceived
-    [1, 0, 10000, 1000000, 1000, 100000],
-    [1, 0, 500000, 100000, 1000, 200],
-    [1, 1, 10000, 1000000, 1000, 10],
-    [1, 1, 500000, 100000, 1000, 5000],
+    [1, 0, 10000, 1000000, 1000, 90909],
+    [1, 0, 11000,  909091, 1000, 75757],
+    // minReceived not met
+    [1, 0, 11000,  909091, 1000, 75758, throws],
+    // Swap the other way
+    [1, 1, 10000, 1000000, 1000, 9],
+    [1, 1, 500000, 100000, 1000, 4950],
     // What happens when somebody tries to buy all of one side?
-    [1, 0, 500000, 100000, 500000, 100000],
+    [1, 0, 500000, 100000, 500000, 50000],
     // What happens whens somebody tries to buy more than one side?
-    [1, 0, 500000, 100000, 600000, 0, throws],
+    [1, 0, 500000, 100000, 600000, 54545],
     // What happens when somebody tries to buy zero?
     [1, 0, 500000, 100000, 0, 0, throws],
-    // What happens when minReceived not met?
-    [1, 0, 500000, 100000, 1000, 100001, throws],
   ].map(x => x.slice(0, 2).concat(x.slice(2,6).map(y=>new BN(y))).concat(x.slice(6)));
 
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
