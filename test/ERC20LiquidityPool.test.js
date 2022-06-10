@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 exports.depositAndWithdrawEqual = async function({
-  web3, accounts, deployContract, throws,
+  web3, accounts, deployContract,
 }) {
   const BN = web3.utils.BN;
   const VALID_DIFF = new BN(3); // Small math discrepancy
@@ -20,7 +20,7 @@ exports.depositAndWithdrawEqual = async function({
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
-    group.options.address, tokenA.options.address, tokenB.options.address, '', '', 4);
+    group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -58,7 +58,7 @@ exports.depositAndWithdrawEqual = async function({
 };
 
 exports.depositDevaluedAfterMint = async function({
-  web3, accounts, deployContract, throws,
+  web3, accounts, deployContract,
 }) {
   const BN = web3.utils.BN;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
@@ -69,7 +69,7 @@ exports.depositDevaluedAfterMint = async function({
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
-    group.options.address, tokenA.options.address, tokenB.options.address, '', '', 4);
+    group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -91,8 +91,55 @@ exports.depositDevaluedAfterMint = async function({
   const balanceA = new BN(await tokenA.methods.balanceOf(accounts[0]).call())
   const balanceB = new BN(await tokenB.methods.balanceOf(accounts[0]).call())
 
-  // TOken amounts withdrawn should be have of input
+  // Token amounts withdrawn should be half of input
   assert.ok(AMOUNT_A.sub(balanceA).eq(balanceA));
   assert.ok(AMOUNT_B.sub(balanceB).eq(balanceB));
+};
+
+exports.swapFee = async function({
+  web3, accounts, deployContract, throws,
+}) {
+  const BN = web3.utils.BN;
+  const FEE = 0.1;
+  const AMOUNT_A = new BN(100000), AMOUNT_B = new BN(100000);
+  const SWAP_IN = 1000, OUT = 892;
+
+  const mockVerification = await deployContract(accounts[0], 'MockVerification');
+  // VerifiedGroup constructor requires verified user
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
+  await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
+  const group = await deployContract(accounts[0], 'VerifiedGroup',
+    mockVerification.options.address, accounts[0], '');
+
+  // accounts[0] is adminstrator of group
+  await group.sendFrom(accounts[0]).allowContract(accounts[0]);
+  await group.sendFrom(accounts[0]).register(accounts[1]);
+
+  const tokenA = await deployContract(accounts[0], 'TestERC20');
+  const tokenB = await deployContract(accounts[0], 'TestERC20');
+  const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
+    group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
+
+  // Only allowed contracts can set the swap fee
+  assert.strictEqual(await throws(() =>
+    pool.sendFrom(accounts[1]).setSwapFee(Math.floor(FEE * 0xffffffff))
+  ), true);
+  await group.sendFrom(accounts[0]).allowContract(accounts[1]);
+  await pool.sendFrom(accounts[1]).setSwapFee(Math.floor(FEE * 0xffffffff));
+
+  // Prepare the liquidity
+  await tokenA.sendFrom(accounts[0]).mint(accounts[0], AMOUNT_A);
+  await tokenA.sendFrom(accounts[0]).approve(pool.options.address, AMOUNT_A);
+  await tokenB.sendFrom(accounts[0]).mint(accounts[0], AMOUNT_B);
+  await tokenB.sendFrom(accounts[0]).approve(pool.options.address, AMOUNT_B);
+
+  await pool.sendFrom(accounts[0]).deposit(AMOUNT_A, AMOUNT_B);
+  const liquidity = new BN(await pool.methods.balanceOf(accounts[0]).call());
+
+  // Perform the swap
+  await tokenA.sendFrom(accounts[1]).mint(pool.options.address, SWAP_IN);
+  await pool.sendFrom(accounts[1]).swapRoute(0,  accounts[1]);
+  const output = Number(await tokenB.methods.balanceOf(accounts[1]).call());
+  assert.strictEqual(output, OUT);
 
 };

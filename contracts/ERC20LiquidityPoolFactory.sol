@@ -20,6 +20,7 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     address group,
     address token0,
     address token1,
+    uint32 swapFee,
     string memory name,
     string memory symbol,
     uint8 decimals
@@ -32,7 +33,7 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     require(getPairByGroup[group][token0][token1] == address(0), 'PAIR_EXISTS');
 
     ERC20LiquidityPool newContract = new ERC20LiquidityPool(
-      group, token0, token1, name, symbol, decimals);
+      group, token0, token1, swapFee, name, symbol, decimals);
 
     getPairByGroup[group][token0][token1] = address(newContract);
     // Also provide reverse in order to aid frontends
@@ -58,6 +59,7 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
       } else {
         // Output to next pool
         address nextPoolAddress = getPairByGroup[group][tokens[i+1]][tokens[i+2]];
+        require(nextPoolAddress != address(0), 'NO_POOL_EXISTS');
         curAmount = pool.swapRoute(fromToken, nextPoolAddress);
       }
     }

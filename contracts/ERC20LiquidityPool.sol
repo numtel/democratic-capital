@@ -9,8 +9,11 @@ import "./IERC20.sol";
 contract ERC20LiquidityPool is ERC20Mintable {
   address[2] public tokens;
   uint[2] public reserves;
+  uint32 public swapFee;
 
   uint public constant MINIMUM_DEPOSIT = 10**3;
+
+  event NewSwapFee(uint32 oldFee, uint32 newFee);
 
   uint private unlocked = 1;
   modifier lock() {
@@ -24,12 +27,14 @@ contract ERC20LiquidityPool is ERC20Mintable {
     address _group,
     address _token0,
     address _token1,
+    uint32 _swapFee,
     string memory _name,
     string memory _symbol,
     uint8 _decimals
   ) ERC20Mintable(_group, _name, _symbol, _decimals) {
     tokens[0] = _token0;
     tokens[1] = _token1;
+    swapFee = _swapFee;
     thisInterfaceId = type(IERC20LiquidityPool).interfaceId;
   }
 
@@ -39,8 +44,7 @@ contract ERC20LiquidityPool is ERC20Mintable {
     reserve1 = reserves[1];
   }
 
-  // function mint() fom parent ERC20Mintable allows the group
-  //  the ability to dilute liquidity
+  // function mint() from parent ERC20Mintable allows group to dilute liquidity
 
   function deposit(uint amount0, uint amount1) external lock returns(uint liquidity) {
     require(amount0 > MINIMUM_DEPOSIT && amount1 > MINIMUM_DEPOSIT, 'Deposit Too Small');
@@ -82,19 +86,22 @@ contract ERC20LiquidityPool is ERC20Mintable {
     safeTransfer.invoke(tokens[1], msg.sender, amount1);
   }
 
+  function setSwapFee(uint32 _newFee) external {
+    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    emit NewSwapFee(swapFee, _newFee);
+    swapFee = _newFee;
+  }
+
   function swapRoute(uint8 fromToken, address recipient) external lock returns(uint amountOut) {
     require(fromToken == 0 || fromToken == 1, "Invalid fromToken");
     uint8 toToken = fromToken == 0 ? 1 : 0;
 
-    uint balance0 = IERC20(tokens[0]).balanceOf(address(this));
-    uint balance1 = IERC20(tokens[1]).balanceOf(address(this));
-    uint[2] memory diff;
-    diff[0] = balance0 - reserves[0];
-    diff[1] = balance1 - reserves[1];
-    require(diff[fromToken] > 0, 'Input Too Low');
+    uint diff = IERC20(tokens[fromToken]).balanceOf(address(this)) - reserves[fromToken];
+    require(diff > 0, 'Input Too Low');
 
-    reserves[fromToken] += diff[fromToken];
-    amountOut = (diff[fromToken] * reserves[toToken]) / reserves[fromToken];
+    reserves[fromToken] += diff;
+    amountOut = (diff * reserves[toToken]) / reserves[fromToken];
+    amountOut -= (amountOut * swapFee) / 0xffffffff;
     reserves[toToken] -= amountOut;
 
     safeTransfer.invoke(tokens[toToken], recipient, amountOut);

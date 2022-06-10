@@ -81,7 +81,7 @@ exports.swapRouter = async function({
         group.options.address,
         tokens[i].options.address,
         tokens[i + 1].options.address,
-        '', '', 4)).events.NewDeployment.returnValues.deployed;
+        0, '', '', 4)).events.NewDeployment.returnValues.deployed;
       pools.push(await loadContract('ERC20LiquidityPool', poolAddress));
     }
 
