@@ -1,6 +1,6 @@
 const assert = require('assert');
 
-exports.mintAndBurnEqual = async function({
+exports.depositAndWithdrawEqual = async function({
   web3, accounts, deployContract, throws,
 }) {
   const BN = web3.utils.BN;
@@ -55,4 +55,44 @@ exports.mintAndBurnEqual = async function({
     assert.ok(inputs[i][1].sub(balanceA).abs().lte(VALID_DIFF), assertStr);
     assert.ok(inputs[i][2].sub(balanceB).abs().lte(VALID_DIFF), assertStr);
   }
+};
+
+exports.depositDevaluedAfterMint = async function({
+  web3, accounts, deployContract, throws,
+}) {
+  const BN = web3.utils.BN;
+  const mockVerification = await deployContract(accounts[0], 'MockVerification');
+  // VerifiedGroup constructor requires verified user
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
+  const group = await deployContract(accounts[0], 'VerifiedGroup',
+    mockVerification.options.address, accounts[0], '');
+  const tokenA = await deployContract(accounts[0], 'TestERC20');
+  const tokenB = await deployContract(accounts[0], 'TestERC20');
+  const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
+    group.options.address, tokenA.options.address, tokenB.options.address, '', '', 4);
+
+  // accounts[0] is adminstrator of group
+  await group.sendFrom(accounts[0]).allowContract(accounts[0]);
+
+  const AMOUNT_A = new BN(100000), AMOUNT_B = new BN(50000);
+
+  await tokenA.sendFrom(accounts[0]).mint(accounts[0], AMOUNT_A);
+  await tokenA.sendFrom(accounts[0]).approve(pool.options.address, AMOUNT_A);
+  await tokenB.sendFrom(accounts[0]).mint(accounts[0], AMOUNT_B);
+  await tokenB.sendFrom(accounts[0]).approve(pool.options.address, AMOUNT_B);
+
+  await pool.sendFrom(accounts[0]).deposit(AMOUNT_A, AMOUNT_B);
+  const liquidity = new BN(await pool.methods.balanceOf(accounts[0]).call());
+
+  // Dilute liquidity by minting an equal amount to another user
+  await pool.sendFrom(accounts[0]).mint(accounts[1], liquidity);
+
+  await pool.sendFrom(accounts[0]).withdraw(liquidity);
+  const balanceA = new BN(await tokenA.methods.balanceOf(accounts[0]).call())
+  const balanceB = new BN(await tokenB.methods.balanceOf(accounts[0]).call())
+
+  // TOken amounts withdrawn should be have of input
+  assert.ok(AMOUNT_A.sub(balanceA).eq(balanceA));
+  assert.ok(AMOUNT_B.sub(balanceB).eq(balanceB));
+
 };
