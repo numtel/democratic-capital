@@ -8,6 +8,7 @@ import {NewElectionsSimpleQuadratic} from './NewElectionsSimpleQuadratic.js';
 import {NewOpenRegistrations} from './NewOpenRegistrations.js';
 import {NewOpenUnregistrations} from './NewOpenUnregistrations.js';
 import {NewERC20Mintable} from './NewERC20Mintable.js';
+import {NewERC20LiquidityPool} from './NewERC20LiquidityPool.js';
 import {NewMemberTokenEmissions} from './NewMemberTokenEmissions.js';
 import {NewRegistrationsByElection} from './NewRegistrationsByElection.js';
 import {NewRegistrationsByFee} from './NewRegistrationsByFee.js';

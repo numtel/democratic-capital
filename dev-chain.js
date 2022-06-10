@@ -72,6 +72,11 @@ const contracts = {
     abi: 'ERC20MintableFactory.abi',
     constructorArgs: [],
   },
+  ERC20LiquidityPoolFactory: {
+    instance: null,
+    abi: 'ERC20LiquidityPoolFactory.abi',
+    constructorArgs: [],
+  },
   MemberTokenEmissionsFactory: {
     instance: null,
     abi: 'MemberTokenEmissionsFactory.abi',

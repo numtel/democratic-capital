@@ -28,6 +28,10 @@ export class BaseElement extends LitElement {
       factory: 'ERC20MintableFactory',
       tpl: parent => html`<new-erc20-mintable></new-erc20-mintable>`,
     },
+    ERC20LiquidityPool: {
+      factory: 'ERC20LiquidityPoolFactory',
+      tpl: parent => html`<new-erc20-liquidity-pool></new-erc20-liquidity-pool>`,
+    },
     MemberTokenEmissions: {
       factory: 'MemberTokenEmissionsFactory',
       tpl: parent => html`<new-member-token-emissions groupAddress="${parent.groupAddress}"></new-member-token-emissions>`,

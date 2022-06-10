@@ -10,6 +10,7 @@ import {MemberTokenEmissionsDetails} from './MemberTokenEmissionsDetails.js';
 import {RegistrationsByElectionsDetails} from './RegistrationsByElectionDetails.js';
 import {RegistrationsByFeeDetails} from './RegistrationsByFeeDetails.js';
 import {FundraiserDetails} from './FundraiserDetails.js';
+import {ERC20LiquidityPoolDetails} from './ERC20LiquidityPoolDetails.js';
 import {GroupComments} from './GroupComments.js'
 
 export class ChildDetails extends BaseElement {
@@ -65,6 +66,11 @@ export class ChildDetails extends BaseElement {
     Fundraiser: {
       tpl: (parent) => html`
         <fundraiser-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></fundraiser-details>
+      `
+    },
+    ERC20LiquidityPool: {
+      tpl: (parent) => html`
+        <erc20-liquidity-pool-details groupAddress="${parent.groupAddress}" address="${parent.childAddress}" allowed="${parent._details.isAllowed}"></erc20-liquidity-pool-details>
       `
     },
   };
