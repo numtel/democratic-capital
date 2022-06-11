@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+/*{
+  "name": "First Test Custom Metadata"
+}*/
 contract Test1 {
   uint stater;
   address public meta;
