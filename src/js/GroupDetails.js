@@ -3,7 +3,8 @@ import {BaseElement} from './BaseElement.js';
 import {app} from './Web3App.js';
 import {PaginatedList} from './PaginatedList.js';
 import {AppTabs} from './AppTabs.js';
-import {GroupComments} from './GroupComments.js'
+import {GroupComments} from './GroupComments.js';
+import {TokenSwap} from './TokenSwap.js';
 
 export class GroupDetails extends BaseElement {
   static properties = {
@@ -272,6 +273,15 @@ export class GroupDetails extends BaseElement {
           `}
         `},
     ];
+    const pools = this._details.factories.filter(x => x.name === 'ERC20LiquidityPool');
+    if(pools.length > 0) {
+      tabs.push({
+        name: 'Swap Tokens',
+        render: () => html`
+          <token-swap poolCount="${pools[0].count}" groupAddress="${this.address}"></token-swap>
+        `
+      });
+    }
     if(adminMode) {
       tabs.push({
         name: 'Adminstrator',
