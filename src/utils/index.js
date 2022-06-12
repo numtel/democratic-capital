@@ -35,3 +35,15 @@ export async function selfDescribingContract(web3, address) {
   }));
   return contract;
 }
+
+export function explorer(address) {
+  return window.config.blockExplorer + '/address/' + address;
+}
+
+export function isAddress(address) {
+  return typeof address === 'string' && address.match(/^0x[a-f0-9]{40}$/i);
+}
+
+export function ellipseAddress(address) {
+  return address.slice(0, 6) + '...' + address.slice(-4);
+}

@@ -38,15 +38,6 @@ export class Template {
     }
     return false;
   }
-  explorer(address) {
-    return window.config.blockExplorer + '/address/' + address;
-  }
-  isAddress(address) {
-    return typeof address === 'string' && address.match(/^0x[a-f0-9]{40}$/i);
-  }
-  ellipseAddress(address) {
-    return address.slice(0, 6) + '...' + address.slice(-4);
-  }
 }
 
 export function html(literalSections, ...substs) {
