@@ -1,4 +1,54 @@
 
+export class Template {
+  constructor() {
+    this.element = document.createElement('tpl');
+    this.element.tpl = this;
+    this.timeout = null;
+    this.set();
+  }
+  set(key, value) {
+    if(key) {
+      this[key] = value;
+    }
+    if(this.timeout === null) {
+      // Only re-render once if setting multiple times in same loop
+      this.timeout = setTimeout(() => {
+        this.timeout = null;
+        const tpl = this.render();
+        this.element.innerHTML = tpl.result;
+        for(let id of Object.keys(tpl.els)) {
+          const container = this.element.querySelector(`[id="${id}"]`);
+          container.appendChild(tpl.els[id].element);
+        }
+      }, 0);
+    }
+  }
+  render() {
+    return '';
+  }
+  get link() {
+    return 'onclick="return tpl(this).route(this)"';
+  }
+  route(element) {
+    const newPath = element.attributes.href.value;
+    if(newPath.startsWith('http')) {
+      window.open(newPath);
+    } else {
+      app.router.goto(newPath);
+    }
+    return false;
+  }
+  explorer(address) {
+    return window.config.blockExplorer + '/address/' + address;
+  }
+  isAddress(address) {
+    return typeof address === 'string' && address.match(/^0x[a-f0-9]{40}$/i);
+  }
+  ellipseAddress(address) {
+    return address.slice(0, 6) + '...' + address.slice(-4);
+  }
+}
+
 export function html(literalSections, ...substs) {
   let raw = literalSections.raw;
   let result = '';
@@ -16,6 +66,9 @@ export function html(literalSections, ...substs) {
       }
       els[id] = subst;
       subst = `<div id="${id}"></div>`;
+    } else if(subst instanceof HTMLTemplate) {
+      Object.assign(els, subst.els);
+      subst = subst.result;
     } else if(lit.endsWith('$')) {
       // Do not htmlEscape if using double dollar signs e.g. html`$${myval}`
       lit = lit.slice(0, -1);
@@ -27,38 +80,17 @@ export function html(literalSections, ...substs) {
     result += subst;
   });
   result += raw[raw.length-1];
-  return { result, els };
+  return new HTMLTemplate({ result, els });
 }
 
-export class Template {
-  constructor() {
-    this.element = document.createElement('tpl');
-    this.element.tpl = this;
-    this.timeout = null;
-  }
-  set(key, value) {
-    this[key] = value;
-    if(this.timeout === null) {
-      // Only re-render once if setting multiple times in same loop
-      this.timeout = setTimeout(() => {
-        this.timeout = null;
-        const tpl = this.render();
-        this.element.innerHTML = tpl.result;
-        for(let id of Object.keys(tpl.els)) {
-          this.element.querySelector(`[id="${id}"]`)
-            .appendChild(tpl.els[id].element);
-        }
-      }, 0);
-    }
-  }
-  render() {
-    return '';
+class HTMLTemplate {
+  constructor(options) {
+    Object.assign(this, options);
   }
 }
 
 function htmlEscape(str) {
-  if(typeof str === 'number') return '' + str;
-  return str.replace(/&/g, '&amp;') // first!
+  return String(str).replace(/&/g, '&amp;') // first!
             .replace(/>/g, '&gt;')
             .replace(/</g, '&lt;')
             .replace(/"/g, '&quot;')

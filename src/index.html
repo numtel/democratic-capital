@@ -6,9 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Democratic Capital</title>
     <link rel="manifest" href="/manifest.json">
-    <link href="/css/style.css" rel="stylesheet">
+    <link href="/styles.css" rel="stylesheet">
   </head>
   <body>
+    <a href="/" onclick="app.router.goto('/'); return false;">Home</a>
+    <div id="app"></div>
     <script src="/deps/web3.min.js"></script>
     <script src="/deps/gunzip.min.js"></script>
     <script src="/config.js"></script>
