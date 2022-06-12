@@ -30,8 +30,31 @@ const contracts = {
   Test1_meta: {},
   Test1: { constructorArgs: [
     () => contracts.Test1_meta.instance.options.address,
-  ]}
+  ]},
+  ...factory('ERC20LiquidityPool'),
+  ...factory('ERC20Mintable'),
+  ...factory('ElectionsByMedian'),
+  ...factory('ElectionsSimple'),
+  ...factory('ElectionsSimpleQuadratic'),
+  ...factory('Fundraiser'),
+  ...factory('MemberTokenEmissions'),
+  ...factory('OpenRegistrations'),
+  ...factory('OpenUnregistrations'),
+  ...factory('RegistrationsByElection'),
+  ...factory('RegistrationsByFee'),
+  ...factory('VerifiedGroup'),
 };
+
+function factory(childName) {
+  return {
+    [childName + '_meta']: {},
+    [childName + 'Factory_meta'] : {},
+    [childName + 'Factory']: { constructorArgs: [
+      () => contracts[childName + 'Factory_meta'].instance.options.address,
+      () => contracts[childName + '_meta'].instance.options.address,
+    ]},
+  }
+}
 
 const commands = {
   help: async function() {
