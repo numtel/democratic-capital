@@ -46,21 +46,15 @@ contract ElectionsSimpleQuadratic is ElectionBase {
   }
 
   function voteQuadratic(address key, bool inSupport, uint amount) external {
-    requireAuth();
-    require(group.joinedTimestamps(msg.sender) < elections[key].startTime,
-      "Registered After Election Start");
-    require(block.timestamp < elections[key].endTime, "Election Ended");
-    require(elections[key].votesByAccount[msg.sender] == 0, "Cannot Vote Again");
-
+    vote(key, inSupport);
     uint votePower = sqrt(1 + (amount / quadraticMultiplier));
 
     // Effects before interaction
+    // Subtract 1 from votePower because the base vote() method already applied
     if(inSupport) {
-      elections[key].supporting += votePower;
-      elections[key].votesByAccount[msg.sender] = 1;
+      elections[key].supporting += votePower - 1;
     } else {
-      elections[key].against += votePower;
-      elections[key].votesByAccount[msg.sender] = 2;
+      elections[key].against += votePower - 1;
     }
 
     if(amount > 0) {
@@ -95,7 +89,7 @@ contract ElectionsSimpleQuadratic is ElectionBase {
   }
 
   function allowed() view internal {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    require(group.contractAllowed(msg.sender));
   }
 
   // From: https://github.com/Uniswap/v2-core/blob/v1.0.1/contracts/libraries/Math.sol

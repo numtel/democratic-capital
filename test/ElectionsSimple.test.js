@@ -35,7 +35,7 @@ exports.proposeMinThresholdFails = async function({
   await elections.sendFrom(accounts[0]).vote(key, true);
   await elections.sendFrom(accounts[1]).vote(key, false);
 
-  const details = await elections.methods.details(key).call();
+  const details = await elections.methods.details(key, accounts[0]).call();
   assert.strictEqual(Number(details.supporting), 1);
   assert.strictEqual(Number(details.against), 1);
 

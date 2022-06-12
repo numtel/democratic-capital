@@ -14,15 +14,9 @@ library VoteSet {
     uint supporting;
     uint against;
   }
-  function vote(Data storage self, address account, bool inSupport, bool allowRevote) internal {
+  function vote(Data storage self, address account, bool inSupport) internal {
     require(block.timestamp < self.endTime, "Election Ended");
-    require(allowRevote || self.votesByAccount[account] == 0, "Cannot Vote Again");
-    // This is a re-vote, reverse existing value
-    if(self.votesByAccount[account] == 1) {
-      self.supporting--;
-    } else if(self.votesByAccount[account] == 2) {
-      self.against--;
-    }
+    require(self.votesByAccount[account] == 0, "Cannot Vote Again");
 
     if(inSupport) {
       self.supporting++;

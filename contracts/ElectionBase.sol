@@ -16,6 +16,21 @@ abstract contract ElectionBase is ChildBase {
   AddressSet.Set proposals;
   bytes[] public allowedInvokePrefixes;
 
+  struct ProposalDetails {
+    address key;
+    uint startTime;
+    uint endTime;
+    bytes[] data;
+    uint16 _threshold;
+    uint minVoters;
+    bool processed;
+    uint supporting;
+    uint against;
+    uint8 myVote;
+    bool passed;
+    bool passing;
+  }
+
   event ElectionProcessed(address key, uint txIndex, bytes sent, bytes returned);
   event NewElection(address key);
 
@@ -74,46 +89,43 @@ abstract contract ElectionBase is ChildBase {
     return proposals.count();
   }
 
-  function atIndex(uint index) external view returns(address) {
-    return proposals.keyList[index];
+  function detailsMany(uint startIndex, uint8 fetchCount, address voter) external view returns(ProposalDetails[] memory) {
+    ProposalDetails[] memory out = new ProposalDetails[](fetchCount);
+    for(uint8 i; i < fetchCount; i++) {
+      out[i] = details(proposals.keyList[startIndex + i], voter);
+    }
+    return out;
   }
 
-  // TODO function detailsMany(startIndex, count) external view returns()
-
-  function details(address key) external view returns(
-    uint startTime, uint endTime, bytes[] memory data, uint dataCount,
-    uint16 _threshold, uint minVoters, bool processed,
-    uint supporting, uint against, bool passed, bool passing
-  ) {
-    require(elections[key].endTime > 0, 'Not Found');
-    startTime = elections[key].startTime;
-    endTime = elections[key].endTime;
-    data = invokeData[key];
-    dataCount = invokeData[key].length;
-    _threshold = elections[key].threshold;
-    minVoters = elections[key].minVoters;
-    processed = elections[key].processed;
-    supporting = elections[key].supporting;
-    against = elections[key].against;
-    passed = elections[key].passed();
-    passing = elections[key].passing();
+  function details(address key, address voter) public view returns(ProposalDetails memory) {
+    require(elections[key].endTime > 0);
+    return ProposalDetails(
+      key,
+      elections[key].startTime,
+      elections[key].endTime,
+      invokeData[key],
+      elections[key].threshold,
+      elections[key].minVoters,
+      elections[key].processed,
+      elections[key].supporting,
+      elections[key].against,
+      elections[key].votesByAccount[voter],
+      elections[key].passed(),
+      elections[key].passing()
+    );
   }
 
-  function voteValue(address key, address voter) external view returns(uint8) {
-    return elections[key].votesByAccount[voter];
-  }
-
-  function vote(address key, bool inSupport) external {
+  function vote(address key, bool inSupport) public {
     requireAuth();
     require(group.joinedTimestamps(msg.sender) < elections[key].startTime,
       "Registered After Election Start");
-    elections[key].vote(msg.sender, inSupport, false);
+    elections[key].vote(msg.sender, inSupport);
   }
 
   function process(address key) external {
     requireAuth();
-    require(elections[key].passed(), 'Election Not Passed');
-    require(elections[key].processed == false, 'Election Already Processed');
+    require(elections[key].passed());
+    require(elections[key].processed == false);
     elections[key].processed = true;
     for(uint d = 0; d < invokeData[key].length; d++) {
       address to = abi.decode(bytes(hex"000000000000000000000000").concat(invokeData[key][d].slice(0, 20)), (address));

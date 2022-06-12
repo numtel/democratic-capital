@@ -57,7 +57,7 @@ exports.proposeMinThresholdFails = async function({
     Number(await token.methods.balanceOf(group.options.address).call()),
     tokenAmount0 + tokenAmount1);
 
-  const details = await elections.methods.details(key).call();
+  const details = await elections.methods.details(key, accounts[0]).call();
   assert.strictEqual(Number(details.supporting), 4);
   assert.strictEqual(Number(details.against), 2);
 

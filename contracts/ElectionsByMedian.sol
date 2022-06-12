@@ -42,8 +42,7 @@ contract ElectionsByMedian is ElectionBase {
   function setProposalConfig(
     uint8 _duration, uint8 _threshold, uint8 _minParticipation
   ) external {
-    require(group.isRegistered(msg.sender), 'Not Registered');
-    require(group.isVerified(msg.sender), 'Not Verified');
+    requireAuth();
     duration.set(msg.sender, _duration);
     threshold.set(msg.sender, _threshold);
     minParticipation.set(msg.sender, _minParticipation);
@@ -52,7 +51,7 @@ contract ElectionsByMedian is ElectionBase {
   function unsetProposalConfig(address account) external {
     // Allow contracts to invoke this function so that
     // they can clean out any users that unregister
-    require(account == msg.sender || group.contractAllowed(msg.sender), 'Invalid Caller');
+    require(account == msg.sender || group.contractAllowed(msg.sender));
     duration.unsetAccount(account);
     threshold.unsetAccount(account);
     minParticipation.unsetAccount(account);
@@ -60,7 +59,7 @@ contract ElectionsByMedian is ElectionBase {
 
   function getProposalConfig(address account) external view
       returns(uint8 _duration, uint8 _threshold, uint8 _minParticipation) {
-    require(group.isRegistered(account), 'Not Registered');
+    require(group.isRegistered(account));
     _duration = duration.accountValues[account];
     _threshold = threshold.accountValues[account];
     _minParticipation = minParticipation.accountValues[account];

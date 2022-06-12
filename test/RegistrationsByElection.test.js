@@ -24,7 +24,8 @@ exports.electionSucceeds = async function({
   await increaseTime(3);
 
   await registrations.sendFrom(accounts[1]).register();
-  const key = await elections.methods.atIndex(0).call();
+  const electionData = await elections.methods.detailsMany(0, 1, accounts[0]).call();
+  const key = electionData[0].key;
 
   await increaseTime(3);
 
