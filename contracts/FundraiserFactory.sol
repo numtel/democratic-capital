@@ -5,6 +5,9 @@ import "./Fundraiser.sol";
 import "./ChildFactory.sol";
 
 contract FundraiserFactory is ChildFactory {
+  constructor(address factoryMeta, address _childMeta)
+    ChildFactory(factoryMeta, _childMeta) {}
+
   function deployNew(
     address group,
     address token,
@@ -14,7 +17,7 @@ contract FundraiserFactory is ChildFactory {
   ) external {
     requireMember(group);
     Fundraiser newContract = new Fundraiser(
-      group, token, goalAmount, duration, name);
+      childMeta, group, token, goalAmount, duration, name);
     deployedByGroup[group].push(address(newContract));
     emit NewDeployment(group, address(newContract));
   }

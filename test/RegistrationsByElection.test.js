@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 exports.electionSucceeds = async function({
-  web3, accounts, deployContract, throws, increaseTime,
+  web3, accounts, deployContract, throws, increaseTime, BURN_ACCOUNT,
 }) {
   const DURATION = 10, THRESHOLD = 0x7fff, MIN_PARTICIPATION = 0xffff;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
@@ -9,12 +9,12 @@ exports.electionSucceeds = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsSimple',
-    group.options.address, [], DURATION, THRESHOLD, MIN_PARTICIPATION, '');
+    BURN_ACCOUNT, group.options.address, [], DURATION, THRESHOLD, MIN_PARTICIPATION, '');
   const registrations = await deployContract(accounts[0], 'RegistrationsByElection',
-    group.options.address, elections.options.address, '');
+    BURN_ACCOUNT, group.options.address, elections.options.address, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

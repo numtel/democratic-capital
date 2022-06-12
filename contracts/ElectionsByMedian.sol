@@ -14,12 +14,13 @@ contract ElectionsByMedian is ElectionBase {
   uint constant SECONDS_PER_DAY = 60 * 60 * 24;
 
   constructor(
+    address _meta,
     address _group,
     bytes[] memory _allowedInvokePrefixes,
     string memory _name
   )
   ElectionBase( _allowedInvokePrefixes)
-  ChildBase(_group, _name) {}
+  ChildBase(_meta, _group, _name) {}
 
   // Lifecycle methods
   function onAllow() external {
@@ -59,7 +60,6 @@ contract ElectionsByMedian is ElectionBase {
 
   function getProposalConfig(address account) external view
       returns(uint8 _duration, uint8 _threshold, uint8 _minParticipation) {
-    require(group.isRegistered(account));
     _duration = duration.accountValues[account];
     _threshold = threshold.accountValues[account];
     _minParticipation = minParticipation.accountValues[account];

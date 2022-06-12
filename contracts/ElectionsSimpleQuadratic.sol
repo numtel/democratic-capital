@@ -18,6 +18,7 @@ contract ElectionsSimpleQuadratic is ElectionBase {
   event QuadraticMultiplierChanged(uint oldMultiplier, uint newMultiplier);
 
   constructor(
+    address _meta,
     address _group,
     bytes[] memory _allowedInvokePrefixes,
     uint _durationSeconds,
@@ -28,7 +29,7 @@ contract ElectionsSimpleQuadratic is ElectionBase {
     string memory _name
   )
   ElectionBase( _allowedInvokePrefixes)
-  ChildBase(_group, _name) {
+  ChildBase(_meta, _group, _name) {
     durationSeconds = _durationSeconds;
     threshold = _threshold;
     minParticipation = _minParticipation;

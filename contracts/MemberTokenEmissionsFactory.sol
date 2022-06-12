@@ -5,6 +5,9 @@ import "./MemberTokenEmissions.sol";
 import "./ChildFactory.sol";
 
 contract MemberTokenEmissionsFactory is ChildFactory {
+  constructor(address factoryMeta, address _childMeta)
+    ChildFactory(factoryMeta, _childMeta) {}
+
   function deployNew(
     address group,
     address tokenAddress,
@@ -14,7 +17,7 @@ contract MemberTokenEmissionsFactory is ChildFactory {
   ) external {
     requireMember(group);
     MemberTokenEmissions newContract = new MemberTokenEmissions(
-      group, tokenAddress, emissionPeriodSeconds, emissionAmount, name);
+      childMeta, group, tokenAddress, emissionPeriodSeconds, emissionAmount, name);
     deployedByGroup[group].push(address(newContract));
     emit NewDeployment(group, address(newContract));
   }

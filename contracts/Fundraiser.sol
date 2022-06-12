@@ -17,8 +17,8 @@ contract Fundraiser is ChildBase {
 
   event Success(uint amount, address indexed recipient);
 
-  constructor(address _group, address _token, uint _amount, uint _duration, string memory _name)
-      ChildBase(_group, _name) {
+  constructor(address _meta, address _group, address _token, uint _amount, uint _duration, string memory _name)
+      ChildBase(_meta, _group, _name) {
     require(_amount > 0, 'Invalid Amount');
     require(_duration > 0, 'Invalid Duration');
     token = _token;

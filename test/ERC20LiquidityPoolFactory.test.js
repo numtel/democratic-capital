@@ -2,7 +2,7 @@ const assert = require('assert');
 
 
 exports.swapRouter = async function({
-  web3, accounts, deployContract, loadContract, throws,
+  web3, accounts, deployContract, loadContract, throws, BURN_ACCOUNT,
 }) {
   const cases = [
     { mints: [10000, 10000],
@@ -63,12 +63,12 @@ exports.swapRouter = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
 
   for(let params of cases) {
-    const factory = await deployContract(accounts[0], 'ERC20LiquidityPoolFactory');
+    const factory = await deployContract(accounts[0], 'ERC20LiquidityPoolFactory', BURN_ACCOUNT, BURN_ACCOUNT);
 
     const tokens = [];
     for(let i = 0; i < params.mints.length; i++) {

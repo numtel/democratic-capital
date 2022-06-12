@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 exports.proposeMinThresholdFails = async function({
-  web3, accounts, deployContract, throws, increaseTime,
+  web3, accounts, deployContract, throws, increaseTime, BURN_ACCOUNT,
 }) {
   const DURATION = 10, THRESHOLD = 0xffff, MIN_PARTICIPATION = 0xffff;
   const QUAD_MULTIPLIER = 10000;
@@ -11,11 +11,11 @@ exports.proposeMinThresholdFails = async function({
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[2], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const token = await deployContract(accounts[0], 'TestERC20');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsSimpleQuadratic',
-    group.options.address, [], DURATION, THRESHOLD, MIN_PARTICIPATION,
+    BURN_ACCOUNT, group.options.address, [], DURATION, THRESHOLD, MIN_PARTICIPATION,
     token.options.address, QUAD_MULTIPLIER, '');
 
 

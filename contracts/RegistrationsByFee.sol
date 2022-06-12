@@ -11,8 +11,8 @@ contract RegistrationsByFee is ChildBase {
   event TokenChanged(address indexed oldToken, address indexed newToken);
   event AmountChanged(uint oldAmount, uint newAmount);
 
-  constructor(address _group, address _token, uint _amount, string memory _name)
-      ChildBase(_group, _name) {
+  constructor(address _meta, address _group, address _token, uint _amount, string memory _name)
+      ChildBase(_meta, _group, _name) {
     require(_amount > 0, 'Invalid Amount');
     feeToken = _token;
     amount = _amount;

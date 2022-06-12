@@ -1,18 +1,18 @@
 const assert = require('assert');
 
 exports.collectAvailable = async function({
-  web3, accounts, deployContract, throws, increaseTime,
+  web3, accounts, deployContract, throws, increaseTime, BURN_ACCOUNT,
 }) {
   const DECIMALS = 5, PERIOD = 6, AMOUNT = 400000;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const token = await deployContract(accounts[0], 'ERC20Mintable',
-    group.options.address, 'Test Token', 'TEST', DECIMALS);
+    BURN_ACCOUNT, group.options.address, 'Test Token', 'TEST', DECIMALS);
   const emissions = await deployContract(accounts[0], 'MemberTokenEmissions',
-    group.options.address, token.options.address, PERIOD, AMOUNT, '');
+    BURN_ACCOUNT, group.options.address, token.options.address, PERIOD, AMOUNT, '');
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
   // Ensure emissions don't start until contract is allowed

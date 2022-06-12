@@ -5,6 +5,9 @@ import "./ElectionsSimpleQuadratic.sol";
 import "./ChildFactory.sol";
 
 contract ElectionsSimpleQuadraticFactory is ChildFactory {
+  constructor(address factoryMeta, address _childMeta)
+    ChildFactory(factoryMeta, _childMeta) {}
+
   function deployNew(
     address group,
     bytes[] memory allowedInvokePrefixes,
@@ -17,7 +20,7 @@ contract ElectionsSimpleQuadraticFactory is ChildFactory {
   ) external {
     requireMember(group);
     ElectionsSimpleQuadratic newContract = new ElectionsSimpleQuadratic(
-      group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation, quadraticToken, quadraticMultiplier, name);
+      childMeta, group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation, quadraticToken, quadraticMultiplier, name);
     deployedByGroup[group].push(address(newContract));
     emit NewDeployment(group, address(newContract));
   }

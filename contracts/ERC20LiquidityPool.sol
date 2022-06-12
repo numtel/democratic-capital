@@ -23,6 +23,7 @@ contract ERC20LiquidityPool is ERC20Mintable {
   }
 
   constructor(
+    address _meta,
     address _group,
     address _token0,
     address _token1,
@@ -30,7 +31,7 @@ contract ERC20LiquidityPool is ERC20Mintable {
     string memory _name,
     string memory _symbol,
     uint8 _decimals
-  ) ERC20Mintable(_group, _name, _symbol, _decimals) {
+  ) ERC20Mintable(_meta, _group, _name, _symbol, _decimals) {
     tokens[0] = _token0;
     tokens[1] = _token1;
     swapFee = _swapFee;

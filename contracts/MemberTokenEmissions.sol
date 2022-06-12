@@ -18,12 +18,13 @@ contract MemberTokenEmissions is ChildBase {
   event Collected(address indexed account, uint amount);
 
   constructor(
+    address _meta,
     address _group,
     address _tokenAddress,
     uint _emissionPeriodSeconds,
     uint _emissionAmount,
     string memory _name
-  ) ChildBase(_group, _name) {
+  ) ChildBase(_meta, _group, _name) {
     tokenAddress = _tokenAddress;
     emissionPeriodSeconds = _emissionPeriodSeconds;
     emissionAmount = _emissionAmount;

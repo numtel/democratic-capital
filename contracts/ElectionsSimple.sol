@@ -13,6 +13,7 @@ contract ElectionsSimple is ElectionBase {
   event MinParticipationChanged(uint16 oldMinParticipation, uint16 newMinParticipation);
 
   constructor(
+    address _meta,
     address _group,
     bytes[] memory _allowedInvokePrefixes,
     uint _durationSeconds,
@@ -21,7 +22,7 @@ contract ElectionsSimple is ElectionBase {
     string memory _name
   )
   ElectionBase( _allowedInvokePrefixes)
-  ChildBase(_group, _name) {
+  ChildBase(_meta, _group, _name) {
     durationSeconds = _durationSeconds;
     threshold = _threshold;
     minParticipation = _minParticipation;

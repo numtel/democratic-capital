@@ -11,11 +11,12 @@ contract ERC20Mintable is ERC20, ChildBase {
   event SymbolChanged(string oldSymbol, string newSymbol);
 
   constructor(
+    address _meta,
     address _group,
     string memory _name,
     string memory _symbol,
     uint8 _decimals
-  ) ChildBase(_group, _name) {
+  ) ChildBase(_meta, _group, _name) {
     symbol = _symbol;
     decimals = _decimals;
   }

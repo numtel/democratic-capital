@@ -5,6 +5,9 @@ import "./ERC20Mintable.sol";
 import "./ChildFactory.sol";
 
 contract ERC20MintableFactory is ChildFactory {
+  constructor(address factoryMeta, address _childMeta)
+    ChildFactory(factoryMeta, _childMeta) {}
+
   function deployNew(
     address group,
     string memory name,
@@ -12,7 +15,7 @@ contract ERC20MintableFactory is ChildFactory {
     uint8 decimals
   ) external {
     requireMember(group);
-    ERC20Mintable newContract = new ERC20Mintable(group, name, symbol, decimals);
+    ERC20Mintable newContract = new ERC20Mintable(childMeta, group, name, symbol, decimals);
     deployedByGroup[group].push(address(newContract));
     emit NewDeployment(group, address(newContract));
   }

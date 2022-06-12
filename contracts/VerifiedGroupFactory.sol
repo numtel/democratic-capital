@@ -2,19 +2,18 @@
 pragma solidity 0.8.13;
 
 import "./VerifiedGroup.sol";
+import "./ChildFactory.sol";
 
-contract VerifiedGroupFactory {
-  address[] public groups;
+contract VerifiedGroupFactory is ChildFactory {
+  constructor(address factoryMeta, address _childMeta)
+    ChildFactory(factoryMeta, _childMeta) {}
 
-  event NewGroup(address group);
-
-  function createGroup(address verifications, string memory name) external {
-    VerifiedGroup newGroup = new VerifiedGroup(verifications, msg.sender, name);
-    groups.push(address(newGroup));
-    emit NewGroup(address(newGroup));
-  }
-
-  function count() external view returns(uint) {
-    return groups.length;
+  function deployNew(
+    address verifications,
+    string memory name
+  ) external {
+    VerifiedGroup newContract = new VerifiedGroup(childMeta, verifications, msg.sender, name);
+    deployedByGroup[address(0)].push(address(newContract));
+    emit NewDeployment(address(0), address(newContract));
   }
 }

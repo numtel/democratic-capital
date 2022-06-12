@@ -1,17 +1,17 @@
 const assert = require('assert');
 
 exports.succeeds = async function({
-  web3, accounts, deployContract, increaseTime, throws,
+  web3, accounts, deployContract, increaseTime, throws, BURN_ACCOUNT,
 }) {
   const GOAL = 10, DURATION = 100;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const token = await deployContract(accounts[0], 'TestERC20');
   const fundraiser = await deployContract(accounts[0], 'Fundraiser',
-    group.options.address, token.options.address, GOAL, DURATION, '');
+    BURN_ACCOUNT, group.options.address, token.options.address, GOAL, DURATION, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -32,17 +32,17 @@ exports.succeeds = async function({
 };
 
 exports.withdrawOnFailure = async function({
-  web3, accounts, deployContract, increaseTime, throws,
+  web3, accounts, deployContract, increaseTime, throws, BURN_ACCOUNT,
 }) {
   const GOAL = 10, DEPOSIT = 9, DURATION = 100;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const token = await deployContract(accounts[0], 'TestERC20');
   const fundraiser = await deployContract(accounts[0], 'Fundraiser',
-    group.options.address, token.options.address, GOAL, DURATION, '');
+    BURN_ACCOUNT, group.options.address, token.options.address, GOAL, DURATION, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

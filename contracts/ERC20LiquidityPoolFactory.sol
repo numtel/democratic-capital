@@ -6,6 +6,9 @@ import "./ChildFactory.sol";
 import "./safeTransfer.sol";
 
 contract ERC20LiquidityPoolFactory is ChildFactory {
+  constructor(address factoryMeta, address _childMeta)
+    ChildFactory(factoryMeta, _childMeta) {}
+
   mapping(address => mapping(address => mapping(address => address))) public getPairByGroup;
 
   uint private unlocked = 1;
@@ -33,7 +36,7 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     require(getPairByGroup[group][token0][token1] == address(0), 'PAIR_EXISTS');
 
     ERC20LiquidityPool newContract = new ERC20LiquidityPool(
-      group, token0, token1, swapFee, name, symbol, decimals);
+      childMeta, group, token0, token1, swapFee, name, symbol, decimals);
 
     getPairByGroup[group][token0][token1] = address(newContract);
     // Also provide reverse in order to aid frontends

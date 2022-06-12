@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 exports.depositAndWithdrawEqual = async function({
-  web3, accounts, deployContract,
+  web3, accounts, deployContract, BURN_ACCOUNT,
 }) {
   const BN = web3.utils.BN;
   const VALID_DIFF = new BN(3); // Small math discrepancy
@@ -16,11 +16,11 @@ exports.depositAndWithdrawEqual = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
-    group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
+    BURN_ACCOUNT, group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -58,18 +58,18 @@ exports.depositAndWithdrawEqual = async function({
 };
 
 exports.depositDevaluedAfterMint = async function({
-  web3, accounts, deployContract,
+  web3, accounts, deployContract, BURN_ACCOUNT,
 }) {
   const BN = web3.utils.BN;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
-    group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
+    BURN_ACCOUNT, group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -97,7 +97,7 @@ exports.depositDevaluedAfterMint = async function({
 };
 
 exports.swapFee = async function({
-  web3, accounts, deployContract, throws,
+  web3, accounts, deployContract, throws, BURN_ACCOUNT,
 }) {
   const BN = web3.utils.BN;
   const FEE = 0.1;
@@ -109,7 +109,7 @@ exports.swapFee = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -118,7 +118,7 @@ exports.swapFee = async function({
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
-    group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
+    BURN_ACCOUNT, group.options.address, tokenA.options.address, tokenB.options.address, 0, '', '', 4);
 
   // Only allowed contracts can set the swap fee
   assert.strictEqual(await throws(() =>

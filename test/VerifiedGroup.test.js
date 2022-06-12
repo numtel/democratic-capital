@@ -3,13 +3,13 @@ const assert = require('assert');
 const SECONDS_PER_DAY = 60 * 60 * 24;
 
 exports.requiresVerified = async function({
-  web3, accounts, deployContract, throws,
+  web3, accounts, deployContract, throws, BURN_ACCOUNT,
 }) {
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   // Contract constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -39,13 +39,13 @@ exports.requiresVerified = async function({
 };
 
 exports.ban = async function({
-  web3, accounts, deployContract, throws, increaseTime,
+  web3, accounts, deployContract, throws, increaseTime, BURN_ACCOUNT,
 }) {
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -71,13 +71,13 @@ exports.ban = async function({
 };
 
 exports.childContractInvokeAndHooks = async function({
-  web3, accounts, deployContract, throws,
+  web3, accounts, deployContract, throws, BURN_ACCOUNT,
 }) {
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const testChild = await deployContract(accounts[0], 'TestChild',
     group.options.address);
 
@@ -122,13 +122,13 @@ exports.childContractInvokeAndHooks = async function({
 };
 
 exports.changeVerificationContract = async function({
-  web3, accounts, deployContract, throws, increaseTime,
+  web3, accounts, deployContract, throws, increaseTime, BURN_ACCOUNT,
 }) {
   const mockVerification1 = await deployContract(accounts[0], 'MockVerification');
   const mockVerification2 = await deployContract(accounts[0], 'MockVerification');
   await mockVerification1.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification1.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification1.options.address, accounts[0], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

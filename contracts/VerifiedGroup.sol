@@ -37,10 +37,12 @@ contract VerifiedGroup is ChildBase {
   event UnregisterHookFailure(address indexed contractAddress, address indexed account);
 
   constructor(
+    address _meta,
     address _verifications,
     address _firstAccount,
     string memory _name
   ) ChildBase(
+    _meta,
     address(this),
     _name
   ){

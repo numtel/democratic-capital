@@ -11,8 +11,8 @@ contract RegistrationsByElection is ChildBase {
 
   event ElectionsChanged(address indexed oldElections, address indexed newElections);
 
-  constructor(address _group, address _elections, string memory _name)
-      ChildBase(_group, _name) {
+  constructor(address _meta, address _group, address _elections, string memory _name)
+      ChildBase(_meta, _group, _name) {
     elections = _elections;
   }
 

@@ -1,7 +1,7 @@
 const assert = require('assert');
 
 exports.succeeds = async function({
-  web3, accounts, deployContract,
+  web3, accounts, deployContract, BURN_ACCOUNT,
 }) {
   const FEE = 10;
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
@@ -9,10 +9,10 @@ exports.succeeds = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   const token = await deployContract(accounts[0], 'TestERC20');
   const registrations = await deployContract(accounts[0], 'RegistrationsByFee',
-    group.options.address, token.options.address, FEE, '');
+    BURN_ACCOUNT, group.options.address, token.options.address, FEE, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
