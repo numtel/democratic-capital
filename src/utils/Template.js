@@ -4,6 +4,7 @@ export class Template {
     this.element = document.createElement('tpl');
     this.element.tpl = this;
     this.timeout = null;
+    this.renderMethod = 'render';
     this.set();
   }
   set(key, value) {
@@ -14,7 +15,7 @@ export class Template {
       // Only re-render once if setting multiple times in same loop
       this.timeout = setTimeout(() => {
         this.timeout = null;
-        const tpl = this.render();
+        const tpl = this[this.renderMethod]();
         this.element.innerHTML = tpl.result;
         for(let id of Object.keys(tpl.els)) {
           const container = this.element.querySelector(`[id="${id}"]`);
@@ -37,6 +38,35 @@ export class Template {
       app.router.goto(newPath);
     }
     return false;
+  }
+}
+
+export class AsyncTemplate extends Template {
+  constructor() {
+    super();
+    this.set('loading', true);
+    this.renderMethod = 'superRender';
+    setTimeout(() => this.superInit(), 0);
+  }
+  async superInit() {
+    this.set('loading', true);
+    try {
+      await this.init();
+    } catch(error) {
+      console.error(error);
+      this.set('error', true);
+    }
+    this.set('loading', false);
+  }
+  superRender() {
+    if(this.loading) {
+      return html`${app.router.loader}`;
+    } else if(this.error) {
+      return html`
+        <p>Error!</p>
+      `;
+    }
+    return this.render();
   }
 }
 
