@@ -9,6 +9,12 @@ export async function selfDescribingContract(web3, address) {
     to: address,
     data: web3.eth.abi.encodeFunctionSignature('meta()'),
   });
+  if(localStorage.hasOwnProperty(metaAddress)) {
+    const cached = JSON.parse(localStorage.getItem(metaAddress));
+    const contract = new web3.eth.Contract(cached.abi, address);
+    contract.metadata = cached.custom;
+    return contract;
+  }
   const meta = new web3.eth.Contract(metaABI, '0x' + metaAddress.slice(-40));
   const zippedHex = await meta.methods.getABI().call();
   const zipped = fromHexString(zippedHex.slice(2));
@@ -24,5 +30,8 @@ export async function selfDescribingContract(web3, address) {
     const custom = JSON.parse(plain);
     contract.metadata = custom;
   }
+  localStorage.setItem(metaAddress, JSON.stringify({
+    abi, custom: contract.metadata
+  }));
   return contract;
 }
