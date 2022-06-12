@@ -36,7 +36,7 @@ contract ElectionsSimpleQuadratic is ElectionBase {
     quadraticMultiplier = _quadraticMultiplier;
   }
 
-  function propose(bytes memory data) external {
+  function propose(bytes[] memory data) external {
     _propose(
         data,
       durationSeconds,
@@ -46,8 +46,7 @@ contract ElectionsSimpleQuadratic is ElectionBase {
   }
 
   function voteQuadratic(address key, bool inSupport, uint amount) external {
-    require(group.isRegistered(msg.sender), 'Not Registered');
-    require(group.isVerified(msg.sender), 'Not Verified');
+    requireAuth();
     require(group.joinedTimestamps(msg.sender) < elections[key].startTime,
       "Registered After Election Start");
     require(block.timestamp < elections[key].endTime, "Election Ended");

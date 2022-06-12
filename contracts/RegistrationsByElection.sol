@@ -2,6 +2,8 @@
 pragma solidity 0.8.13;
 
 import "./ChildBase.sol";
+import "./BytesLib.sol";
+using BytesLib for bytes;
 
 contract RegistrationsByElection is ChildBase {
   address public elections;
@@ -24,11 +26,14 @@ contract RegistrationsByElection is ChildBase {
     require(group.isVerified(msg.sender), 'Not Verified');
     require(!group.isRegistered(msg.sender), 'Already Registered');
     IElection electionContract = IElection(elections);
-    electionContract.propose(abi.encodeWithSelector(SELECTOR, msg.sender));
+    bytes memory groupAddress = abi.encode(address(group)).slice(12, 20);
+    bytes[] memory txs = new bytes[](1);
+    txs[0] = groupAddress.concat(abi.encodeWithSelector(SELECTOR, msg.sender));
+    electionContract.propose(txs);
   }
 }
 
 interface IElection {
-  function propose(bytes memory data) external;
+  function propose(bytes[] memory data) external;
 }
 

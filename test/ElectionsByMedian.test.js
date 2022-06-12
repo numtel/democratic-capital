@@ -58,10 +58,10 @@ exports.proposeWithFilter = async function({
   const group = await deployContract(accounts[0], 'VerifiedGroup',
     mockVerification.options.address, accounts[0], '');
   // XXX Is there a simpler way to get the function selector?
-  const unregisterSelector = group.methods.unregister(accounts[0]).encodeABI().slice(0, 10);
+  const unregisterSelector = group.methods.unregister(accounts[0]).encodeABI().slice(2, 10);
   // These elections can only call the unregister method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
-    group.options.address, [ unregisterSelector ], '');
+    group.options.address, [ group.options.address + unregisterSelector ], '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -75,14 +75,14 @@ exports.proposeWithFilter = async function({
   await increaseTime(3);
 
   assert.strictEqual(await throws(() =>
-    elections.sendFrom(accounts[0]).propose(
-      group.methods.register(accounts[2]).encodeABI()
-    )), true,
+    elections.sendFrom(accounts[0]).propose([
+      group.options.address + group.methods.register(accounts[2]).encodeABI().slice(2)
+    ])), true,
     'Does not match filter');
 
-  const key = (await elections.sendFrom(accounts[0]).propose(
-      group.methods.unregister(accounts[1]).encodeABI()
-    )).events.NewElection.returnValues.key;
+  const key = (await elections.sendFrom(accounts[0]).propose([
+      group.options.address + group.methods.unregister(accounts[1]).encodeABI().slice(2)
+    ])).events.NewElection.returnValues.key;
 
   await elections.sendFrom(accounts[0]).vote(key, true);
 
@@ -114,9 +114,9 @@ exports.proposeWithoutFilter = async function({
   // Give a few seconds so registrations aren't in same second as proposal
   await increaseTime(3);
 
-  const key = (await elections.sendFrom(accounts[0]).propose(
-      group.methods.register(accounts[1]).encodeABI()
-    )).events.NewElection.returnValues.key;
+  const key = (await elections.sendFrom(accounts[0]).propose([
+      group.options.address + group.methods.register(accounts[1]).encodeABI().slice(2)
+    ])).events.NewElection.returnValues.key;
 
   await elections.sendFrom(accounts[0]).vote(key, true);
 
@@ -150,9 +150,9 @@ exports.proposeMinThresholdFails = async function({
   // Give a few seconds so registrations aren't in same second as proposal
   await increaseTime(3);
 
-  const key = (await elections.sendFrom(accounts[0]).propose(
-      group.methods.unregister(accounts[1]).encodeABI()
-    )).events.NewElection.returnValues.key;
+  const key = (await elections.sendFrom(accounts[0]).propose([
+      group.options.address + group.methods.unregister(accounts[1]).encodeABI().slice(2)
+    ])).events.NewElection.returnValues.key;
 
   await increaseTime(SECONDS_PER_DAY * 0.1);
   await group.sendFrom(accounts[0]).register(accounts[2]);

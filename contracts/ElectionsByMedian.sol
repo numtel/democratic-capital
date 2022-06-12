@@ -28,7 +28,7 @@ contract ElectionsByMedian is ElectionBase {
   }
 
   // General usage methods
-  function propose(bytes memory data) external {
+  function propose(bytes[] memory data) external {
     require(proposalConfigCount() > 0, 'Missing Proposal Config');
     _propose(
         data,

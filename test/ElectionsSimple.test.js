@@ -22,9 +22,9 @@ exports.proposeMinThresholdFails = async function({
   // Give a few seconds so registrations aren't in same second as proposal
   await increaseTime(3);
 
-  const key = (await elections.sendFrom(accounts[0]).propose(
-      group.methods.unregister(accounts[1]).encodeABI()
-    )).events.NewElection.returnValues.key;
+  const key = (await elections.sendFrom(accounts[0]).propose([
+      group.options.address + group.methods.unregister(accounts[1]).encodeABI().slice(2)
+    ])).events.NewElection.returnValues.key;
 
   await increaseTime(3);
   await group.sendFrom(accounts[0]).register(accounts[2]);

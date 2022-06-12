@@ -27,7 +27,7 @@ contract ElectionsSimple is ElectionBase {
     minParticipation = _minParticipation;
   }
 
-  function propose(bytes memory data) external {
+  function propose(bytes[] memory data) external {
     _propose(
         data,
       durationSeconds,
