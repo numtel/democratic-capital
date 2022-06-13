@@ -1,6 +1,10 @@
 export default class Router {
   constructor(options) {
-    Object.assign(this, options);
+    Object.assign(this, {
+      element: null,
+      loader: null, // Template instance
+      routes: [],
+    }, options);
     window.addEventListener('popstate', this.popstate.bind(this));
     this.popstate();
   }
@@ -15,8 +19,10 @@ export default class Router {
     for(let route of this.routes) {
       const match = path.match(route.regex);
       if(match) {
-        this.element.innerHTML = '';
-        this.element.appendChild(this.loader.element);
+        if(this.loader) {
+          this.element.innerHTML = '';
+          this.element.appendChild(this.loader.element);
+        }
         const klass = await import(route.template);
         const args = 'constructor' in route ? route.constructor(match) : [];
         const base = new klass.default(...args);

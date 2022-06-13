@@ -75,30 +75,38 @@ export function html(literalSections, ...substs) {
   let result = '';
   const els = {};
 
-  substs.forEach((subst, i) => {
+  substs.forEach((substs, i) => {
     let lit = raw[i];
-    if(subst instanceof Template) {
-      // Allow nested Template instances to render independently
-      const rando = new Uint8Array(10);
-      crypto.getRandomValues(rando);
-      let id = 'x';
-      for(let char of rando) {
-        id += char.toString(16);
-      }
-      els[id] = subst;
-      subst = `<div id="${id}"></div>`;
-    } else if(subst instanceof HTMLTemplate) {
-      Object.assign(els, subst.els);
-      subst = subst.result;
-    } else if(lit.endsWith('$')) {
+    if(!Array.isArray(substs)) {
+      substs = [substs];
+    }
+    let escapeHtml = true;
+    if(lit.endsWith('$')) {
       // Do not htmlEscape if using double dollar signs e.g. html`$${myval}`
       lit = lit.slice(0, -1);
-    } else {
-      // Escape any passed values, by default
-      subst = htmlEscape(subst);
+      escapeHtml = false;
     }
     result += lit;
-    result += subst;
+    for(let subst of substs) {
+      if(subst instanceof Template) {
+        // Allow nested Template instances to render independently
+        const rando = new Uint8Array(10);
+        crypto.getRandomValues(rando);
+        let id = 'x';
+        for(let char of rando) {
+          id += char.toString(16);
+        }
+        els[id] = subst;
+        subst = `<div id="${id}"></div>`;
+      } else if(subst instanceof HTMLTemplate) {
+        Object.assign(els, subst.els);
+        subst = subst.result;
+      } else if(escapeHtml) {
+        // Escape any passed values, by default
+        subst = htmlEscape(subst || '');
+      }
+      result += subst;
+    }
   });
   result += raw[raw.length-1];
   return new HTMLTemplate({ result, els });

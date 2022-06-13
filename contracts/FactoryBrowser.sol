@@ -4,6 +4,12 @@ pragma solidity 0.8.13;
 import "./IVerifiedGroupFactory.sol";
 
 contract FactoryBrowser {
+  address public meta;
+
+  constructor(address _meta) {
+    meta = _meta;
+  }
+
   function detailsMany(IVerifiedGroupFactory factory, address group, uint startIndex, uint fetchCount) external view returns(IVerifiedGroupFactory.GroupChild[] memory) {
     uint itemCount = factory.childCount(group);
     require(startIndex < itemCount);

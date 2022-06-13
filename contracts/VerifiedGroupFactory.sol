@@ -5,9 +5,16 @@ import "./VerifiedGroup.sol";
 import "./ChildFactory.sol";
 
 /*{
-  "type": "factory",
   "name": "Groups",
-  "singular": "Group"
+  "methods": {
+    "deployNew": [
+      { "hidden": "Verification" },
+      { "hint": "Can be changed" }
+    ]
+  },
+  "display": {
+    "FactoryBrowser": { "root": true }
+  }
 }*/
 contract VerifiedGroupFactory is ChildFactory {
   struct GroupChild {
@@ -25,8 +32,8 @@ contract VerifiedGroupFactory is ChildFactory {
     string memory name
   ) external {
     VerifiedGroup newContract = new VerifiedGroup(childMeta, verifications, msg.sender, name);
-    groupChildren[address(newContract)].push(GroupChild(address(0), address(newContract)));
-    emit NewChild(address(newContract), address(0), address(newContract));
+    groupChildren[address(0)].push(GroupChild(childMeta, address(newContract)));
+    emit NewChild(address(0), childMeta, address(newContract));
   }
 
   function registerChild(address group, address childMeta, address item) public {

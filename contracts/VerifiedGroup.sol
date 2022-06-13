@@ -5,6 +5,14 @@ import "./ChildBase.sol";
 import "./AddressSet.sol";
 using AddressSet for AddressSet.Set;
 
+/*{
+  "name": "Group",
+  "methods": {
+    "allowContract": [
+      { "hint": "Anything" }
+    ]
+  }
+}*/
 contract VerifiedGroup is ChildBase {
   IVerification public verifications;
   uint public registeredCount;

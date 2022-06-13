@@ -27,11 +27,10 @@ const web3 = new Web3(ganacheServer.provider);
 
 const contracts = {
   MockVerification: {},
-  Test1_meta: {},
-  Test1: { constructorArgs: [
-    () => contracts.Test1_meta.instance.options.address,
+  FactoryBrowser_meta: {},
+  FactoryBrowser: { constructorArgs: [
+    () => contracts.FactoryBrowser_meta.instance.options.address,
   ]},
-  FactoryBrowser: {},
   ...factory('VerifiedGroup'), // Special case
   ...factory('ERC20LiquidityPool'),
   ...factory('ERC20Mintable'),

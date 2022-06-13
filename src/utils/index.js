@@ -50,3 +50,11 @@ export function isAddress(address) {
 export function ellipseAddress(address) {
   return address.slice(0, 6) + '...' + address.slice(-4);
 }
+
+export const ZERO_ACCOUNT = '0x0000000000000000000000000000000000000000';
+
+export function delay(ms) {
+  return new Promise(resolve => {
+    setTimeout(() => resolve(), ms);
+  });
+}
