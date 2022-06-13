@@ -14,6 +14,7 @@ contract RegistrationsByFeeFactory is ChildFactory {
     uint amount,
     string memory name
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     RegistrationsByFee newContract = new RegistrationsByFee(
       childMeta, group, tokenAddress, amount, name);
     parentFactory.registerChild(group, childMeta, address(newContract));

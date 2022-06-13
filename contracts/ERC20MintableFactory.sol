@@ -14,6 +14,7 @@ contract ERC20MintableFactory is ChildFactory {
     string memory symbol,
     uint8 decimals
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     ERC20Mintable newContract = new ERC20Mintable(childMeta, group, name, symbol, decimals);
     parentFactory.registerChild(group, childMeta, address(newContract));
   }

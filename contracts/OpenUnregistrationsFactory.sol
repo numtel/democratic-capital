@@ -9,6 +9,7 @@ contract OpenUnregistrationsFactory is ChildFactory {
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   function deployNew(address group, string memory name) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     OpenUnregistrations newContract = new OpenUnregistrations(childMeta, group, name);
     parentFactory.registerChild(group, childMeta, address(newContract));
   }

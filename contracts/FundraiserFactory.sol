@@ -15,6 +15,7 @@ contract FundraiserFactory is ChildFactory {
     uint duration,
     string memory name
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     Fundraiser newContract = new Fundraiser(
       childMeta, group, token, goalAmount, duration, name);
     parentFactory.registerChild(group, childMeta, address(newContract));

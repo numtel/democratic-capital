@@ -15,6 +15,7 @@ contract MemberTokenEmissionsFactory is ChildFactory {
     uint emissionAmount,
     string memory name
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     MemberTokenEmissions newContract = new MemberTokenEmissions(
       childMeta, group, tokenAddress, emissionPeriodSeconds, emissionAmount, name);
     parentFactory.registerChild(group, childMeta, address(newContract));

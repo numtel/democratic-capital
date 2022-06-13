@@ -13,6 +13,7 @@ contract RegistrationsByElectionFactory is ChildFactory {
     address elections,
     string memory name
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     RegistrationsByElection newContract = new RegistrationsByElection(
       childMeta, group, elections, name);
     parentFactory.registerChild(group, childMeta, address(newContract));

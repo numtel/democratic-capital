@@ -9,6 +9,7 @@ contract ElectionsByMedianFactory is ChildFactory {
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   function deployNew(address group, bytes[] memory allowedInvokePrefixes, string memory name) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     ElectionsByMedian newContract = new ElectionsByMedian(childMeta, group, allowedInvokePrefixes, name);
     parentFactory.registerChild(group, childMeta, address(newContract));
   }

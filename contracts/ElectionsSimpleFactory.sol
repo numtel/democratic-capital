@@ -16,6 +16,7 @@ contract ElectionsSimpleFactory is ChildFactory {
     uint16 minParticipation,
     string memory name
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     ElectionsSimple newContract = new ElectionsSimple(
       childMeta, group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation, name);
     parentFactory.registerChild(group, childMeta, address(newContract));

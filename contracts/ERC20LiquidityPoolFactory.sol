@@ -28,6 +28,7 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     string memory symbol,
     uint8 decimals
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     require(token0 != token1, 'IDENTICAL_ADDRESSES');
     (token0, token1) = token0 < token1 ? (token0, token1) : (token1, token0);
     require(token0 != address(0), 'ZERO_ADDRESS');

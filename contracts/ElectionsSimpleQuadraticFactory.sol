@@ -18,6 +18,7 @@ contract ElectionsSimpleQuadraticFactory is ChildFactory {
     uint quadraticMultiplier,
     string memory name
   ) external {
+    require(IVerifiedGroup(group).contractAllowed(msg.sender));
     ElectionsSimpleQuadratic newContract = new ElectionsSimpleQuadratic(
       childMeta, group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation, quadraticToken, quadraticMultiplier, name);
     parentFactory.registerChild(group, childMeta, address(newContract));
