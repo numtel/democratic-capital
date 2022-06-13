@@ -5,14 +5,12 @@ import "./OpenRegistrations.sol";
 import "./ChildFactory.sol";
 
 contract OpenRegistrationsFactory is ChildFactory {
-  constructor(address factoryMeta, address _childMeta)
-    ChildFactory(factoryMeta, _childMeta) {}
+  constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
+    ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   function deployNew(address group, string memory name) external {
-    requireMember(group);
     OpenRegistrations newContract = new OpenRegistrations(childMeta, group, name);
-    deployedByGroup[group].push(address(newContract));
-    emit NewDeployment(group, address(newContract));
+    parentFactory.registerChild(group, childMeta, address(newContract));
   }
 }
 

@@ -66,9 +66,12 @@ exports.swapRouter = async function({
     BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
+  const groupFactory = await deployContract(accounts[0], 'VerifiedGroupFactory',
+    BURN_ACCOUNT, BURN_ACCOUNT);
 
   for(let params of cases) {
-    const factory = await deployContract(accounts[0], 'ERC20LiquidityPoolFactory', BURN_ACCOUNT, BURN_ACCOUNT);
+    const factory = await deployContract(accounts[0], 'ERC20LiquidityPoolFactory',
+      BURN_ACCOUNT, BURN_ACCOUNT, groupFactory.options.address);
 
     const tokens = [];
     for(let i = 0; i < params.mints.length; i++) {
@@ -77,12 +80,14 @@ exports.swapRouter = async function({
 
     const pools = [];
     for(let i = 0; i < tokens.length - 1; i++) {
-      const poolAddress = (await factory.sendFrom(accounts[0]).deployNew(
+      await factory.sendFrom(accounts[0]).deployNew(
         group.options.address,
         tokens[i].options.address,
         tokens[i + 1].options.address,
-        0, '', '', 4)).events.NewDeployment.returnValues.deployed;
-      pools.push(await loadContract('ERC20LiquidityPool', poolAddress));
+        0, '', '', 4);
+      const childCount = await groupFactory.methods.childCount(group.options.address).call();
+      const child = await groupFactory.methods.groupChildren(group.options.address, childCount - 1).call();
+      pools.push(await loadContract('ERC20LiquidityPool', child.item));
     }
 
     // Mint tokens

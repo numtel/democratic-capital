@@ -5,8 +5,8 @@ import "./ElectionsSimple.sol";
 import "./ChildFactory.sol";
 
 contract ElectionsSimpleFactory is ChildFactory {
-  constructor(address factoryMeta, address _childMeta)
-    ChildFactory(factoryMeta, _childMeta) {}
+  constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
+    ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   function deployNew(
     address group,
@@ -16,11 +16,9 @@ contract ElectionsSimpleFactory is ChildFactory {
     uint16 minParticipation,
     string memory name
   ) external {
-    requireMember(group);
     ElectionsSimple newContract = new ElectionsSimple(
       childMeta, group, allowedInvokePrefixes, durationSeconds, threshold, minParticipation, name);
-    deployedByGroup[group].push(address(newContract));
-    emit NewDeployment(group, address(newContract));
+    parentFactory.registerChild(group, childMeta, address(newContract));
   }
 }
 

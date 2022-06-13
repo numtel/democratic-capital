@@ -5,19 +5,17 @@ import "./RegistrationsByElection.sol";
 import "./ChildFactory.sol";
 
 contract RegistrationsByElectionFactory is ChildFactory {
-  constructor(address factoryMeta, address _childMeta)
-    ChildFactory(factoryMeta, _childMeta) {}
+  constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
+    ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   function deployNew(
     address group,
     address elections,
     string memory name
   ) external {
-    requireMember(group);
     RegistrationsByElection newContract = new RegistrationsByElection(
       childMeta, group, elections, name);
-    deployedByGroup[group].push(address(newContract));
-    emit NewDeployment(group, address(newContract));
+    parentFactory.registerChild(group, childMeta, address(newContract));
   }
 }
 

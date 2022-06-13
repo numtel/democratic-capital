@@ -5,8 +5,8 @@ import "./RegistrationsByFee.sol";
 import "./ChildFactory.sol";
 
 contract RegistrationsByFeeFactory is ChildFactory {
-  constructor(address factoryMeta, address _childMeta)
-    ChildFactory(factoryMeta, _childMeta) {}
+  constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
+    ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   function deployNew(
     address group,
@@ -14,11 +14,9 @@ contract RegistrationsByFeeFactory is ChildFactory {
     uint amount,
     string memory name
   ) external {
-    requireMember(group);
     RegistrationsByFee newContract = new RegistrationsByFee(
       childMeta, group, tokenAddress, amount, name);
-    deployedByGroup[group].push(address(newContract));
-    emit NewDeployment(group, address(newContract));
+    parentFactory.registerChild(group, childMeta, address(newContract));
   }
 }
 

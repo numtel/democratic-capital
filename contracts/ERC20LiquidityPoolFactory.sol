@@ -6,8 +6,8 @@ import "./ChildFactory.sol";
 import "./safeTransfer.sol";
 
 contract ERC20LiquidityPoolFactory is ChildFactory {
-  constructor(address factoryMeta, address _childMeta)
-    ChildFactory(factoryMeta, _childMeta) {}
+  constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
+    ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   mapping(address => mapping(address => mapping(address => address))) public getPairByGroup;
 
@@ -28,7 +28,6 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     string memory symbol,
     uint8 decimals
   ) external {
-    requireMember(group);
     require(token0 != token1, 'IDENTICAL_ADDRESSES');
     (token0, token1) = token0 < token1 ? (token0, token1) : (token1, token0);
     require(token0 != address(0), 'ZERO_ADDRESS');
@@ -42,8 +41,7 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     // Also provide reverse in order to aid frontends
     getPairByGroup[group][token1][token0] = address(newContract);
 
-    deployedByGroup[group].push(address(newContract));
-    emit NewDeployment(group, address(newContract));
+    parentFactory.registerChild(group, childMeta, address(newContract));
   }
 
   function swapRouter(address group, address[] memory tokens, uint amountIn, uint minReceived) external lock returns(uint amountOut) {
