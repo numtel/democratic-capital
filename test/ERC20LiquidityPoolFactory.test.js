@@ -72,6 +72,7 @@ exports.swapRouter = async function({
   for(let params of cases) {
     const factory = await deployContract(accounts[0], 'ERC20LiquidityPoolFactory',
       BURN_ACCOUNT, BURN_ACCOUNT, groupFactory.options.address);
+    await group.sendFrom(accounts[0]).allowContract(factory.options.address);
 
     const tokens = [];
     for(let i = 0; i < params.mints.length; i++) {

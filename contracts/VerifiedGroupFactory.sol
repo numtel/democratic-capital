@@ -31,8 +31,7 @@ contract VerifiedGroupFactory is ChildFactory {
 
   function registerChild(address group, address childMeta, address item) public {
     VerifiedGroup groupInstance = VerifiedGroup(group);
-    require(groupInstance.isVerified(tx.origin), 'Not Verified');
-    require(groupInstance.isRegistered(tx.origin), 'Not Registered');
+    require(groupInstance.contractAllowed(msg.sender), 'Invalid Caller');
     groupChildren[group].push(GroupChild(childMeta, item));
     emit NewChild(group, childMeta, item);
   }
