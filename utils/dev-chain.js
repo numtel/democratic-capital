@@ -31,6 +31,8 @@ const contracts = {
   Test1: { constructorArgs: [
     () => contracts.Test1_meta.instance.options.address,
   ]},
+  FactoryBrowser: {},
+  ...factory('VerifiedGroup'), // Special case
   ...factory('ERC20LiquidityPool'),
   ...factory('ERC20Mintable'),
   ...factory('ElectionsByMedian'),
@@ -42,17 +44,21 @@ const contracts = {
   ...factory('OpenUnregistrations'),
   ...factory('RegistrationsByElection'),
   ...factory('RegistrationsByFee'),
-  ...factory('VerifiedGroup'),
 };
 
 function factory(childName) {
+  const factoryArgs = [
+    () => contracts[childName + 'Factory_meta'].instance.options.address,
+    () => contracts[childName + '_meta'].instance.options.address,
+  ];
+  if(childName !== 'VerifiedGroup') {
+    factoryArgs.push(
+      () => contracts['VerifiedGroupFactory'].instance.options.address);
+  }
   return {
     [childName + '_meta']: {},
     [childName + 'Factory_meta'] : {},
-    [childName + 'Factory']: { constructorArgs: [
-      () => contracts[childName + 'Factory_meta'].instance.options.address,
-      () => contracts[childName + '_meta'].instance.options.address,
-    ]},
+    [childName + 'Factory']: { constructorArgs: factoryArgs },
   }
 }
 
@@ -132,6 +138,7 @@ async function deployContracts() {
     params: []
   });
   for(let contractName of Object.keys(contracts)) {
+    console.log(`Deploying ${contractName}...`);
     const bytecode = fs.readFileSync(`${BUILD_DIR}${contractName}.bin`, { encoding: 'utf8' });
     const abi = JSON.parse(fs.readFileSync(`${BUILD_DIR}${contractName}.abi`, { encoding: 'utf8' }));
     const newContract = new web3.eth.Contract(abi);

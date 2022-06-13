@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import "./IVerifiedGroupFactory.sol";
+
 contract ChildFactory {
   address public meta;
   address public childMeta;
@@ -13,6 +15,3 @@ contract ChildFactory {
   }
 }
 
-interface IVerifiedGroupFactory {
-  function registerChild(address group, address childMeta, address item) external;
-}

@@ -4,12 +4,13 @@ const metaABI = [{"inputs":[],"name":"getABI","outputs":[{"internalType":"bytes"
 const fromHexString = (hexString) =>
   Uint8Array.from(hexString.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
 
-export async function selfDescribingContract(web3, address) {
+export async function selfDescribingContract(address) {
+  const web3 = app.web3;
   const metaAddress = await web3.eth.call({
     to: address,
     data: web3.eth.abi.encodeFunctionSignature('meta()'),
   });
-  if(localStorage.hasOwnProperty(metaAddress)) {
+  if(app.cacheABI && localStorage.hasOwnProperty(metaAddress)) {
     const cached = JSON.parse(localStorage.getItem(metaAddress));
     const contract = new web3.eth.Contract(cached.abi, address);
     contract.metadata = cached.custom;
@@ -30,9 +31,11 @@ export async function selfDescribingContract(web3, address) {
     const custom = JSON.parse(plain);
     contract.metadata = custom;
   }
-  localStorage.setItem(metaAddress, JSON.stringify({
-    abi, custom: contract.metadata
-  }));
+  if(app.cacheABI) {
+    localStorage.setItem(metaAddress, JSON.stringify({
+      abi, custom: contract.metadata
+    }));
+  }
   return contract;
 }
 

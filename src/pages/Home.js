@@ -7,7 +7,7 @@ export default class Home extends Template {
   render() {
     return html`
       <p>Welcome!</p>
-      <a href="/groups" $${this.link}>Groups!</a>
+      <a href="/${config.contracts.VerifiedGroupFactory.address}" $${this.link}>Groups!</a>
     `;
   }
 }

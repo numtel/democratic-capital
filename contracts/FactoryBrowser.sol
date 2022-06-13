@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import "./IVerifiedGroupFactory.sol";
+
 contract FactoryBrowser {
   function detailsMany(IVerifiedGroupFactory factory, address group, uint startIndex, uint fetchCount) external view returns(IVerifiedGroupFactory.GroupChild[] memory) {
     uint itemCount = factory.childCount(group);
@@ -14,13 +16,4 @@ contract FactoryBrowser {
     }
     return out;
   }
-}
-
-interface IVerifiedGroupFactory {
-  struct GroupChild {
-    address meta;
-    address item;
-  }
-  function childCount(address group) external view returns(uint);
-  function groupChildren(address group, uint index) external view returns(GroupChild memory);
 }
