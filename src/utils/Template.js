@@ -16,12 +16,15 @@ export class Template {
       this.timeout = setTimeout(() => {
         this.timeout = null;
         const tpl = this[this.renderMethod]();
-        this.element.innerHTML = tpl.result;
-        for(let id of Object.keys(tpl.els)) {
-          const container = this.element.querySelector(`[id="${id}"]`);
-          container.appendChild(tpl.els[id].element);
-        }
+        this._render(tpl);
       }, 0);
+    }
+  }
+  _render(tpl) {
+    this.element.innerHTML = tpl.result;
+    for(let id of Object.keys(tpl.els)) {
+      const container = this.element.querySelector(`[id="${id}"]`);
+      container.appendChild(tpl.els[id].element);
     }
   }
   render() {
@@ -66,7 +69,10 @@ export class AsyncTemplate extends Template {
         <p>Error!</p>
       `;
     }
-    return this.render();
+    this.render().then(result => {
+      this._render(result);
+    });
+    return html`${app.router.loader}`;
   }
 }
 
@@ -103,6 +109,7 @@ export function html(literalSections, ...substs) {
         subst = subst.result;
       } else if(escapeHtml) {
         // Escape any passed values, by default
+        if(subst === 0) subst = '0';
         subst = htmlEscape(subst || '');
       }
       result += subst;

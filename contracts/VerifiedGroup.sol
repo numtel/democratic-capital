@@ -9,8 +9,16 @@ using AddressSet for AddressSet.Set;
   "name": "Group",
   "methods": {
     "allowContract": [
-      { "hint": "Anything" }
+      { "hint": "Anything",
+        "select": [ "Factories", "Children" ] }
+    ],
+    "disallowContract": [
+      { "select": [ "Allowed" ] }
     ]
+  },
+  "display": {
+    "Allowed": {},
+    "FactoryBrowser": {}
   }
 }*/
 contract VerifiedGroup is ChildBase {

@@ -1,22 +1,23 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract, ZERO_ACCOUNT} from '/utils/index.js';
+import {selfDescribingContract} from '/utils/index.js';
 
 export default class FactoryBrowser extends AsyncTemplate {
-  constructor(factory) {
+  constructor(address) {
     super();
-    this.set('factoryAddress', factory);
+    this.set('address', address);
   }
   async init() {
     this.contract = await selfDescribingContract(config.contracts.FactoryBrowser.address);
-    this.factory = await selfDescribingContract(this.factoryAddress);
-    this.set('count', Number(await this.factory.methods.childCount(ZERO_ACCOUNT).call()));
+    this.factory = await selfDescribingContract(config.contracts.VerifiedGroupFactory.address);
+    this.set('count', Number(await this.factory.methods.childCount(this.address).call()));
     if(this.count > 0) {
+      // TODO paging!
       this.set('result', await this.contract.methods.detailsMany(
-        this.factoryAddress, ZERO_ACCOUNT, 0, 20
+        config.contracts.VerifiedGroupFactory.address, this.address, 0, 20
       ).call());
     }
   }
-  render() {
+  async render() {
     if(this.count === 0) {
       return html`
         <p>Nothing found!</p>
@@ -25,7 +26,7 @@ export default class FactoryBrowser extends AsyncTemplate {
     return html`
       <ul>
       ${this.result.map(item => html`
-        <li><a href="/${item.item}" $${this.link}>${item.item}</a></li>
+        <li><a href="/${item.item}" $${this.link}>${item.name}</a> ${item.metaname} ${(new Date(item.created * 1000)).toString()}</li>
       `)}
       </ul>
     `;

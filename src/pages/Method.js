@@ -14,35 +14,69 @@ export default class Details extends AsyncTemplate {
       .map((input, index) =>
         Object.assign(input, this.contract.metadata.methods[this.method][index]));
   }
-  render() {
+  async render() {
+    const inputTpls = [];
+    for(let index = 0; index < this.inputs.length; index++) {
+      const input = this.inputs[index];
+      if('hidden' in input) {
+        inputTpls.push(html`
+          <input
+            type="hidden"
+            name="arg_${index}"
+            value="${await this.givenValues(input.hidden)}">
+        `);
+      } else {
+        let selector;
+        if('select' in input) {
+          const optgroups = [];
+          for(let type of input.select) {
+            const options = [];
+            for(let opt of await this.givenValues(type)) {
+              options.push(html`
+                <option value="${opt[1]}">${opt[0]}</option>
+              `)
+            }
+            optgroups.push(html`
+              <optgroup label="${type}">
+                ${options}
+              </optgroup>
+            `);
+          }
+          selector = html`
+            <select name="sel_${index}" onchange="tpl(this).setVal(${index})">
+              <option value="">Choose value...</option>
+              ${optgroups}
+            </select>
+          `;
+        }
+        inputTpls.push(html`
+          <div>
+            <label>
+              <span>${input.name}</span>
+              <input name="arg_${index}" value="${this['arg_' + index] || ''}">
+            </label>
+            ${selector}
+            ${'hint' in input && html`
+              <span class="hint">${input.hint}</span>
+            `}
+          </div>`);
+       }
+    }
     return html`
-      <a href="/${this.address}" $${this.link}>Back to ${this.contract.metadata.name}</a>
+      <a href="/${this.address}" $${this.link}>Back to ${this.contract.metaname}</a>
       <h2>${this.contract.metadata.name}: ${this.method}</h2>
       <form onsubmit="tpl(this).submit(); return false">
         <fieldset>
-          ${this.inputs.map((input, index) =>
-            'hidden' in input ? html`
-              <input
-                type="hidden"
-                name="arg_${index}"
-                value="${givenValues(input.hidden)}">
-            ` : html`
-              <div>
-                <label>
-                  <span>${input.name}</span>
-                  <input name="arg_${index}">
-                </label>
-                ${'hint' in input && html`
-                  <span class="hint">${input.hint}</span>
-                `}
-              </div>
-            `)}
+          ${inputTpls}
           <div class="commands">
             <button type="submit">Submit</button>
           </div>
         </fieldset>
       </form>
     `;
+  }
+  setVal(index) {
+    this.set('arg_' + index, this.element.querySelector(`select[name="sel_${index}`).value);
   }
   async submit() {
     const args = Array.from(this.element.querySelectorAll('input[name^="arg_"]'))
@@ -54,11 +88,40 @@ export default class Details extends AsyncTemplate {
       alert(error);
     }
   }
-}
-
-function givenValues(identifier) {
-  if(identifier === 'Verification') {
-    return config.contracts.MockVerification.address;
+  async givenValues(identifier) {
+    switch(identifier) {
+      case 'Verification':
+        return config.contracts.MockVerification.address;
+      case 'Factories':
+        return Object.keys(config.contracts)
+          .filter(type => type.endsWith('Factory'))
+          .reduce((out, cur) => {
+            out.push([
+              cur,
+              config.contracts[cur].address
+            ]);
+            return out;
+          }, []);
+      case 'Children':
+        return [ ['foo', '0x1234'] ];
+      case 'Allowed':
+        const browser = await selfDescribingContract(config.contracts.FactoryBrowser.address);
+        const count = Number(await this.contract.methods.allowedContractCount().call());
+        if(count > 0) {
+          if(!this.allowed) {
+            this.allowed = browser.methods.allowedMany(
+              this.address, 0, 100
+            ).call();
+          }
+        } else {
+          this.allowed = Promise.resolve([]);
+        }
+        const allowed = await this.allowed;
+        return allowed.map(item => [
+          `${item.name} ${item.metaname} ${item.item}`,
+          item.item
+        ]);
+    }
+    return '';
   }
-  return '';
 }

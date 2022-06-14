@@ -34,6 +34,7 @@ for(let file of files) {
 pragma solidity 0.8.13;
 
 contract ${file.slice(0, -4)}_meta {
+  string public name = "${file.slice(0, -4)}";
   function getABI() public pure returns (bytes memory) {
     return hex"${abiZip.toString('hex')}";
   }

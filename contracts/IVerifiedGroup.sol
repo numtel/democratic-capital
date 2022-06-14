@@ -9,6 +9,8 @@ interface IVerifiedGroup {
   function isVerified(address account) external view returns(bool);
   function isRegistered(address account) external view returns(bool);
   function contractAllowed(address key) external view returns(bool);
+  function allowedContractCount() external view returns(uint);
+  function allowedContractIndex(uint index) external view returns(address);
   function postComment(address item, string memory text) external;
   function register(address account) external;
   function unregister(address account) external;

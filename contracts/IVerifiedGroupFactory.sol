@@ -5,6 +5,7 @@ interface IVerifiedGroupFactory {
   struct GroupChild {
     address meta;
     address item;
+    uint created;
   }
   function childCount(address group) external view returns(uint);
   function groupChildren(address group, uint index) external view returns(GroupChild memory);
