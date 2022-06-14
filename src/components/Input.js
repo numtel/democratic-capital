@@ -53,7 +53,7 @@ export default class Input extends AsyncTemplate {
         `;
       }
       return html`
-        <div>
+        <div class="field">
           <label>
             <span>${input.name}</span>
             <input name="${this.name}" value="${this.value || ''}" onchange="tpl(this).set('value', value).onChange(this.value)">

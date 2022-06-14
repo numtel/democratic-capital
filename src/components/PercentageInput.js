@@ -20,7 +20,7 @@ export default class PercentageInput extends Template {
   }
   render() {
     return html`
-      <div>
+      <div class="field">
         <label>
           <span>${this.input.name}</span>
           <input

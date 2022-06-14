@@ -1,6 +1,7 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract} from '/utils/index.js';
 import Input from '/components/Input.js';
+import TopMenu from '/components/TopMenu.js';
 
 export default class Details extends AsyncTemplate {
   constructor(address, method, parent) {
@@ -33,16 +34,20 @@ export default class Details extends AsyncTemplate {
     let parentUrl = '/' + this.address;
     if(this.parent) parentUrl = '/' + this.parent + parentUrl;
     return html`
-      <a href="${parentUrl}" $${this.link}>Back to ${this.contract.metaname}</a>
-      <h2>${this.contract.metadata.name}: ${this.method}</h2>
-      <form onsubmit="tpl(this).submit(); return false">
-        <fieldset>
-          ${inputTpls}
-          <div class="commands">
-            <button type="submit">Submit</button>
-          </div>
-        </fieldset>
-      </form>
+      ${new TopMenu(html`
+        <a href="${parentUrl}" $${this.link}>Back to ${this.contract.metaname}</a>
+      `)}
+      <div class="white window">
+        <form onsubmit="tpl(this).submit(); return false">
+          <fieldset>
+            <legend>${this.contract.metadata.name}: ${this.method}</legend>
+            ${inputTpls}
+            <div class="commands">
+              <button type="submit">Submit</button>
+            </div>
+          </fieldset>
+        </form>
+      </div>
     `;
   }
   async submit() {

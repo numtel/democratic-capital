@@ -31,15 +31,19 @@ export default class InvokeFilter extends AsyncTemplate {
         funName = 'Unknown Function';
       }
       entries.push(html`
-        <li>
-          <dl>
-            <dt>Contract Address</dt>
-            <dd>${entry[0]}</dd>
-            <dt>Function</dt>
-            <dd>${entry[1] ? html`${funName} (${entry[1]})` : 'Any Method'}</dd>
-          </dl>
-          <button onclick="tpl(this).removeFilter(${index}); return false;">Remove</button>
-        </li>
+        <tr>
+          <td>
+            <dl>
+              <dt>Contract Address</dt>
+              <dd>${entry[0]}</dd>
+              <dt>Function</dt>
+              <dd>${entry[1] ? html`${funName} (${entry[1]})` : 'Any Method'}</dd>
+            </dl>
+          </td>
+          <td>
+            <button onclick="tpl(this).removeFilter(${index}); return false;">Remove</button>
+          </td>
+        </tr>
       `);
     }
     return html`
@@ -51,14 +55,19 @@ export default class InvokeFilter extends AsyncTemplate {
           contract:  this.addFilterContract,
           select: [ 'Methods' ],
         }, 'invoke_method', this.groupAddress)}
-        <button onclick="tpl(this).addFilter(); return false;">Allow this Method</button>
+        <div class="commands">
+          <button onclick="tpl(this).addFilter(); return false;">Allow this Method</button>
+        </div>
       </fieldset>
       ${entries.length === 0 ? html`
         <p>No filters set, elections will be able to invoke any contract and method.</p>
       ` : html`
-        <ul>
-          ${entries}
-        </ul>
+        <fieldset>
+          <legend>Proposal Invoke Filters</legend>
+          <table>
+            ${entries}
+          </table>
+        </fieldset>
       `}
     `;
   }

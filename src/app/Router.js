@@ -19,6 +19,7 @@ export default class Router {
     for(let route of this.routes) {
       const match = path.match(route.regex);
       if(match) {
+        window.scrollTo(0, 0);
         if(this.loader) {
           this.element.innerHTML = '';
           this.element.appendChild(this.loader.element);

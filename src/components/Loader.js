@@ -4,7 +4,7 @@ export default class Loader extends Template {
   render() {
     return html`
       <div class="loader">
-        <div class="lds-ring"><div></div><div></div><div></div><div></div></div>
+        <span class="loader"></span>
       </div>
     `;
   }

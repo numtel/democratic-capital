@@ -51,7 +51,13 @@ contract FactoryBrowser {
     for(uint i; i < fetchCount; i++) {
       address raw = group.allowedContractIndex(startIndex + i);
       address metaAddr = safeMeta(raw);
-      out[i] = AllowedDetails(metaAddr, raw, safeName(metaAddr), safeName(raw));
+      string memory metaname;
+      if(!isContract(raw)) {
+        metaname = 'Not a Contract';
+      } else {
+        metaname = safeName(metaAddr);
+      }
+      out[i] = AllowedDetails(metaAddr, raw, metaname, safeName(raw));
     }
     return out;
   }

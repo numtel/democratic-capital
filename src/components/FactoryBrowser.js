@@ -19,18 +19,36 @@ export default class FactoryBrowser extends AsyncTemplate {
   }
   async render() {
     if(this.count === 0) {
-      return html`
-        <p>Nothing found!</p>
-      `;
+      return html``;
     }
     let parentUrl = '/' + this.address;
     if(this.address === ZERO_ACCOUNT) parentUrl = '';
     return html`
-      <ul>
-      ${this.result.map(item => html`
-        <li><a href="${parentUrl}/${item.item}" $${this.link}>${item.name}</a> ${item.metaname} ${(new Date(item.created * 1000)).toString()}</li>
-      `)}
-      </ul>
+      <div class="white window">
+        <fieldset>
+        <legend>Child Contracts</legend>
+        <table>
+        <thead>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Created</th>
+        </thead>
+        <tbody>
+        ${this.result.map(item => html`
+          <tr>
+          <td>
+            <a href="${parentUrl}/${item.item}" $${this.link}>
+              ${item.name || html`<i>Unnamed</i>`}
+            </a>
+          </td>
+          <td>${item.metaname}</td>
+          <td>${(new Date(item.created * 1000)).toLocaleString()}</td>
+          </tr>
+        `)}
+        </tbody>
+        </table>
+        </fieldset>
+      </div>
     `;
   }
 }

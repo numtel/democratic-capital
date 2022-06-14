@@ -2,6 +2,7 @@ import {selfDescribingContract} from '/utils/index.js';
 import Router from '/app/Router.js';
 import Wallet from '/app/Wallet.js';
 import Loader from '/components/Loader.js';
+import ErrorWindow from '/components/ErrorWindow.js';
 
 window.app = {
   cacheABI: false,
@@ -10,6 +11,7 @@ window.app = {
   router: new Router({
     element: document.getElementById('app'),
     loader: new Loader,
+    error: new ErrorWindow,
     routes: [
       { regex: /^\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})\/([a-z0-9_]+)$/i,
         template: '/pages/Method.js',

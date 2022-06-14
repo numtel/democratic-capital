@@ -63,9 +63,7 @@ export class AsyncTemplate extends Template {
     this.set('loading', false);
   }
   superRender() {
-    const errorMessage = html`
-      <p>Error!</p>
-    `;
+    const errorMessage = html`${app.router.error}`;
     if(this.loading) {
       return html`${app.router.loader}`;
     } else if(this.error) {

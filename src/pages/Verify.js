@@ -1,4 +1,5 @@
 import {Template, html} from '/utils/Template.js';
+import TopMenu from '/components/TopMenu.js';
 
 export default class Verify extends Template {
   constructor() {
@@ -7,8 +8,13 @@ export default class Verify extends Template {
   }
   render() {
     return html`
-      <p>Must be verified on Coinpassport!</p>
-      <a href="https://coinpassport.net/" $${this.link}>Coinpassport</a>
+      ${new TopMenu}
+      <div class="blue window">
+        <h2>Must be verified on Coinpassport!</h2>
+        <p>All contributors to Democratic Capital must prove that they are a unique person by verifying their passport.</p>
+        <p><a class="button" href="https://coinpassport.net/" $${this.link}>Open Coinpassport...</a></p>
+      </div>
+      </div>
     `;
   }
 }

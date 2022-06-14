@@ -19,16 +19,32 @@ export default class FactoryBrowser extends AsyncTemplate {
   }
   async render() {
     if(this.count === 0) {
-      return html`
-        <p>Nothing found!</p>
-      `;
+      return html``;
     }
     return html`
-      <ul>
-      ${this.result.map(item => html`
-        <li><a href="${app.router.path}/${item.item}" $${this.link}>${item.name || item.item}</a> ${item.metaname}</li>
-      `)}
-      </ul>
+      <div class="white window">
+        <fieldset>
+        <legend>Allowed Contracts</legend>
+        <table>
+        <thead>
+          <th>Name</th>
+          <th>Type</th>
+        </thead>
+        <tbody>
+        ${this.result.map(item => html`
+          <tr>
+          <td>
+            <a href="${app.router.path}/${item.item}" $${this.link}>
+              ${item.name || item.item}
+            </a>
+          </td>
+          <td>${item.metaname || 'Unknown'}</td>
+          </tr>
+        `)}
+        </tbody>
+        </table>
+        </fieldset>
+      </div>
     `;
   }
 }
