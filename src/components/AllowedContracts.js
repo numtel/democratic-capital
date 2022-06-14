@@ -26,7 +26,7 @@ export default class FactoryBrowser extends AsyncTemplate {
     return html`
       <ul>
       ${this.result.map(item => html`
-        <li><a href="/${item.item}" $${this.link}>${item.name || item.item}</a> ${item.metaname}</li>
+        <li><a href="${app.router.path}/${item.item}" $${this.link}>${item.name || item.item}</a> ${item.metaname}</li>
       `)}
       </ul>
     `;

@@ -11,6 +11,12 @@ window.app = {
     element: document.getElementById('app'),
     loader: new Loader,
     routes: [
+      { regex: /^\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})\/([a-z0-9_]+)$/i,
+        template: '/pages/Method.js',
+        constructor: match => [ match[2], match[3], match[1] ] },
+      { regex: /^\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})$/i,
+        template: '/pages/Details.js',
+        constructor: match => [ match[2], match[1] ] },
       { regex: /^\/(0x[a-f0-9]{40})\/([a-z0-9_]+)$/i,
         template: '/pages/Method.js',
         constructor: match => [ match[1], match[2] ] },

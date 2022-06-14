@@ -3,6 +3,7 @@ import {Template, html} from '/utils/Template.js';
 export default class Verify extends Template {
   constructor() {
     super();
+    document.title = 'Verification Required';
   }
   render() {
     return html`

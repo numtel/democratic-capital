@@ -19,6 +19,7 @@ export class Template {
         this._render(tpl);
       }, 0);
     }
+    return this;
   }
   _render(tpl) {
     this.element.innerHTML = tpl.result;
@@ -62,15 +63,19 @@ export class AsyncTemplate extends Template {
     this.set('loading', false);
   }
   superRender() {
+    const errorMessage = html`
+      <p>Error!</p>
+    `;
     if(this.loading) {
       return html`${app.router.loader}`;
     } else if(this.error) {
-      return html`
-        <p>Error!</p>
-      `;
+      return errorMessage;
     }
     this.render().then(result => {
       this._render(result);
+    }).catch(error => {
+      console.error(error);
+      this._render(errorMessage);
     });
     return html`${app.router.loader}`;
   }

@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract} from '/utils/index.js';
+import {selfDescribingContract, ZERO_ACCOUNT} from '/utils/index.js';
 
 export default class FactoryBrowser extends AsyncTemplate {
   constructor(address) {
@@ -23,10 +23,12 @@ export default class FactoryBrowser extends AsyncTemplate {
         <p>Nothing found!</p>
       `;
     }
+    let parentUrl = '/' + this.address;
+    if(this.address === ZERO_ACCOUNT) parentUrl = '';
     return html`
       <ul>
       ${this.result.map(item => html`
-        <li><a href="/${item.item}" $${this.link}>${item.name}</a> ${item.metaname} ${(new Date(item.created * 1000)).toString()}</li>
+        <li><a href="${parentUrl}/${item.item}" $${this.link}>${item.name}</a> ${item.metaname} ${(new Date(item.created * 1000)).toString()}</li>
       `)}
       </ul>
     `;
