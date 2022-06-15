@@ -8,8 +8,8 @@ export default class TopMenu extends Template {
   render() {
     return html`
       <div class="top-menu-bar">
-        <a href="/" $${this.link}>Home</a>
-        <a href="/${config.contracts.VerifiedGroupFactory.address}" $${this.link}>All Groups<a>
+        <a href="/" $${this.link}>Democratic Capital</a>
+        <a href="/${config.contracts.VerifiedGroupFactory.address}" $${this.link}>All Groups</a>
         ${this.slot}
         <a href="https://github.com/numtel/democratic-capital" $${this.link}>Github</a>
       </div>

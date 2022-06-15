@@ -5,6 +5,7 @@ import Loader from '/components/Loader.js';
 import ErrorWindow from '/components/ErrorWindow.js';
 
 window.app = {
+  // TODO cacheABI should be in window.config
   cacheABI: false,
   web3: new Web3(config.rpc),
   wallet: new Wallet,
@@ -13,6 +14,9 @@ window.app = {
     loader: new Loader,
     error: new ErrorWindow,
     routes: [
+      { regex: /^\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})\/proposal\/(0x[a-f0-9]{40})$/i,
+        template: '/pages/Proposal.js',
+        constructor: match => [ match[2], match[3], match[1] ] },
       { regex: /^\/(0x[a-f0-9]{40})\/(0x[a-f0-9]{40})\/([a-z0-9_]+)$/i,
         template: '/pages/Method.js',
         constructor: match => [ match[2], match[3], match[1] ] },
