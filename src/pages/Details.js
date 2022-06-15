@@ -2,6 +2,7 @@ import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, explorer, ZERO_ACCOUNT} from '/utils/index.js';
 import FactoryBrowser from '/components/FactoryBrowser.js';
 import AllowedContracts from '/components/AllowedContracts.js';
+import Proposals from '/components/Proposals.js';
 import TopMenu from '/components/TopMenu.js';
 import Overview from '/components/Overview.js';
 
@@ -68,6 +69,7 @@ export default class Details extends AsyncTemplate {
               ? ZERO_ACCOUNT
               : this.address) :
           key === 'Allowed' ? new AllowedContracts(this.address, this.parent) :
+          key === 'Proposals' ? new Proposals(this.address, this.parent) :
           '');
       })}
     `;

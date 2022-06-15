@@ -1,7 +1,9 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, isAddress, isFunSig} from '/utils/index.js';
+import ABIDecoder from '/utils/ABIDecoder.js';
 import Input from '/components/Input.js';
 
+// TODO apply filters
 export default class ProposalTxs extends AsyncTemplate {
   constructor(group, onChange) {
     super();
@@ -52,7 +54,49 @@ export default class ProposalTxs extends AsyncTemplate {
         <fieldset>
           <legend>Proposal Transactions</legend>
           <table>
-            ${JSON.stringify(this.entries, null, 2)}
+            <tbody>
+            ${this.entries.map((entry, index) => html`
+            <tr>
+            <td>
+              <dl>
+              <dt>Contract</dt>
+              <dd>${entry.to}</dd>
+              ${entry.decoded ? html`
+                <dt>Method</dt>
+                <dd>${entry.decoded.name}</dd>
+                ${entry.decoded.params.length > 0 && html`
+                  <dt>Arguments</dt>
+                  <dd>
+                    <table>
+                      <thead>
+                        <th>Name</th>
+                        <th>Value</th>
+                        <th>Type</th>
+                      </thead>
+                      <tbody>
+                        ${entry.decoded.params.map(param => html`
+                          <tr>
+                            <td>${param.name}</td>
+                            <td class="wrap">${param.value}</td>
+                            <td>${param.type}</td>
+                          </tr>
+                        `)}
+                      </tbody>
+                    </table>
+                  </dd>
+                `}
+              ` : html`
+                <dt>Transaction Data</dt>
+                <dd class="wrap">${entry.data}</dd>
+              `}
+              </dl>
+            </td>
+            <td>
+              <button onclick="tpl(this).removeTx(${index}); return false;">Remove</button>
+            </td>
+            </tr>
+            `)}
+            </tbody>
           </table>
         </fieldset>
       `}
@@ -100,9 +144,21 @@ export default class ProposalTxs extends AsyncTemplate {
         || !(this.addTxData.startsWith('0x') && this.addTxData.length > 10)) {
       alert('Invalid contract address or missing transaction data!');
     } else {
-      this.entries.push({ to: this.addTxTo, data: this.addTxData });
+      let decoded = null;
+      try {
+        const contract = await selfDescribingContract(this.addTxTo);
+        const decoder = new ABIDecoder(contract.options.jsonInterface);
+        decoded = decoder.decodeMethod(this.addTxData);
+      } catch(error) {
+        // This data cannot be decoded
+      }
+      this.entries.push({ to: this.addTxTo, data: this.addTxData, decoded });
       this.entriesChanged();
     }
+  }
+  removeTx(index) {
+    this.entries.splice(index, 1);
+    this.entriesChanged();
   }
   entriesChanged() {
     this.onChange(this.entries.map(entry => entry.to + entry.data.slice(2)));

@@ -1,11 +1,10 @@
 export default class AbiDecoder {
-  constructor(web3, abiArray) {
-    this.web3 = web3;
+  constructor(abiArray) {
     this.methodIDs = {};
 
     for(let abi of abiArray) {
       if (abi.name) {
-        const signature = this.web3.utils.sha3(
+        const signature = app.web3.utils.sha3(
           `${abi.name}(${abi.inputs.map(_typeToString).join(",")})`);
         if (abi.type === "event") {
           this.methodIDs[signature.slice(2)] = abi;
@@ -19,7 +18,7 @@ export default class AbiDecoder {
     const methodID = data.slice(2, 10);
     const abiItem = this.methodIDs[methodID];
     if (abiItem) {
-      let decoded = this.web3.eth.abi.decodeParameters(abiItem.inputs, data.slice(10));
+      let decoded = app.web3.eth.abi.decodeParameters(abiItem.inputs, data.slice(10));
 
       let retData = {
         name: abiItem.name,
@@ -37,9 +36,9 @@ export default class AbiDecoder {
           const isArray = Array.isArray(param);
 
           if (isArray) {
-            parsedParam = param.map(val => new this.web3.utils.BN(val).toString());
+            parsedParam = param.map(val => new app.web3.utils.BN(val).toString());
           } else {
-            parsedParam = new this.web3.utils.BN(param).toString();
+            parsedParam = new app.web3.utils.BN(param).toString();
           }
         }
 

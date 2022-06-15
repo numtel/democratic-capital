@@ -36,6 +36,9 @@ import "./ElectionBase.sol";
         { "input": "percentage" }
       ]
     }
+  },
+  "display": {
+    "Proposals": {}
   }
 }*/
 contract ElectionsSimple is ElectionBase {
