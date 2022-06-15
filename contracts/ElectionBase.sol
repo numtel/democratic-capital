@@ -51,6 +51,7 @@ abstract contract ElectionBase is ChildBase {
     if(!group.contractAllowed(msg.sender)) {
       requireAuth();
     }
+    require(data.length > 0, 'Transaction Required');
 
     if(allowedInvokePrefixes.length > 0) {
       bool foundAllowed = false;

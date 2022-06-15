@@ -3,6 +3,41 @@ pragma solidity 0.8.13;
 
 import "./ElectionBase.sol";
 
+/*{
+  "name": "Simple Elections",
+  "overview": {
+    "invokePrefixes": { "display": ["invokeFilter"] },
+    "durationSeconds": { "display": ["seconds"] },
+    "threshold": { "display": ["percentage"] },
+    "minParticipation": { "display": ["percentage"] }
+  },
+  "methods": {
+    "propose": {
+      "onlyMember": true,
+      "fields": [
+        {"input":"txs"}
+      ]
+    },
+    "setDuration": {
+      "onlyAllowed": true,
+      "fields": [
+        { "preview": "seconds" }
+      ]
+    },
+    "setThreshold": {
+      "onlyAllowed": true,
+      "fields": [
+        { "input": "percentage" }
+      ]
+    },
+    "setMinParticipation": {
+      "onlyAllowed": true,
+      "fields": [
+        { "input": "percentage" }
+      ]
+    }
+  }
+}*/
 contract ElectionsSimple is ElectionBase {
   uint public durationSeconds;
   uint16 public threshold;

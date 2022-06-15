@@ -7,10 +7,12 @@ import "./ChildFactory.sol";
 /*{
   "name": "Groups",
   "methods": {
-    "deployNew": [
-      { "hidden": "Verification" },
-      { "hint": "Can be changed" }
-    ]
+    "deployNew": {
+      "fields": [
+        { "hidden": "Verification" },
+        { "hint": "Can be changed later" }
+      ]
+    }
   },
   "display": {
     "FactoryBrowser": { "root": true }

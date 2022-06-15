@@ -15,7 +15,7 @@ export default class Details extends AsyncTemplate {
     this.inputs = this.contract.options.jsonInterface
       .filter(x => x.name === this.method)[0].inputs
       .map((input, index) =>
-        Object.assign(input, this.contract.metadata.methods[this.method][index]));
+        Object.assign(input, this.contract.metadata.methods[this.method].fields[index]));
     document.title =`${this.contract.metadata.name}: ${this.method}`;
   }
   async render() {

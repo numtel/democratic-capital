@@ -2,9 +2,10 @@ import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract} from '/utils/index.js';
 
 export default class FactoryBrowser extends AsyncTemplate {
-  constructor(address) {
+  constructor(address, parent) {
     super();
     this.set('address', address);
+    this.set('parent', parent);
   }
   async init() {
     this.contract = await selfDescribingContract(this.address);
@@ -21,6 +22,8 @@ export default class FactoryBrowser extends AsyncTemplate {
     if(this.count === 0) {
       return html``;
     }
+    let parentUrl = '/' + this.address;
+    if(this.parent) parentUrl = '/' + this.parent;
     return html`
       <div class="white window">
         <fieldset>
@@ -34,7 +37,7 @@ export default class FactoryBrowser extends AsyncTemplate {
         ${this.result.map(item => html`
           <tr>
           <td>
-            <a href="${app.router.path}/${item.item}" $${this.link}>
+            <a href="${parentUrl}/${item.item}" $${this.link}>
               ${item.name || item.item}
             </a>
           </td>

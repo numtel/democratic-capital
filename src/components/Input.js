@@ -1,14 +1,16 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import InvokeFilter from '/components/InvokeFilter.js';
-import PercentageInput from '/components/PercentageInput.js';
+import InvokeFilter from '/components/input/InvokeFilter.js';
+import PercentageInput from '/components/input/PercentageInput.js';
+import ProposalTxs from '/components/input/ProposalTxs.js';
 import {selfDescribingContract, remaining} from '/utils/index.js';
 
 export default class Input extends AsyncTemplate {
-  constructor(input, name, parent, onChange) {
+  constructor(input, name, parent, onChange, value) {
     super();
     this.set('input', input);
     this.set('name', name);
     this.set('parent', parent);
+    this.set('value', value);
     this.set('onChange', onChange || (() => {}));
   }
   async init() {
@@ -26,8 +28,10 @@ export default class Input extends AsyncTemplate {
       `;
     } else if(input.input === 'invokeFilter') {
       return html`${new InvokeFilter(this.parent, this.onChange)}`;
+    } else if(input.input === 'txs') {
+      return html`${new ProposalTxs(this.parent, this.onChange)}`;
     } else if(input.input === 'percentage') {
-      return html`${new PercentageInput(input, this.onChange)}`;
+      return html`${new PercentageInput(input, this.onChange, this.value)}`;
     } else {
       let selector;
       if('select' in input) {

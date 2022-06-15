@@ -5,15 +5,18 @@ import "./ElectionsSimple.sol";
 import "./ChildFactory.sol";
 
 /*{
-  "name": "Simple Elections",
+  "name": "Simple Elections Factory",
   "methods": {
-    "deployNew": [
-      {"hidden":"parent"},
-      {"input":"invokeFilter"},
-      {"preview":"seconds"},
-      {"input":"percentage"},
-      {"input":"percentage"}
-    ]
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"},
+        {"input":"invokeFilter"},
+        {"preview":"seconds"},
+        {"input":"percentage"},
+        {"input":"percentage"}
+      ]
+    }
   }
 }*/
 contract ElectionsSimpleFactory is ChildFactory {

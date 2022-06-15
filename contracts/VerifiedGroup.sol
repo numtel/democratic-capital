@@ -7,14 +7,23 @@ using AddressSet for AddressSet.Set;
 
 /*{
   "name": "Group",
+  "overview": {
+    "registeredCount": {}
+  },
   "methods": {
-    "allowContract": [
-      { "hint": "Anything",
-        "select": [ "Factories", "Children" ] }
-    ],
-    "disallowContract": [
-      { "select": [ "Allowed" ] }
-    ]
+    "allowContract": {
+      "onlyAllowed": true,
+      "fields": [
+        { "hint": "Anything",
+          "select": [ "Factories", "Children" ] }
+      ]
+    },
+    "disallowContract": {
+      "onlyAllowed": true,
+      "fields": [
+        { "select": [ "Allowed" ] }
+      ]
+    }
   },
   "display": {
     "Allowed": {},
