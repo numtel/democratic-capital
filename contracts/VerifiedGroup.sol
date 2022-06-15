@@ -41,9 +41,9 @@ contract VerifiedGroup is ChildBase {
   AddressSet.Set registrationHookSet;
   AddressSet.Set unregistrationHookSet;
   struct Comment {
-    string text;
     address author;
     uint timestamp;
+    string text;
   }
   mapping(address => Comment[]) public comments;
 
@@ -109,11 +109,16 @@ contract VerifiedGroup is ChildBase {
     return comments[item].length;
   }
 
+  // Cannot use auto-getter from public comments mapping due to variable-length strings
+  function getComment(address item, uint index) external view returns(Comment memory) {
+    return comments[item][index];
+  }
+
   // Functions that can be invoked by members
   function postComment(address item, string memory text) external {
     require(isVerified(msg.sender), 'Not Verified');
     require(isRegistered(msg.sender), 'Not Registered');
-    comments[item].push(Comment(text, msg.sender, block.timestamp));
+    comments[item].push(Comment(msg.sender, block.timestamp, text));
     emit NewComment(item, text);
   }
 

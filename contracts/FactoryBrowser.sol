@@ -62,6 +62,19 @@ contract FactoryBrowser {
     return out;
   }
 
+  function commentsMany(IVerifiedGroup group, address item, uint startIndex, uint fetchCount) external view returns(IVerifiedGroup.Comment[] memory) {
+    uint itemCount = group.commentCount(item);
+    require(startIndex < itemCount);
+    if(startIndex + fetchCount >= itemCount) {
+      fetchCount = itemCount - startIndex;
+    }
+    IVerifiedGroup.Comment[] memory out = new IVerifiedGroup.Comment[](fetchCount);
+    for(uint i = 0; i < fetchCount; i++) {
+      out[i] = group.getComment(item, startIndex + i);
+    }
+    return out;
+  }
+
   function safeName(address raw) public returns(string memory) {
     if(!isContract(raw)) return "";
     (bool success, bytes memory data) = raw.call(abi.encodeWithSelector(NAME_SELECTOR));

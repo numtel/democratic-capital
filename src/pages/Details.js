@@ -5,6 +5,7 @@ import AllowedContracts from '/components/AllowedContracts.js';
 import Proposals from '/components/Proposals.js';
 import TopMenu from '/components/TopMenu.js';
 import Overview from '/components/Overview.js';
+import Comments from '/components/Comments.js';
 
 export default class Details extends AsyncTemplate {
   constructor(address, parent) {
@@ -41,10 +42,11 @@ export default class Details extends AsyncTemplate {
     document.title = this.name;
   }
   async render() {
+    // TODO support onlyMember method filtering
     return html`
       ${new TopMenu(html`
         ${this.parent && html`
-          <a href="/${this.parent}" $${this.link}>Parent</a>
+          <a href="/${this.parent}" $${this.link}>Back to Group</a>
         `}
       `)}
       <div class="blue window">
@@ -72,6 +74,9 @@ export default class Details extends AsyncTemplate {
           key === 'Proposals' ? new Proposals(this.address, this.parent) :
           '');
       })}
+      ${this.contract.metaname === 'VerifiedGroup'
+        ? new Comments(this.address, this.address)
+        : this.parent ? new Comments(this.address, this.parent) : ''}
     `;
   }
 }

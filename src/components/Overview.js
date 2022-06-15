@@ -29,6 +29,13 @@ export default class Overview extends Template {
               : item.result}
             </td>
           </tr>
+          ${key === 'registeredCount' && item.result === '1' && html`
+            <tr>
+              <td class="notice" colspan="2">
+                This group only has one member. When a group only has one member, that person can perform any administrative action on the group contract directly.<br><br>Before another member is registered into the group, it is <strong>very</strong> important to allow a contract that has the capability to perform administrative actions, such as an elections contract or by allowing an individual's account as an allowed contract, in order to prevent the group from becoming stuck.
+              </td>
+            </tr>
+          `}
         `})}
         </tbody>
       </table>

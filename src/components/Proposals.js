@@ -61,8 +61,8 @@ export default class Proposals extends AsyncTemplate {
                     : proposal.processed ? html`<span class="proposal-completed">Proposal passed and already processed</span>`
                       : proposal.passed ? html`<span class="proposal-waiting">Proposal passed and awaiting processing</span>`
                         : html`<span class="proposal-failed">Proposal failed</span>`}
-                <span class="my-vote">${proposal.myVote === 1 ? '(Voted in Support)' :
-                  proposal.myVote === 2 ? '(Voted Against)' : ''}</span>
+                <span class="my-vote">${proposal.myVote === '1' ? '(Voted in Support)' :
+                  proposal.myVote === '2' ? '(Voted Against)' : ''}</span>
                 <ul class="tx">
                   ${proposal.tx.map(tx => html`
                     <li>

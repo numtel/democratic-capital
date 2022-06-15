@@ -2,6 +2,7 @@ import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, remaining, explorer, ellipseAddress} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import TopMenu from '/components/TopMenu.js';
+import Comments from '/components/Comments.js';
 
 export default class Proposal extends AsyncTemplate {
   constructor(elections, proposal, group) {
@@ -91,8 +92,8 @@ export default class Proposal extends AsyncTemplate {
               : proposal.processed ? html`<span class="proposal-completed">Proposal passed and already processed</span>`
                 : proposal.passed ? html`<span class="proposal-waiting">Proposal passed and awaiting processing</span>`
                   : html`<span class="proposal-failed">Proposal failed</span>`}
-            ${proposal.myVote === 1 ? '(Voted in Support)' :
-              proposal.myVote === 2 ? '(Voted Against)' : ''}
+            ${proposal.myVote === '1' ? '(Voted in Support)' :
+              proposal.myVote === '2' ? '(Voted Against)' : ''}
           </dd>
           <dt>Support Level</dt>
           <dd>
@@ -114,7 +115,34 @@ export default class Proposal extends AsyncTemplate {
           <dt>End Time</dt>
           <dd>${(new Date(proposal.endTime * 1000)).toLocaleString()}</dd>
         </dl>
+        ${timeLeft > 0 && proposal.myVote === '0' ? html`
+          <div class="commands">
+            <button onclick="tpl(this).vote(true)">Vote in Support</button>
+            <button onclick="tpl(this).vote(false)">Vote Against</button>
+          </div>
+        ` : proposal.passed && !proposal.processed ? html`
+          <div class="commands">
+            <button onclick="tpl(this).process()">Invoke Proposal Transactions</button>
+          </div>
+        ` : ''}
       </div>
+      ${new Comments(this.key, this.group)}
     `
+  }
+  async vote(inSupport) {
+    try {
+      await app.wallet.send(this.contract.methods.vote(this.key, inSupport));
+      await this.superInit();
+    } catch(error) {
+      alert(error);
+    }
+  }
+  async process() {
+    try {
+      await app.wallet.send(this.contract.methods.process(this.key));
+      await this.superInit();
+    } catch(error) {
+      alert(error);
+    }
   }
 }

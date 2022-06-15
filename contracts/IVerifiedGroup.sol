@@ -2,6 +2,11 @@
 pragma solidity 0.8.13;
 
 interface IVerifiedGroup {
+  struct Comment {
+    address author;
+    uint timestamp;
+    string text;
+  }
   function name() external view returns(string memory);
   function setName(string memory _name) external;
   function joinedTimestamps(address account) external view returns(uint);
@@ -11,6 +16,8 @@ interface IVerifiedGroup {
   function contractAllowed(address key) external view returns(bool);
   function allowedContractCount() external view returns(uint);
   function allowedContractIndex(uint index) external view returns(address);
+  function commentCount(address item) external view returns(uint);
+  function getComment(address item, uint index) external view returns(Comment memory);
   function postComment(address item, string memory text) external;
   function register(address account) external;
   function unregister(address account) external;

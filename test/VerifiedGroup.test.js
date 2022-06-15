@@ -2,6 +2,24 @@ const assert = require('assert');
 
 const SECONDS_PER_DAY = 60 * 60 * 24;
 
+exports.comments = async function({
+  web3, accounts, deployContract, throws, BURN_ACCOUNT,
+}) {
+  const TEXT = 'heyo';
+  const mockVerification = await deployContract(accounts[0], 'MockVerification');
+  // Contract constructor requires verified user
+  await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
+  const group = await deployContract(accounts[0], 'VerifiedGroup',
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+  const browser = await deployContract(accounts[0], 'FactoryBrowser',
+    BURN_ACCOUNT);
+  await group.sendFrom(accounts[0]).postComment(group.options.address, TEXT);
+  const result = await browser.methods.commentsMany(
+    group.options.address, group.options.address, 0, 10).call();
+  assert.strictEqual(result.length, 1);
+  assert.strictEqual(result[0].text, TEXT);
+};
+
 exports.requiresVerified = async function({
   web3, accounts, deployContract, throws, BURN_ACCOUNT,
 }) {
