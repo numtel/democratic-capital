@@ -1,5 +1,8 @@
 * {box-sizing:border-box;}
 body { margin:0; padding: 0;}
+a:visited { color: #000; }
+.blue a:visited { color:#fff; }
+a.button:visited { color:#fff; }
 menu { display: flex; padding:0;}
 menu li { padding: 0 10px;}
 table {width:100%;}

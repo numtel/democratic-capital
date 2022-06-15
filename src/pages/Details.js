@@ -30,7 +30,7 @@ export default class Details extends AsyncTemplate {
       <div class="blue window">
         <h2>${this.name}</h2>
         <p>Type: ${this.contract.metadata.name || this.contract.metaname}</p>
-        <p><a href="${explorer(this.address)}">${this.address}</a> ${this.contract.metaname}</p>
+        <p><a href="${explorer(this.address)}" $${this.link}>${this.address}</a> ${this.contract.metaname}</p>
         ${'methods' in this.contract.metadata && html`
           <menu>
             ${Object.keys(this.contract.metadata.methods).map(method => html`
