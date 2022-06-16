@@ -1,5 +1,6 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, explorer, ellipseAddress} from '/utils/index.js';
+import Paging from '/components/Paging.js';
 
 export default class Comments extends AsyncTemplate {
   constructor(item, group) {
@@ -10,13 +11,14 @@ export default class Comments extends AsyncTemplate {
   async init() {
     this.contract = await selfDescribingContract(config.contracts.FactoryBrowser.address);
     this.group = await selfDescribingContract(this.groupAddress);
-    this.set('count', Number(await this.group.methods.commentCount(this.item).call()));
-    if(this.count > 0) {
-      // TODO paging!
-      this.set('result', await this.contract.methods.commentsMany(
-        this.groupAddress, this.item, 0, 20
-      ).call());
-    }
+  }
+  async count() {
+    return Number(await this.group.methods.commentCount(this.item).call());
+  }
+  async fetch(start, count) {
+    return await this.contract.methods.commentsMany(
+      this.groupAddress, this.item, start, count
+    ).call();
   }
   async render() {
     return html`
@@ -30,11 +32,12 @@ export default class Comments extends AsyncTemplate {
             </div>
           </fieldset>
         </form>
-        ${this.result && html`
+        ${new Paging(this.count.bind(this), this.fetch.bind(this), (result, options) => html`
           <fieldset>
             <legend>Comments</legend>
+            ${options}
             <ul class="comments">
-            ${this.result.map(comment => html`
+            ${result.map(comment => html`
               <li>
                 <div class="meta">
                   <a href="${explorer(comment.author)}" $${this.link}>${ellipseAddress(comment.author)}</a>
@@ -49,7 +52,7 @@ export default class Comments extends AsyncTemplate {
             `)}
             </ul>
           </fieldset>
-        `}
+        `)}
       </div>
     `;
   }

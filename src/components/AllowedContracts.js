@@ -1,5 +1,6 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract} from '/utils/index.js';
+import Paging from '/components/Paging.js';
 
 export default class FactoryBrowser extends AsyncTemplate {
   constructor(address, parent) {
@@ -10,31 +11,30 @@ export default class FactoryBrowser extends AsyncTemplate {
   async init() {
     this.contract = await selfDescribingContract(this.address);
     this.browser = await selfDescribingContract(config.contracts.FactoryBrowser.address);
-    this.set('count', Number(await this.contract.methods.allowedContractCount().call()));
-    if(this.count > 0) {
-      // TODO paging!
-      this.set('result', await this.browser.methods.allowedMany(
-        this.address, 0, 20
-      ).call());
-    }
+  }
+  async count() {
+    return Number(await this.contract.methods.allowedContractCount().call());
+  }
+  async fetch(start, count) {
+    return await this.browser.methods.allowedMany(
+      this.address, start, count
+    ).call();
   }
   async render() {
-    if(this.count === 0) {
-      return html``;
-    }
     let parentUrl = '/' + this.address;
     if(this.parent) parentUrl = '/' + this.parent;
-    return html`
+    return html`${new Paging(this.count.bind(this), this.fetch.bind(this), (result, options) => html`
       <div class="white window">
         <fieldset>
         <legend>Allowed Contracts</legend>
+        ${options}
         <table>
         <thead>
           <th>Name</th>
           <th>Type</th>
         </thead>
         <tbody>
-        ${this.result.map(item => html`
+        ${result.map(item => html`
           <tr>
           <td>
             <a href="${parentUrl}/${item.item}" $${this.link}>
@@ -48,7 +48,7 @@ export default class FactoryBrowser extends AsyncTemplate {
         </table>
         </fieldset>
       </div>
-    `;
+    `)}`;
   }
 }
 

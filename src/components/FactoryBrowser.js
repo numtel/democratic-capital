@@ -1,5 +1,6 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, ZERO_ACCOUNT} from '/utils/index.js';
+import Paging from '/components/Paging.js';
 
 export default class FactoryBrowser extends AsyncTemplate {
   constructor(address) {
@@ -9,24 +10,23 @@ export default class FactoryBrowser extends AsyncTemplate {
   async init() {
     this.contract = await selfDescribingContract(config.contracts.FactoryBrowser.address);
     this.factory = await selfDescribingContract(config.contracts.VerifiedGroupFactory.address);
-    this.set('count', Number(await this.factory.methods.childCount(this.address).call()));
-    if(this.count > 0) {
-      // TODO paging!
-      this.set('result', await this.contract.methods.detailsMany(
-        config.contracts.VerifiedGroupFactory.address, this.address, 0, 20
-      ).call());
-    }
+  }
+  async count() {
+    return Number(await this.factory.methods.childCount(this.address).call());
+  }
+  async fetch(start, count) {
+    return await this.contract.methods.detailsMany(
+      config.contracts.VerifiedGroupFactory.address, this.address, start, count
+    ).call();
   }
   async render() {
-    if(this.count === 0) {
-      return html``;
-    }
     let parentUrl = '/' + this.address;
     if(this.address === ZERO_ACCOUNT) parentUrl = '';
-    return html`
+    return html`${new Paging(this.count.bind(this), this.fetch.bind(this), (result, options) => html`
       <div class="white window">
         <fieldset>
         <legend>Child Contracts</legend>
+        ${options}
         <table>
         <thead>
           <th>Name</th>
@@ -34,7 +34,7 @@ export default class FactoryBrowser extends AsyncTemplate {
           <th>Created</th>
         </thead>
         <tbody>
-        ${this.result.map(item => html`
+        ${result.map(item => html`
           <tr>
           <td>
             <a href="${parentUrl}/${item.item}" $${this.link}>
@@ -49,7 +49,7 @@ export default class FactoryBrowser extends AsyncTemplate {
         </table>
         </fieldset>
       </div>
-    `;
+    `)}`;
   }
 }
 
