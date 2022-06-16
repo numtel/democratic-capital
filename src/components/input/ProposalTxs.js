@@ -3,24 +3,36 @@ import {selfDescribingContract, isAddress, isFunSig} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import Input from '/components/Input.js';
 
-// TODO apply filters
 export default class ProposalTxs extends AsyncTemplate {
-  constructor(group, onChange) {
+  constructor(group, item, onChange) {
     super();
     this.set('groupAddress', group);
+    this.set('itemAddress', item);
     this.set('onChange', onChange);
     this.set('entries', []);
   }
   async init() {
+    const elections = await selfDescribingContract(this.itemAddress);
+    this.set('allowedPrefixes', await elections.methods.invokePrefixes().call());
+
     this.set('contractInput', new Input({
       name: 'Contract',
       select: [ 'Allowed', 'Children' ],
+      filter: this.allowedPrefixes.map(x => x.slice(0,42).toLowerCase()),
     }, 'invoke_to', this.groupAddress, (value) => {
       this.set('addTxTo', isAddress(value) ? value : undefined);
     }));
   }
   async render() {
     const addInputs = await this.fetchInputs();
+    let methodFilter;
+    if(this.addTxTo) {
+      methodFilter = this.allowedPrefixes
+        .filter(x => x.toLowerCase().startsWith(this.addTxTo.toLowerCase()))
+        .map(x => '0x' + x.slice(42));
+      if(methodFilter.indexOf('0x') !== -1) methodFilter = [];
+    }
+
     return html`
       <fieldset>
         <legend>Add Transaction</legend>
@@ -34,6 +46,7 @@ export default class ProposalTxs extends AsyncTemplate {
           name: 'Method',
           contract:  this.addTxTo,
           select: [ 'Methods' ],
+          filter: methodFilter,
         }, 'invoke_method', this.groupAddress, (value) => {
           this.set('addTxMethod', isFunSig(value) ? value : undefined);
           this.updateTxData();

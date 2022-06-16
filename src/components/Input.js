@@ -5,11 +5,12 @@ import ProposalTxs from '/components/input/ProposalTxs.js';
 import {selfDescribingContract, remaining} from '/utils/index.js';
 
 export default class Input extends AsyncTemplate {
-  constructor(input, name, parent, onChange, value) {
+  constructor(input, name, parent, onChange, value, item) {
     super();
     this.set('input', input);
     this.set('name', name);
     this.set('parent', parent);
+    this.set('item', item);
     this.set('value', value);
     this.set('onChange', onChange || (() => {}));
   }
@@ -29,7 +30,7 @@ export default class Input extends AsyncTemplate {
     } else if(input.input === 'invokeFilter') {
       return html`${new InvokeFilter(this.parent, this.onChange)}`;
     } else if(input.input === 'txs') {
-      return html`${new ProposalTxs(this.parent, this.onChange)}`;
+      return html`${new ProposalTxs(this.parent, this.item, this.onChange)}`;
     } else if(input.input === 'percentage') {
       return html`${new PercentageInput(input, this.onChange, this.value)}`;
     } else {
@@ -39,6 +40,9 @@ export default class Input extends AsyncTemplate {
         for(let type of input.select) {
           const options = [];
           for(let opt of await this.givenValues(type)) {
+            if(input.filter && input.filter.length
+                && input.filter.indexOf(opt[1].toLowerCase()) === -1)
+              continue;
             options.push(html`
               <option value="${opt[1]}">${opt[0]}</option>
             `)
@@ -111,8 +115,9 @@ export default class Input extends AsyncTemplate {
         count = Number(await rootFactory.methods.childCount(this.parent).call());
         if(count > 0) {
           if(!this.children) {
+            // TODO what to do with more than 100 children?
             this.children = browser.methods.detailsMany(
-              config.contracts.VerifiedGroupFactory.address, this.parent, 0, 20
+              config.contracts.VerifiedGroupFactory.address, this.parent, 0, 100
             ).call();
           }
         } else {
@@ -129,6 +134,7 @@ export default class Input extends AsyncTemplate {
         count = Number(await contract.methods.allowedContractCount().call());
         if(count > 0) {
           if(!this.allowed) {
+            // TODO what to do with more than 100 allowed?
             this.allowed = browser.methods.allowedMany(
               this.parent, 0, 100
             ).call();

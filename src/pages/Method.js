@@ -28,7 +28,9 @@ export default class Details extends AsyncTemplate {
         input,
         `arg_${index}`,
         this.parent || this.address,
-        (value) => this[`arg_${index}`] = value
+        (value) => this[`arg_${index}`] = value,
+        undefined,
+        this.address
       ));
     }
     let parentUrl = '/' + this.address;
