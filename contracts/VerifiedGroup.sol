@@ -23,6 +23,25 @@ using AddressSet for AddressSet.Set;
       "fields": [
         { "select": [ "Allowed" ] }
       ]
+    },
+    "register": {
+      "onlyAllowed": true
+    },
+    "unregister": {
+      "onlyAllowed": true
+    },
+    "ban": {
+      "onlyAllowed": true,
+      "fields": [
+        {},
+        { "preview": "timestamp" }
+      ]
+    },
+    "setVerifications": {
+      "onlyAllowed": true
+    },
+    "invoke": {
+      "onlyAllowed": true
     }
   },
   "display": {

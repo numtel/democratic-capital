@@ -4,14 +4,14 @@ a:visited { color: #000; }
 button { cursor: pointer; }
 .blue a:visited { color:#fff; }
 a.button:visited { color:#fff; }
-menu { display: flex; padding:0;}
-menu li { padding: 0 10px;}
+menu { padding:0;}
+menu li { padding: 10px; display:inline-block; }
 table {width:100%;}
 table>a {display:table-row;}
 .commands {text-align:center; padding:20px;}
 select {max-width: 80%; background:#ccc !important; color:#000 !important; cursor:pointer; margin: 10px 0; }
 div.field { padding: 10px; 0;}
-span.hint { display:block; }
+div.field span.hint { display:block; }
 span.preview { display:block;}
 .wrap {word-wrap:anywhere; white-space:pre-wrap;}
 .notice { padding: 10px; background:#fcc; color: #000; }

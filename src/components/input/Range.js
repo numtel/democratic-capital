@@ -1,6 +1,6 @@
 import {Template, html} from '/utils/Template.js';
 
-export default class PercentageInput extends Template {
+export default class Range extends Template {
   constructor(input, onChange, value) {
     super();
     if(!String(input.internalType).startsWith('uint')) {
@@ -12,8 +12,6 @@ export default class PercentageInput extends Template {
     this.set('min', 'min' in input ? input.min : 0);
     this.set('value', value || this.min);
     this.onChange(this.value);
-    this.set('minPercent', 'minPercent' in input ? input.minPercent : 0);
-    this.set('maxPercent', 'maxPercent' in input ? input.maxPercent : 100);
     if('max' in input) {
       this.set('max', input.max);
     } else {
@@ -40,8 +38,9 @@ export default class PercentageInput extends Template {
             step="1"
           >
         </label>
-        <span class="preview">${Math.round((this.value-this.min)/(this.max-this.min) * 100 * (this.maxPercent - this.minPercent))/100 + this.minPercent}%</span>
+        <span class="preview">${this.value}</span>
         ${this.input.hint && html`<span class="hint">${this.input.hint}</span>`}
     `
   }
 }
+

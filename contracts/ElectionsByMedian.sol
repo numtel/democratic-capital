@@ -6,6 +6,87 @@ using MedianOfSixteen for MedianOfSixteen.Data;
 
 import "./ElectionBase.sol";
 
+/*{
+  "name": "Elections by Median",
+  "overview": {
+    "Median Configuration": {
+      "function":"getProposalConfig",
+      "display": [
+        {"hint": "Number of Days",
+         "special": [ {"value": "0", "label": "Not Set"} ]},
+        {"type":"percentage",
+         "special": [ {"value": "0", "label": ""} ],
+         "min": 1,
+         "max": 16,
+         "minPercent": 50,
+         "maxPercent": 100},
+        {"type":"percentage",
+         "special": [ {"value": "0", "label": ""} ],
+         "min": 1,
+         "max": 16,
+         "minPercent": 0,
+         "maxPercent": 100}
+      ]
+    },
+    "My Configuration Ballot": {
+      "function":"getProposalConfig",
+      "args": ["account"],
+      "display": [
+        {"hint": "Number of Days",
+         "special": [ {"value": "0", "label": "Not Set"} ]},
+        {"type":"percentage",
+         "special": [ {"value": "0", "label": ""} ],
+         "min": 1,
+         "max": 16,
+         "minPercent": 50,
+         "maxPercent": 100},
+        {"type":"percentage",
+         "special": [ {"value": "0", "label": ""} ],
+         "min": 1,
+         "max": 16,
+         "minPercent": 0,
+         "maxPercent": 100}
+      ]
+    },
+    "proposalConfigCount": {}
+  },
+  "methods": {
+    "propose": {
+      "onlyMember": true,
+      "fields": [
+        {"input":"txs"}
+      ]
+    },
+    "setProposalConfig": {
+      "onlyMember": true,
+      "fields": [
+        {"input":"range",
+         "min": 1,
+         "max": 16,
+         "hint": "Number of Days"},
+        {"input":"percentage",
+         "min": 1,
+         "max": 16,
+         "minPercent": 50,
+         "maxPercent": 100},
+        {"input":"percentage",
+         "min": 1,
+         "max": 16,
+         "minPercent": 0,
+         "maxPercent": 100}
+      ]
+    },
+    "unsetProposalConfig": {
+      "onlyMember": true,
+      "fields": [
+        {"hidden": "account"}
+      ]
+    }
+  },
+  "display": {
+    "Proposals": {}
+  }
+}*/
 contract ElectionsByMedian is ElectionBase {
   MedianOfSixteen.Data duration;
   MedianOfSixteen.Data threshold;

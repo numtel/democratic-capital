@@ -18,15 +18,33 @@ export default class Overview extends Template {
           <tr>
             <td>${key}</td>
             <td>
-              ${!item.display
-                ? item.result
-              : item.display[0] === 'invokeFilter'
-                ? new InvokeFilterDisplay(item.result)
-              : item.display[0] === 'percentage'
-                ? new PercentageDisplay(item.result, item.outputs[0].type)
-              : item.display[0] === 'seconds'
-                ? new SecondsDisplay(item.result)
-              : item.result}
+              ${!item.display ? item.result[0] : item.display.map((display, index) => {
+                let result = item.result[index];
+                // Shorthand version
+                if(typeof display === 'string') display = { type: display };
+                if('special' in display) {
+                  const isSpecial = display.special.filter(special => special.value === result);
+                  if(isSpecial.length > 0) {
+                    return html`
+                      <div class="result">
+                        ${isSpecial[0].label}
+                      </div>
+                    `;
+                  }
+                }
+                return html`
+                  <div class="result">
+                  ${display.hint && html`<span class="hint">${display.hint}</span>`}
+                  ${display.type === 'invokeFilter'
+                    ? new InvokeFilterDisplay(item.result) // Special, gets full result
+                  : display.type === 'percentage'
+                    ? new PercentageDisplay(result, item.outputs[index].type, display)
+                  : display.type === 'seconds'
+                    ? new SecondsDisplay(result)
+                  : result}
+                  </div>
+                  `;
+              })}
             </td>
           </tr>
           ${key === 'registeredCount' && item.result === '1' && html`

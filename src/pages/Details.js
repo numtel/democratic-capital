@@ -15,6 +15,7 @@ export default class Details extends AsyncTemplate {
     document.title = 'Item Details';
   }
   async init() {
+    const accounts = await app.wallet.accounts;
     this.contract = await selfDescribingContract(this.address);
     if(this.parent) {
       this.parentContract = await selfDescribingContract(this.parent);
@@ -32,11 +33,23 @@ export default class Details extends AsyncTemplate {
     this.overview = this.contract.metadata.overview;
     if(this.overview) {
       for(let key of Object.keys(this.overview)) {
+        let funName = key;
+        if('function' in this.overview[key]) {
+          funName = this.overview[key].function;
+        }
         const input = this.contract.options.jsonInterface
-          .filter(x => x.name === key)[0];
+          .filter(x => x.name === funName)[0];
         this.overview[key] = Object.assign(this.overview[key], input);
-        // TODO overview when there's an argument
-        this.overview[key].result = await this.contract.methods[key]().call();
+        let args = [];
+        if('args' in this.overview[key]) {
+          args = this.overview[key].args.map(arg =>
+            arg === 'account' ? accounts[0]
+            : arg);
+        }
+        this.overview[key].result = await this.contract.methods[funName](...args).call();
+        if(typeof this.overview[key].result !== 'object') {
+          this.overview[key].result = [this.overview[key].result];
+        }
       }
     }
     document.title = this.name;

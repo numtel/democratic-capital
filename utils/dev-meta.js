@@ -16,7 +16,7 @@ const files = fs.readdirSync(BUILD_DIR)
 for(let file of files) {
   const abiText = fs.readFileSync(BUILD_DIR + file);
   const abiZip = zlib.gzipSync(abiText);
-  let customZip;
+  let customZip, customText;
   try {
     const contractText = fs.readFileSync(CONTRACT_DIR + file.slice(0, -4) + '.sol', 'utf8');
     const customStart = contractText.indexOf('/*{');
@@ -25,10 +25,21 @@ for(let file of files) {
       customEnd = contractText.indexOf('}*/');
     }
     if(customStart !== -1 && customEnd > customStart) {
-      const customText = contractText.slice(customStart + 2, customEnd + 1);
+      customText = contractText.slice(customStart + 2, customEnd + 1);
+      JSON.parse(customText);
       customZip = zlib.gzipSync(Buffer.from(customText, 'utf8'));
     }
-  } catch(error) {}
+  } catch(error) {
+    if(error.message.indexOf('JSON') !== -1) {
+      console.log("JSON Error in ", file.slice(0, -4));
+      const pos = error.message.match(/position ([\d]+)/);
+      if(pos) {
+        const posVal = Number(pos[1]);
+        console.log(customText.slice(posVal-100, posVal), '^', customText.slice(posVal, posVal+100));
+      }
+      throw error;
+    }
+  }
   const source =
 `// SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;

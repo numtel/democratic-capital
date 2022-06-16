@@ -1,6 +1,7 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import InvokeFilter from '/components/input/InvokeFilter.js';
 import PercentageInput from '/components/input/PercentageInput.js';
+import Range from '/components/input/Range.js';
 import ProposalTxs from '/components/input/ProposalTxs.js';
 import {selfDescribingContract, remaining} from '/utils/index.js';
 
@@ -31,6 +32,8 @@ export default class Input extends AsyncTemplate {
       return html`${new InvokeFilter(this.parent, this.onChange)}`;
     } else if(input.input === 'txs') {
       return html`${new ProposalTxs(this.parent, this.item, this.onChange)}`;
+    } else if(input.input === 'range') {
+      return html`${new Range(input, this.onChange, this.value)}`;
     } else if(input.input === 'percentage') {
       return html`${new PercentageInput(input, this.onChange, this.value)}`;
     } else {
@@ -83,6 +86,9 @@ export default class Input extends AsyncTemplate {
   async givenValues(identifier) {
     let contract, browser, count;
     switch(identifier) {
+      case 'account':
+        const accounts = await app.wallet.accounts;
+        return accounts[0];
       case 'parent':
         if(!this.parent) throw new Error('Parent required!');
         return this.parent;
