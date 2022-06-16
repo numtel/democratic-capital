@@ -153,6 +153,7 @@ async function deployContracts() {
   // Provide contract addresses to frontend
   fs.writeFileSync(`${BUILD_DIR}config.js`, `
   window.config=${JSON.stringify({
+    cacheABI: false,
     rpc: `http://localhost:${PORT}`,
     chain: '0x539',
     chainName: 'Localhost',

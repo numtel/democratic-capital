@@ -5,8 +5,7 @@ import Loader from '/components/Loader.js';
 import ErrorWindow from '/components/ErrorWindow.js';
 
 window.app = {
-  // TODO cacheABI should be in window.config
-  cacheABI: false,
+  cacheABI: config.cacheABI,
   web3: new Web3(config.rpc),
   wallet: new Wallet,
   router: new Router({
