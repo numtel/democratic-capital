@@ -2,6 +2,11 @@
 
 Contract manager for groups of unique humans verified by [Coinpassport](https://coinpassport.net)
 
+## Concepts
+
+* [Self-Describing Contracts](contracts.md)
+* [Contract Hierarchy](hierarchy.md)
+
 ## Installation
 
 ```
