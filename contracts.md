@@ -2,7 +2,7 @@
 
 At its core, Democratic Capital is a frontend for self-describing contracts.
 
-Most Smart Contracts on Ethereum-based chains are opaque blobs of bytecode unless without the matching ABI specification that describes the function signatures that exist within the contract.
+Most Smart Contracts on Ethereum-based chains are opaque blobs of bytecode useless without the matching ABI specification that describes the function signatures that exist within the contract.
 
 Contracts on Democratic Capital always supply a meta contract address which contains (on chain) ABI specification as well as any other custom JSON metadata GZipped.
 
