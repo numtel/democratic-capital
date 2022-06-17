@@ -3,6 +3,7 @@ pragma solidity 0.8.13;
 
 import "./ChildBase.sol";
 import "./safeTransfer.sol";
+import "./IERC20.sol";
 
 /*{
   "name": "Fundraiser",
@@ -63,9 +64,9 @@ contract Fundraiser is ChildBase {
     require(finished(), 'Not Yet Finished');
     require(totalDeposited >= goalAmount, 'Goal Not Met');
     collected = true;
-    emit Success(totalDeposited, recipient);
-    // TODO Should transfer balance, not totalDeposited, so that nothing gets stuck
-    safeTransfer.invoke(token, recipient, totalDeposited);
+    uint balance = IERC20(token).balanceOf(address(this));
+    emit Success(balance, recipient);
+    safeTransfer.invoke(token, recipient, balance);
   }
 
   function deposit(uint amount) external {
