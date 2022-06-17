@@ -4,6 +4,34 @@ pragma solidity 0.8.13;
 import "./ChildBase.sol";
 import "./safeTransfer.sol";
 
+/*{
+  "name": "Fundraiser",
+  "overview": {
+    "token": { "display": ["token"] },
+    "goalAmount": {},
+    "endTime": {"display":["timestamp"] },
+    "finished": {},
+    "My Deposits": {
+      "function": "deposited",
+      "args": ["account"]
+    },
+    "collected": {},
+    "Withdrawn": {
+      "function": "withdrawn",
+      "args": ["account"]
+    }
+  },
+  "methods": {
+    "collectSuccess": {
+      "onlyAllowed": true
+    },
+    "deposit": {
+      "fields": [{}],
+      "approve": ["token"]
+    },
+    "withdraw": {}
+  }
+}*/
 contract Fundraiser is ChildBase {
   address public token;
   bool public collected;

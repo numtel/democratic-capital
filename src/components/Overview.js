@@ -44,6 +44,8 @@ export default class Overview extends Template {
                     ? new SecondsDisplay(result)
                   : display.type === 'token'
                     ? new PreviewToken(result)
+                  : display.type === 'timestamp'
+                    ? (new Date(result * 1000)).toLocaleString()
                   : result}
                   </div>
                   `;

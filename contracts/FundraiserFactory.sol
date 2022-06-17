@@ -4,6 +4,20 @@ pragma solidity 0.8.13;
 import "./Fundraiser.sol";
 import "./ChildFactory.sol";
 
+/*{
+  "name": "Fundraiser Factory",
+  "methods": {
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"},
+        {"select":["Children"], "preview":"token"},
+        {"hint":"Must account for all token decimals"},
+        {"preview":"seconds"}
+      ]
+    }
+  }
+}*/
 contract FundraiserFactory is ChildFactory {
   constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
