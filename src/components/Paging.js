@@ -26,7 +26,12 @@ export default class Paging extends AsyncTemplate {
     if(count === 0) {
       return this.renderEmpty();
     } else {
-      result = await this.fetchFun((this.page - 1) * this.perPage, this.perPage);
+      const start = (this.page - 1) * this.perPage;
+      let fetchCount = this.perPage;
+      if(start + fetchCount > count) {
+        fetchCount = count - start;
+      }
+      result = await this.fetchFun(start, fetchCount);
     }
     return html`
       ${this.renderPage(result, html`

@@ -57,6 +57,9 @@ import "./ElectionBase.sol";
         {"input":"txs"}
       ]
     },
+    "setName": {
+      "onlyAllowed": true
+    },
     "setProposalConfig": {
       "onlyMember": true,
       "fields": [

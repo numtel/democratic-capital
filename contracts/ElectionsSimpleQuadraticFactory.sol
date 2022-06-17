@@ -4,6 +4,23 @@ pragma solidity 0.8.13;
 import "./ElectionsSimpleQuadratic.sol";
 import "./ChildFactory.sol";
 
+/*{
+  "name": "Simple Elections with Quadratic Voting Factory",
+  "methods": {
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"},
+        {"input":"invokeFilter"},
+        {"preview":"seconds"},
+        {"input":"percentage"},
+        {"input":"percentage"},
+        {"select":["Children"], "preview":"token"},
+        {"hint":"Must account for all token decimals"}
+      ]
+    }
+  }
+}*/
 contract ElectionsSimpleQuadraticFactory is ChildFactory {
   constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}

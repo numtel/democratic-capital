@@ -4,6 +4,27 @@ pragma solidity 0.8.13;
 import "./ERC20.sol";
 import "./ChildBase.sol";
 
+/*{
+  "name": "ERC20 Token",
+  "overview": {
+    "totalSupply": {},
+    "My Balance": {
+      "function": "balanceOf",
+      "args": ["account"]
+    }
+  },
+  "methods": {
+    "setName": {
+      "onlyAllowed": true
+    },
+    "setSymbol": {
+      "onlyAllowed": true
+    },
+    "mint": {
+      "onlyAllowed": true
+    }
+  }
+}*/
 contract ERC20Mintable is ERC20, ChildBase {
   string public symbol;
   uint8 public decimals;

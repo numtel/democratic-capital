@@ -11,6 +11,9 @@ using AddressSet for AddressSet.Set;
     "registeredCount": {}
   },
   "methods": {
+    "setName": {
+      "onlyAllowed": true
+    },
     "allowContract": {
       "onlyAllowed": true,
       "fields": [

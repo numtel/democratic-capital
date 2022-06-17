@@ -2,6 +2,8 @@ import {AsyncTemplate, html} from '/utils/Template.js';
 import InvokeFilter from '/components/input/InvokeFilter.js';
 import PercentageInput from '/components/input/PercentageInput.js';
 import Range from '/components/input/Range.js';
+import PreviewToken from '/components/input/PreviewToken.js';
+import PreviewQuadratic from '/components/input/PreviewQuadratic.js';
 import ProposalTxs from '/components/input/ProposalTxs.js';
 import {selfDescribingContract, remaining} from '/utils/index.js';
 
@@ -75,6 +77,12 @@ export default class Input extends AsyncTemplate {
           `}
           ${input.preview === 'seconds' && html`
             <span class="preview">${remaining(this.value)}</span>
+          `}
+          ${input.preview === 'token' && html`
+            ${new PreviewToken(this.value)}
+          `}
+          ${input.preview === 'quadratic' && html`
+            ${new PreviewQuadratic(this.value, input)}
           `}
         </div>`;
      }

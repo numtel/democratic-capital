@@ -4,6 +4,61 @@ pragma solidity 0.8.13;
 import "./ElectionBase.sol";
 import "./safeTransfer.sol";
 
+/*{
+  "name": "Simple Elections with Quadratic Voting",
+  "overview": {
+    "invokePrefixes": { "display": ["invokeFilter"] },
+    "durationSeconds": { "display": ["seconds"] },
+    "threshold": { "display": ["percentage"] },
+    "minParticipation": { "display": ["percentage"] },
+    "quadraticToken": { "display": ["token"] },
+    "quadraticMultiplier": {}
+  },
+  "methods": {
+    "propose": {
+      "onlyMember": true,
+      "fields": [
+        {"input":"txs"}
+      ]
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
+    "setDuration": {
+      "onlyAllowed": true,
+      "fields": [
+        { "preview": "seconds" }
+      ]
+    },
+    "setThreshold": {
+      "onlyAllowed": true,
+      "fields": [
+        { "input": "percentage" }
+      ]
+    },
+    "setMinParticipation": {
+      "onlyAllowed": true,
+      "fields": [
+        { "input": "percentage" }
+      ]
+    },
+    "setQuadraticToken": {
+      "onlyAllowed": true,
+      "fields": [
+        {"select":["Children"], "preview":"token"}
+      ]
+    },
+    "setQuadraticMultiplier": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hint":"Must account for all token decimals"}
+      ]
+    }
+  },
+  "display": {
+    "Proposals": {}
+  }
+}*/
 contract ElectionsSimpleQuadratic is ElectionBase {
   uint public durationSeconds;
   uint16 public threshold;

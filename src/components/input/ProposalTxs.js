@@ -124,8 +124,10 @@ export default class ProposalTxs extends AsyncTemplate {
       const inputs = method.inputs;
       if(contract.metadata.methods && (method.name in contract.metadata.methods)) {
         const inputsMeta = contract.metadata.methods[method.name].fields;
-        for(let i = 0; i < inputsMeta.length; i++) {
-          Object.assign(inputs[i], inputsMeta[i]);
+        if(inputsMeta) {
+          for(let i = 0; i < inputsMeta.length; i++) {
+            Object.assign(inputs[i], inputsMeta[i]);
+          }
         }
       }
       return inputs;

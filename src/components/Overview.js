@@ -2,6 +2,7 @@ import {Template, html} from '/utils/Template.js';
 import SecondsDisplay from '/components/display/SecondsDisplay.js';
 import PercentageDisplay from '/components/display/PercentageDisplay.js';
 import InvokeFilterDisplay from '/components/display/InvokeFilterDisplay.js';
+import PreviewToken from '/components/input/PreviewToken.js';
 
 export default class Overview extends Template {
   constructor(data) {
@@ -41,6 +42,8 @@ export default class Overview extends Template {
                     ? new PercentageDisplay(result, item.outputs[index].type, display)
                   : display.type === 'seconds'
                     ? new SecondsDisplay(result)
+                  : display.type === 'token'
+                    ? new PreviewToken(result)
                   : result}
                   </div>
                   `;

@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract} from '/utils/index.js';
+import {selfDescribingContract, ellipseAddress} from '/utils/index.js';
 import Paging from '/components/Paging.js';
 
 export default class FactoryBrowser extends AsyncTemplate {
@@ -38,7 +38,7 @@ export default class FactoryBrowser extends AsyncTemplate {
           <tr>
           <td>
             <a href="${parentUrl}/${item.item}" $${this.link}>
-              ${item.name || item.item}
+              ${item.name || ellipseAddress(item.item)}
             </a>
           </td>
           <td>${item.metaname || 'Unknown'}</td>

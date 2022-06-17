@@ -18,6 +18,9 @@ import "./ElectionBase.sol";
         {"input":"txs"}
       ]
     },
+    "setName": {
+      "onlyAllowed": true
+    },
     "setDuration": {
       "onlyAllowed": true,
       "fields": [

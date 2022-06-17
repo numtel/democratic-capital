@@ -1,8 +1,12 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, remaining, explorer, ellipseAddress} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
+import ERC20 from '/utils/ERC20.js';
 import TopMenu from '/components/TopMenu.js';
 import Comments from '/components/Comments.js';
+import PreviewToken from '/components/input/PreviewToken.js';
+import Input from '/components/Input.js';
+
 
 export default class Proposal extends AsyncTemplate {
   constructor(elections, proposal, group) {
@@ -35,6 +39,13 @@ export default class Proposal extends AsyncTemplate {
       proposal.tx.push({ to, data, decoded });
     }
     this.set('proposal', proposal);
+    if('voteQuadratic' in this.contract.methods) {
+      this.set('isQuadratic', true);
+      this.set('quadraticToken', new ERC20(await this.contract.methods.quadraticToken().call()));
+      this.set('quadraticMultiplier', await this.contract.methods.quadraticMultiplier().call());
+      this.set('myBalance', await this.quadraticToken.balanceOf(accounts[0]));
+      this.set('allowance', await this.quadraticToken.allowance(accounts[0], this.elections));
+    }
   }
   async render() {
     const proposal = this.proposal;
@@ -45,6 +56,7 @@ export default class Proposal extends AsyncTemplate {
       / (Number(proposal.supporting)+Number(proposal.against));
     const votersRequired = Number(proposal.minVoters) - totalVoters;
     const threshold = rawThreshold * 100;
+    const BN = app.web3.utils.BN;
     return html`
       ${new TopMenu(html`
         <a href="/${this.group}" $${this.link}>Back to Group</a>
@@ -114,12 +126,45 @@ export default class Proposal extends AsyncTemplate {
           <dd>${(new Date(proposal.startTime * 1000)).toLocaleString()}</dd>
           <dt>End Time</dt>
           <dd>${(new Date(proposal.endTime * 1000)).toLocaleString()}</dd>
+          ${this.isQuadratic && html`
+            <dt>Quadratic Token</dt>
+            <dd>${new PreviewToken(this.quadraticToken.address)}</dd>
+            <dt>Quadratic Multiplier</dt>
+            <dd>${this.quadraticMultiplier}</dd>
+            <dt>My Balance</dt>
+            <dd>${this.myBalance}</dd>
+          `}
         </dl>
         ${timeLeft > 0 && proposal.myVote === '0' ? html`
-          <div class="commands">
-            <button onclick="tpl(this).vote(true)">Vote in Support</button>
-            <button onclick="tpl(this).vote(false)">Vote Against</button>
-          </div>
+          ${this.isQuadratic ? html`
+            <fieldset>
+              <legend>Quadratic Payment</legend>
+              ${new Input({
+                name: 'Amount',
+                preview: 'quadratic',
+                token: this.quadraticToken,
+                multiplier: this.quadraticMultiplier,
+                balance: this.myBalance,
+              }, 'quad_payment', this.group, (value) => {
+                this.set('quadPayment', value);
+              }, this.quadPayment || '0')}
+            </fieldset>
+            ${(new BN(this.quadPayment)).gt(new BN(this.allowance)) ? html`
+              <div class="commands">
+                <button onclick="tpl(this).approve()">Approve Spend</button>
+              </div>
+            ` : html`
+              <div class="commands">
+                <button onclick="tpl(this).vote(true)">Vote in Support</button>
+                <button onclick="tpl(this).vote(false)">Vote Against</button>
+              </div>
+            `}
+          ` : html`
+            <div class="commands">
+              <button onclick="tpl(this).vote(true)">Vote in Support</button>
+              <button onclick="tpl(this).vote(false)">Vote Against</button>
+            </div>
+          `}
         ` : proposal.passed && !proposal.processed ? html`
           <div class="commands">
             <button onclick="tpl(this).process()">Invoke Proposal Transactions</button>
@@ -129,9 +174,21 @@ export default class Proposal extends AsyncTemplate {
       ${new Comments(this.key, this.group)}
     `
   }
+  async approve() {
+    try {
+      await this.quadraticToken.approve(this.elections, this.quadPayment);
+      await this.superInit();
+    } catch(error) {
+      alert(error);
+    }
+  }
   async vote(inSupport) {
     try {
-      await app.wallet.send(this.contract.methods.vote(this.key, inSupport));
+      if(this.isQuadratic) {
+        await app.wallet.send(this.contract.methods.voteQuadratic(this.key, inSupport, this.quadPayment));
+      } else {
+        await app.wallet.send(this.contract.methods.vote(this.key, inSupport));
+      }
       await this.superInit();
     } catch(error) {
       alert(error);

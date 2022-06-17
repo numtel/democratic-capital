@@ -1,6 +1,7 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, remaining, explorer, ellipseAddress} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
+import Paging from '/components/Paging.js';
 
 export default class Proposals extends AsyncTemplate {
   constructor(address, parent) {
@@ -10,10 +11,14 @@ export default class Proposals extends AsyncTemplate {
   }
   async init() {
     this.contract = await selfDescribingContract(this.address);
+  }
+  async count() {
+    return Number(await this.contract.methods.count().call());
+  }
+  async fetch(start, count) {
     const accounts = await app.wallet.accounts;
-    this.set('count', await this.contract.methods.count().call());
     const currentTime = (await app.web3.eth.getBlock('latest')).timestamp;
-    const proposalsRaw = await this.contract.methods.detailsMany(0, this.count, accounts[0]).call();
+    const proposalsRaw = await this.contract.methods.detailsMany(start, count, accounts[0]).call();
     const proposals = []
     for(let proposalRaw of proposalsRaw) {
       // Why is RPC result frozen!?
@@ -37,14 +42,14 @@ export default class Proposals extends AsyncTemplate {
       }
       proposals.push(proposal);
     }
-    this.set('proposals', proposals);
+    return proposals;
   }
   async render() {
-    return html`
-      ${this.proposals.length > 0 && html`
+    return html`${new Paging(this.count.bind(this), this.fetch.bind(this), (result, options) => html`
       <div class="white window">
+        ${options}
         <ul class="proposals">
-          ${this.proposals.map(proposal => html`
+          ${result.map(proposal => html`
             <li>
               <a href="/${this.parent}/${this.address}/proposal/${proposal.key}" $${this.link}>${ellipseAddress(proposal.key)}</a>
               <div class="details">
@@ -90,7 +95,7 @@ export default class Proposals extends AsyncTemplate {
           `)}
         </ul>
       </div>
-      `}
+      `)}
     `;
   }
 }

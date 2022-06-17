@@ -9,7 +9,7 @@ menu li { padding: 10px; display:inline-block; }
 table {width:100%;}
 table>a {display:table-row;}
 .commands {text-align:center; padding:20px;}
-select {max-width: 80%; background:#ccc !important; color:#000 !important; cursor:pointer; margin: 10px 0; }
+select {width: 100%; background:#ccc; color:#000; cursor:pointer; margin: 10px 0; }
 div.field { padding: 10px; 0;}
 div.field span.hint { display:block; }
 span.preview { display:block;}
