@@ -33,6 +33,7 @@ abstract contract ElectionBase is ChildBase {
 
   event ElectionProcessed(address key, uint txIndex, bytes sent, bytes returned);
   event NewElection(address key);
+  event ProposalText(string text);
 
   constructor(bytes[] memory _allowedInvokePrefixes) {
     allowedInvokePrefixes = _allowedInvokePrefixes;
@@ -41,6 +42,9 @@ abstract contract ElectionBase is ChildBase {
   // General usage methods
   function invokePrefixes() external view returns(bytes[] memory) {
     return allowedInvokePrefixes;
+  }
+  function proposalText(string calldata text) external {
+    emit ProposalText(text);
   }
   function _propose(
     bytes[] memory data,

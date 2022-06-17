@@ -71,7 +71,7 @@ export default class Proposals extends AsyncTemplate {
                 <ul class="tx">
                   ${proposal.tx.map(tx => html`
                     <li>
-                      <a $${this.link} href="${explorer(tx.to)}" class="to">${tx.to}</a>
+                      <a $${this.link} href="${explorer(tx.to)}" class="to">${ellipseAddress(tx.to)}</a>
                       ${tx.decoded ? html`
                         <span class="method">${tx.decoded.name}</span>
                         ${tx.decoded.params.map(param => html`

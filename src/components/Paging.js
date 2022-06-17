@@ -22,12 +22,12 @@ export default class Paging extends AsyncTemplate {
           $${this.page === i+1 ? 'selected' : ''}
         >${i+1}</option>`);
     }
-    let result;
+    let result, start, fetchCount;
     if(count === 0) {
       return this.renderEmpty();
     } else {
-      const start = (this.page - 1) * this.perPage;
-      let fetchCount = this.perPage;
+      start = (this.page - 1) * this.perPage;
+      fetchCount = this.perPage;
       if(start + fetchCount > count) {
         fetchCount = count - start;
       }
@@ -42,6 +42,9 @@ export default class Paging extends AsyncTemplate {
               ${pageOpts}
             </select>
           </label>
+          <div>
+            ${start+1}-${start+fetchCount} of ${count}
+          </div>
           <label>
             <span>Per Page</span>
             <select onchange="tpl(this).setPerPage(this.value)">
