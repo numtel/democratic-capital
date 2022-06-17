@@ -4,6 +4,17 @@ pragma solidity 0.8.13;
 import "./OpenRegistrations.sol";
 import "./ChildFactory.sol";
 
+/*{
+  "name": "Open Registrations Factory",
+  "methods": {
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"}
+      ]
+    }
+  }
+}*/
 contract OpenRegistrationsFactory is ChildFactory {
   constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}

@@ -4,6 +4,19 @@ pragma solidity 0.8.13;
 import "./RegistrationsByFee.sol";
 import "./ChildFactory.sol";
 
+/*{
+  "name": "Registrations By Fee Factory",
+  "methods": {
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"},
+        {"select":["Children"], "preview":"token"},
+        {"hint":"Must account for all token decimals"}
+      ]
+    }
+  }
+}*/
 contract RegistrationsByFeeFactory is ChildFactory {
   constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}

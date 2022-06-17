@@ -4,6 +4,21 @@ pragma solidity 0.8.13;
 import "./MemberTokenEmissions.sol";
 import "./ChildFactory.sol";
 
+/*{
+  "name": "Member Token Emissions for ERC20Mintable Factory",
+  "methods": {
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"},
+        {"select":["Children"], "preview":"token"},
+        {"preview":"seconds",
+         "hint": "Each member will be eligible to collect emissionAmount after each period."},
+        {"hint":"Must account for all token decimals"}
+      ]
+    }
+  }
+}*/
 contract MemberTokenEmissionsFactory is ChildFactory {
   constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}

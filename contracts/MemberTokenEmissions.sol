@@ -4,6 +4,39 @@ pragma solidity 0.8.13;
 import "./IERC20Mintable.sol";
 import "./ChildBase.sol";
 
+/*{
+  "name": "Member Token Emissions for ERC20Mintable",
+  "overview": {
+    "tokenAddress": { "display": ["token"] },
+    "emissionPeriodSeconds": {"display":["seconds"] },
+    "emissionAmount": {},
+    "beginEmissions": {"display": ["timestamp"]},
+    "lastCollected": {
+      "display": ["timestamp"],
+      "args": ["account"]
+    },
+    "availableEmissions": {
+      "args": ["account"]
+    }
+  },
+  "methods": {
+    "setToken": {
+      "onlyAllowed": true,
+      "fields": [
+        {"select":["Children"], "preview":"token"}
+      ]
+    },
+    "setEmissionPeriodSeconds": {
+      "onlyAllowed": true
+    },
+    "setEmissionAmount": {
+      "onlyAllowed": true
+    },
+    "collectEmissions": {
+      "onlyMember": true
+    }
+  }
+}*/
 contract MemberTokenEmissions is ChildBase {
   address public tokenAddress;
   uint public emissionPeriodSeconds;

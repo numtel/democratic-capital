@@ -4,6 +4,28 @@ pragma solidity 0.8.13;
 import "./ChildBase.sol";
 import "./safeTransfer.sol";
 
+/*{
+  "name": "Registrations By Fee",
+  "overview": {
+    "feeToken": { "display": ["token"] },
+    "amount": {}
+  },
+  "methods": {
+    "setToken": {
+      "onlyAllowed": true,
+      "fields": [
+        {"select":["Children"], "preview":"token"}
+      ]
+    },
+    "setAmount": {
+      "onlyAllowed": true
+    },
+    "register": {
+      "approve": ["feeToken"],
+      "approveAmount": ["amount"]
+    }
+  }
+}*/
 contract RegistrationsByFee is ChildBase {
   address public feeToken;
   uint public amount;

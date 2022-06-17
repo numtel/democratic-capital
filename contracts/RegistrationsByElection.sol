@@ -5,6 +5,18 @@ import "./ChildBase.sol";
 import "./BytesLib.sol";
 using BytesLib for bytes;
 
+/*{
+  "name": "Open Registrations",
+  "overview": {
+    "elections": {}
+  },
+  "methods": {
+    "setElections": {
+      "onlyAllowed": true
+    },
+    "register": {}
+  }
+}*/
 contract RegistrationsByElection is ChildBase {
   address public elections;
   bytes4 private constant SELECTOR = bytes4(keccak256(bytes('register(address)')));

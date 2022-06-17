@@ -39,14 +39,21 @@ export default class Details extends AsyncTemplate {
         const token = new ERC20(tokenAddress);
         const approval = await token.allowance(accounts[0], this.address);
         const balance = await token.balanceOf(accounts[0]);
-        const value = new BN(this[`args_${this.tokens.length}`] || 0);
+        let value;
+        if(('approveAmount' in this.methodMeta)
+            && this.methodMeta.approveAmount[this.tokens.length]) {
+          const amountFun = this.methodMeta.approveAmount[this.tokens.length];
+          value = new BN(await this.contract.methods[amountFun]().call());
+        } else {
+          value = new BN(this[`args_${this.tokens.length}`] || 0);
+        }
         if((new BN(balance)).lt(value)) {
-          this.set('insufficientBalance', index);
+          this.set('insufficientBalance', this.tokens.length);
         }
         if((new BN(approval)).lt(value)) {
-          this.set('needsApproval', index);
+          this.set('needsApproval', this.tokens.length);
         }
-        this.tokens.push({ token, approval, balance });
+        this.tokens.push({ token, approval, balance, value });
       }
     }
     document.title =`${this.contract.metadata.name}: ${this.method}`;
@@ -69,6 +76,7 @@ export default class Details extends AsyncTemplate {
         (value) => {
           this[`arg_${index}`] = value;
           if(this.tokens[index]) {
+            this.tokens[index].value = new BN(value);
             this.set('needsApproval', null);
             this.set('insufficientBalance', null);
             if((new BN(this.tokens[index].balance)).lt(new BN(value))) {
@@ -96,9 +104,9 @@ export default class Details extends AsyncTemplate {
             ${inputTpls}
             <div class="commands">
               ${this.insufficientBalance !== null ? html`
-                <button type="submit">Insufficient Balance (${await this.tokens[this.insufficientBalance].token.symbol()})</button>
+                <button type="submit">Insufficient Balance (${await this.tokens[this.insufficientBalance].value} ${await this.tokens[this.insufficientBalance].token.symbol()})</button>
               ` : this.needsApproval !== null ? html`
-                <button type="submit">Approve Spend (${await this.tokens[this.needsApproval].token.symbol()})</button>
+                <button type="submit">Approve Spend (${await this.tokens[this.needsApproval].value} ${await this.tokens[this.needsApproval].token.symbol()})</button>
               ` : html`
                 <button type="submit">Submit</button>
               `}
@@ -116,7 +124,8 @@ export default class Details extends AsyncTemplate {
       if(this.insufficientBalance !== null) {
         alert('Insufficient Balance!');
       } else if(this.needsApproval !== null) {
-        await this.tokens[this.needsApproval].token.approve(this.address, this['arg_' + this.needsApproval]);
+        const approval = this.tokens[this.needsApproval];
+        await approval.token.approve(this.address, approval.value);
         await this.superInit();
       } else {
         await app.wallet.send(this.contract.methods[this.method](...args));
