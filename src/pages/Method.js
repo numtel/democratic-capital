@@ -28,8 +28,13 @@ export default class Details extends AsyncTemplate {
     this.set('insufficientBalance', null);
     if(this.methodMeta.approve) {
       for(let tokenAddress of this.methodMeta.approve) {
+        let args = [];
+        if(Array.isArray(tokenAddress)) {
+          args = tokenAddress.slice(1);
+          tokenAddress = tokenAddress[0];
+        }
         if(tokenAddress in this.contract.methods) {
-          tokenAddress = await this.contract.methods[tokenAddress]().call();
+          tokenAddress = await this.contract.methods[tokenAddress](args).call();
         }
         if(!isAddress(tokenAddress)) {
           this.tokens.push(null);
@@ -45,7 +50,7 @@ export default class Details extends AsyncTemplate {
           const amountFun = this.methodMeta.approveAmount[this.tokens.length];
           value = new BN(await this.contract.methods[amountFun]().call());
         } else {
-          value = new BN(this[`args_${this.tokens.length}`] || 0);
+          value = new BN(this[`arg_${this.tokens.length}`] || 0);
         }
         if((new BN(balance)).lt(value)) {
           this.set('insufficientBalance', this.tokens.length);
@@ -54,6 +59,16 @@ export default class Details extends AsyncTemplate {
           this.set('needsApproval', this.tokens.length);
         }
         this.tokens.push({ token, approval, balance, value });
+      }
+    }
+    if('thisToken' in this.methodMeta) {
+      const accounts = await app.wallet.accounts;
+      const token = new ERC20(this.address);
+      const balance = await token.balanceOf(accounts[0]);
+      const value = new BN(this[`arg_${this.thisToken}`] || 0);
+      this.tokens[this.methodMeta.thisToken] = {token,approval:null,balance,value}
+      if((new BN(balance)).lt(value)) {
+        this.set('insufficientBalance', this.methodMeta.thisToken);
       }
     }
     document.title =`${this.contract.metadata.name}: ${this.method}`;
@@ -77,13 +92,16 @@ export default class Details extends AsyncTemplate {
           this[`arg_${index}`] = value;
           if(this.tokens[index]) {
             this.tokens[index].value = new BN(value);
-            this.set('needsApproval', null);
-            this.set('insufficientBalance', null);
-            if((new BN(this.tokens[index].balance)).lt(new BN(value))) {
-              this.set('insufficientBalance', index);
+          }
+          this.set('needsApproval', null);
+          this.set('insufficientBalance', null);
+          for(let i = 0; i<this.tokens.length; i++) {
+            const token = this.tokens[i];
+            if((new BN(token.balance)).lt(token.value)) {
+              this.set('insufficientBalance', i);
             }
-            if((new BN(this.tokens[index].approval)).lt(new BN(value))) {
-              this.set('needsApproval', index);
+            if(token.approval !== null && (new BN(token.approval)).lt(token.value)) {
+              this.set('needsApproval', i);
             }
           }
         },

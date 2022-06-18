@@ -5,6 +5,20 @@ import "./ERC20LiquidityPool.sol";
 import "./ChildFactory.sol";
 import "./safeTransfer.sol";
 
+/*{
+  "name": "ERC20 Liquidity Pool Factory",
+  "methods": {
+    "deployNew": {
+      "onlyAllowed": true,
+      "fields": [
+        {"hidden":"parent"},
+        {"select":["Children"], "preview":"token"},
+        {"select":["Children"], "preview":"token"},
+        { "input": "percentage" }
+      ]
+    }
+  }
+}*/
 contract ERC20LiquidityPoolFactory is ChildFactory {
   constructor(address factoryMeta, address _childMeta, IVerifiedGroupFactory _parentFactory)
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}

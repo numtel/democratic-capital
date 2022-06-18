@@ -8,7 +8,8 @@ using AddressSet for AddressSet.Set;
 /*{
   "name": "Group",
   "overview": {
-    "registeredCount": {}
+    "registeredCount": {},
+    "isRegistered": { "args": ["account"] }
   },
   "methods": {
     "setName": {
@@ -49,7 +50,8 @@ using AddressSet for AddressSet.Set;
   },
   "display": {
     "Allowed": {},
-    "FactoryBrowser": {}
+    "FactoryBrowser": {},
+    "Swap": {}
   }
 }*/
 contract VerifiedGroup is ChildBase {

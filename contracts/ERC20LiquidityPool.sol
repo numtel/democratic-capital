@@ -5,6 +5,59 @@ import "./safeTransfer.sol";
 import "./ERC20Mintable.sol";
 import "./IERC20.sol";
 
+/*{
+  "name": "ERC20 Liquidity Pool",
+  "overview": {
+    "totalSupply": {},
+    "Token 0": {
+      "function": "tokens",
+      "args": ["0"],
+      "display": ["token"]
+    },
+    "Reserves 0": {
+      "function": "reserves",
+      "args": ["0"]
+    },
+    "Token 1": {
+      "function": "tokens",
+      "args": ["1"],
+      "display": ["token"]
+    },
+    "Reserves 1": {
+      "function": "reserves",
+      "args": ["1"]
+    },
+    "swapFee": { "display": ["percentage"] },
+    "My Liqudity Balance": {
+      "function": "balanceOf",
+      "args": ["account"]
+    }
+  },
+  "methods": {
+    "deposit": {
+      "approve": [["tokens",0],["tokens",1]],
+      "fields": [{}, {}]
+    },
+    "withdraw": {
+      "thisToken": 0
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
+    "setSymbol": {
+      "onlyAllowed": true
+    },
+    "setSwapFee": {
+      "onlyAllowed": true,
+      "fields": [
+        {"input": "percentage"}
+      ]
+    },
+    "mint": {
+      "onlyAllowed": true
+    }
+  }
+}*/
 contract ERC20LiquidityPool is ERC20Mintable {
   address[2] public tokens;
   uint[2] public reserves;

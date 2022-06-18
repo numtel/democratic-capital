@@ -9,6 +9,9 @@ export class Template {
   }
   set(key, value) {
     if(key) {
+      // Non-op
+      if(this[key] === value) return this;
+
       this[key] = value;
     }
     if(this.timeout === null) {
