@@ -5,6 +5,7 @@ import AllowedContracts from '/components/AllowedContracts.js';
 import Proposals from '/components/Proposals.js';
 import TopMenu from '/components/TopMenu.js';
 import Overview from '/components/Overview.js';
+import Swap from '/components/Swap.js';
 import Comments from '/components/Comments.js';
 
 export default class Details extends AsyncTemplate {
@@ -85,6 +86,7 @@ export default class Details extends AsyncTemplate {
               : this.address) :
           key === 'Allowed' ? new AllowedContracts(this.address, this.parent) :
           key === 'Proposals' ? new Proposals(this.address, this.parent) :
+          key === 'Swap' ? new Swap(this.address) :
           '');
       })}
       ${this.contract.metaname === 'VerifiedGroup'

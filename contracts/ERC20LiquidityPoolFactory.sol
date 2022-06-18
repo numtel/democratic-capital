@@ -24,6 +24,15 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     ChildFactory(factoryMeta, _childMeta, _parentFactory) {}
 
   mapping(address => mapping(address => mapping(address => address))) public getPairByGroup;
+  mapping(address => address[]) public poolsByGroup;
+
+  struct PoolDetails {
+    address token0;
+    address token1;
+    uint reserve0;
+    uint reserve1;
+    uint32 swapFee;
+  }
 
   uint private unlocked = 1;
   modifier lock() {
@@ -56,7 +65,33 @@ contract ERC20LiquidityPoolFactory is ChildFactory {
     // Also provide reverse in order to aid frontends
     getPairByGroup[group][token1][token0] = address(newContract);
 
+    // For swap router
+    poolsByGroup[group].push(address(newContract));
+
     parentFactory.registerChild(group, childMeta, address(newContract));
+  }
+
+  function groupPoolCount(address group) public view returns(uint) {
+    return poolsByGroup[group].length;
+  }
+
+  function groupPools(address group, uint startIndex, uint fetchCount) external view returns(PoolDetails[] memory) {
+    uint itemCount = groupPoolCount(group);
+    require(startIndex < itemCount);
+    if(startIndex + fetchCount >= itemCount) {
+      fetchCount = itemCount - startIndex;
+    }
+    PoolDetails[] memory out = new PoolDetails[](fetchCount);
+    for(uint i; i < fetchCount; i++) {
+      address poolAddress = poolsByGroup[group][startIndex + i];
+      ERC20LiquidityPool pool = ERC20LiquidityPool(poolAddress);
+      out[i] = PoolDetails(
+        pool.tokens(0), pool.tokens(1),
+        pool.reserves(0), pool.reserves(1),
+        pool.swapFee()
+      );
+    }
+    return out;
   }
 
   function swapRouter(address group, address[] memory tokens, uint amountIn, uint minReceived) external lock returns(uint amountOut) {

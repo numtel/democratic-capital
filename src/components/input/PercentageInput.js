@@ -1,5 +1,6 @@
 import {Template, html} from '/utils/Template.js';
 
+// TODO needs a numeric input too for fine tuning
 export default class PercentageInput extends Template {
   constructor(input, onChange, value) {
     super();
