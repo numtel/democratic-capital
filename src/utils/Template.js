@@ -40,7 +40,7 @@ export class Template {
   route(element) {
     const newPath = element.attributes.href.value;
     if(newPath.startsWith('http')) {
-      window.open(newPath);
+      window.open(newPath, '_blank', 'noopener');
     } else {
       app.router.goto(newPath);
     }
