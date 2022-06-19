@@ -1,6 +1,5 @@
 import {Template, html} from '/utils/Template.js';
 
-// TODO needs a numeric input too for fine tuning
 export default class PercentageInput extends Template {
   constructor(input, onChange, value) {
     super();
@@ -32,16 +31,26 @@ export default class PercentageInput extends Template {
       <div class="field">
         <label>
           <span>${this.input.name}</span>
-          <input
-            type="range"
-            onchange="tpl(this).set('value', this.value).onChange(this.value)"
-            min="${this.min}"
-            max="${this.max}"
-            value="${this.value}"
-            step="1"
-          >
+          <div class="percentage">
+            <input
+              type="range"
+              onchange="tpl(this).set('value', this.value).onChange(this.value)"
+              min="${this.min}"
+              max="${this.max}"
+              value="${this.value}"
+              step="1"
+            >
+            <input
+              type="number"
+              onchange="tpl(this).set('value', this.value).onChange(this.value)"
+              min="${this.min}"
+              max="${this.max}"
+              value="${this.value}"
+              step="1"
+            >
+          </div>
         </label>
-        <span class="preview">${Math.round((this.value-this.min)/(this.max-this.min) * 100 * (this.maxPercent - this.minPercent))/100 + this.minPercent}%</span>
+        <span class="preview">${Math.round((this.value-this.min)/(this.max-this.min) * 10000 * (this.maxPercent - this.minPercent))/10000 + this.minPercent}%</span>
         ${this.input.hint && html`<span class="hint">${this.input.hint}</span>`}
     `
   }

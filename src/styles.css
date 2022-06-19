@@ -12,6 +12,7 @@ table>a {display:table-row;}
 select {width: 100%; background:#ccc; color:#000; cursor:pointer; margin: 10px 0; }
 div.field { padding: 10px; 0;}
 div.field span.hint { display:block; }
+.percentage {display:flex;}
 span.preview { display:block;}
 .wrap {word-wrap:anywhere; white-space:pre-wrap;}
 .notice { padding: 10px; background:#fcc; color: #000; }
