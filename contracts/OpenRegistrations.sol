@@ -6,6 +6,12 @@ import "./ChildBase.sol";
 /*{
   "name": "Open Registrations",
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
     "register": {}
   }
 }*/

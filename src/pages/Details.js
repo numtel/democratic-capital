@@ -33,6 +33,9 @@ export default class Details extends AsyncTemplate {
     } else {
       this.set('name', this.contract.metaname);
     }
+    if('text' in this.contract.methods) {
+      this.set('text', await this.contract.methods.text().call());
+    }
     this.overview = this.contract.metadata.overview;
     if(this.overview) {
       for(let key of Object.keys(this.overview)) {
@@ -68,6 +71,7 @@ export default class Details extends AsyncTemplate {
         <h2>${this.name}</h2>
         <p>Type: ${this.contract.metadata.name || this.contract.metaname}</p>
         <p><a href="${explorer(this.address)}" $${this.link}>${this.address}</a> ${this.contract.metaname}</p>
+        ${this.text && html`<p>${this.text}</p>`}
         ${this.overview && new Overview(this.overview)}
         ${'methods' in this.contract.metadata && html`
           <menu>

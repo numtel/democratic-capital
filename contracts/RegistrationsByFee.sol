@@ -11,6 +11,12 @@ import "./safeTransfer.sol";
     "amount": {}
   },
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
     "setToken": {
       "onlyAllowed": true,
       "fields": [

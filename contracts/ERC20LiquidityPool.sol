@@ -41,6 +41,9 @@ import "./IERC20.sol";
     "withdraw": {
       "thisToken": 0
     },
+    "setText": {
+      "onlyAllowed": true
+    },
     "setName": {
       "onlyAllowed": true
     },

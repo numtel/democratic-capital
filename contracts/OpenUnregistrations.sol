@@ -6,6 +6,12 @@ import "./ChildBase.sol";
 /*{
   "name": "Open Unregistrations",
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
     "unregister": {
       "onlyMember": true
     }

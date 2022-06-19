@@ -23,6 +23,12 @@ import "./IERC20.sol";
     }
   },
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
     "collectSuccess": {
       "onlyAllowed": true
     },

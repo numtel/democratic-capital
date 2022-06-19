@@ -7,8 +7,10 @@ contract ChildBase {
   address public meta;
   IVerifiedGroup public group;
   string public name;
+  string public text;
 
   event NameChanged(string oldName, string newName);
+  event TextChanged(string oldText, string newText);
 
   constructor(
     address _meta,
@@ -21,8 +23,18 @@ contract ChildBase {
   }
 
   function setName(string memory _name) external {
-    require(group.contractAllowed(msg.sender), 'Invalid Caller');
+    requireAllowed();
     emit NameChanged(name, _name);
     name = _name;
+  }
+
+  function setText(string memory _text) external {
+    requireAllowed();
+    emit TextChanged(text, _text);
+    text = _text;
+  }
+
+  function requireAllowed() internal view {
+    require(group.contractAllowed(msg.sender), 'Invalid Caller');
   }
 }

@@ -12,6 +12,9 @@ using AddressSet for AddressSet.Set;
     "isRegistered": { "args": ["account"] }
   },
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
     "setName": {
       "onlyAllowed": true
     },

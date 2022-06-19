@@ -57,6 +57,9 @@ import "./ElectionBase.sol";
         {"input":"txs"}
       ]
     },
+    "setText": {
+      "onlyAllowed": true
+    },
     "setName": {
       "onlyAllowed": true
     },

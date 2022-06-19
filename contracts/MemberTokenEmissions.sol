@@ -20,6 +20,12 @@ import "./ChildBase.sol";
     }
   },
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
     "setToken": {
       "onlyAllowed": true,
       "fields": [

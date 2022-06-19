@@ -11,6 +11,12 @@ using BytesLib for bytes;
     "elections": {}
   },
   "methods": {
+    "setText": {
+      "onlyAllowed": true
+    },
+    "setName": {
+      "onlyAllowed": true
+    },
     "setElections": {
       "onlyAllowed": true
     },

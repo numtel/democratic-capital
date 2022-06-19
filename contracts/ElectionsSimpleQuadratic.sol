@@ -21,6 +21,9 @@ import "./safeTransfer.sol";
         {"input":"txs"}
       ]
     },
+    "setText": {
+      "onlyAllowed": true
+    },
     "setName": {
       "onlyAllowed": true
     },
