@@ -23,8 +23,10 @@ export default class Details extends AsyncTemplate {
     }
     const group = this.parent ? this.parentContract : this.contract;
     if('contractAllowed' in group.methods) {
-      const accounts = await app.wallet.accounts;
       this.set('isAllowed', await group.methods.contractAllowed(accounts[0]).call());
+    }
+    if('isRegistered' in group.methods) {
+      this.set('isMember', await group.methods.isRegistered(accounts[0]).call());
     }
     if('name' in this.contract.methods) {
       this.set('name', await this.contract.methods.name().call());
@@ -56,7 +58,6 @@ export default class Details extends AsyncTemplate {
     document.title = this.name;
   }
   async render() {
-    // TODO support onlyMember method filtering
     return html`
       ${new TopMenu(html`
         ${this.parent && html`
@@ -71,7 +72,8 @@ export default class Details extends AsyncTemplate {
         ${'methods' in this.contract.metadata && html`
           <menu>
             ${Object.keys(this.contract.metadata.methods).map(method =>
-              (!this.contract.metadata.methods[method].onlyAllowed || this.isAllowed) && html`
+              (!this.contract.metadata.methods[method].onlyAllowed || this.isAllowed) &&
+              (!this.contract.metadata.methods[method].onlyMember || this.isMember) && html`
                 <li><a class="button" href="${app.router.path}/${method}" $${this.link}>${method}</a></li>
               `)}
           </menu>
