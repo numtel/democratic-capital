@@ -23,7 +23,7 @@ exports.electionSucceeds = async function({
   // Give a few seconds so registrations aren't in same second as proposal
   await increaseTime(3);
 
-  await registrations.sendFrom(accounts[1]).register();
+  await registrations.sendFrom(accounts[1]).register('');
   const electionData = await elections.methods.detailsMany(0, 1, accounts[0]).call();
   const key = electionData[0].key;
 

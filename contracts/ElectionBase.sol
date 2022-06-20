@@ -58,19 +58,18 @@ abstract contract ElectionBase is ChildBase {
     require(data.length > 0, 'Transaction Required');
 
     if(allowedInvokePrefixes.length > 0) {
-      bool foundAllowed = false;
+      uint foundAllowed;
       for(uint i = 0; i < allowedInvokePrefixes.length; i++) {
         for(uint d = 0; d < data.length; d++) {
           if(data[d].length >= allowedInvokePrefixes[i].length) {
             bytes memory dataPrefix = data[d].slice(0, allowedInvokePrefixes[i].length);
             if(dataPrefix.equal(allowedInvokePrefixes[i])) {
-              foundAllowed = true;
-              break;
+              foundAllowed++;
             }
           }
         }
       }
-      require(foundAllowed, 'Proposed Data Mismatch');
+      require(foundAllowed == data.length, 'Proposed Data Mismatch');
     }
 
     address key = address(uint160(uint256(keccak256(abi.encode(address(this), count())))));

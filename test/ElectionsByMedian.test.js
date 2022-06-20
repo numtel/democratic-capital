@@ -76,6 +76,7 @@ exports.proposeWithFilter = async function({
 
   assert.strictEqual(await throws(() =>
     elections.sendFrom(accounts[0]).propose([
+      group.options.address + group.methods.unregister(accounts[0]).encodeABI().slice(2),
       group.options.address + group.methods.register(accounts[2]).encodeABI().slice(2)
     ])), true,
     'Does not match filter');
