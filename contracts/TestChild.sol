@@ -36,8 +36,4 @@ contract TestChild is Ownable {
     group.unregister(account);
   }
 
-  function invokeUnregister(address account) public onlyOwner {
-    group.invoke(address(this), abi.encodeCall(this.unregister, (account)));
-  }
-
 }

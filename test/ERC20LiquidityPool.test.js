@@ -16,7 +16,7 @@ exports.depositAndWithdrawEqual = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
@@ -65,7 +65,7 @@ exports.depositDevaluedAfterMint = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   const tokenA = await deployContract(accounts[0], 'TestERC20');
   const tokenB = await deployContract(accounts[0], 'TestERC20');
   const pool = await deployContract(accounts[0], 'ERC20LiquidityPool',
@@ -109,7 +109,7 @@ exports.swapFee = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

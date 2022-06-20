@@ -10,7 +10,7 @@ exports.proposeMinThresholdFails = async function({
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[2], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsSimple',
     BURN_ACCOUNT, group.options.address, [], DURATION, THRESHOLD, MIN_PARTICIPATION, '');

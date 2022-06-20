@@ -8,8 +8,11 @@ exports.electionSucceeds = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
+  const rewriter = await deployContract(accounts[0], 'InvokeRewriter');
+  const groupFactory = await deployContract(accounts[0], 'VerifiedGroupFactory',
+    BURN_ACCOUNT, BURN_ACCOUNT, rewriter.options.address);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], groupFactory.options.address, '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsSimple',
     BURN_ACCOUNT, group.options.address, [], DURATION, THRESHOLD, MIN_PARTICIPATION, '');

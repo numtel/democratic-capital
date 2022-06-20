@@ -31,7 +31,7 @@ abstract contract ElectionBase is ChildBase {
     bool passing;
   }
 
-  event ElectionProcessed(address key, uint txIndex, bytes sent, bytes returned);
+  event ElectionProcessed(address key);
   event NewElection(address key);
   event ProposalText(string text);
 
@@ -131,16 +131,10 @@ abstract contract ElectionBase is ChildBase {
     require(elections[key].passed());
     require(elections[key].processed == false);
     elections[key].processed = true;
-    for(uint d = 0; d < invokeData[key].length; d++) {
-      address to = abi.decode(bytes(hex"000000000000000000000000").concat(invokeData[key][d].slice(0, 20)), (address));
-      bytes memory data = invokeData[key][d].slice(20, invokeData[key][d].length - 20);
-      (bool success, bytes memory returned) = address(to).call(data);
-      emit ElectionProcessed(key, d, invokeData[key][d], returned);
-      // TODO consider election processed even if invoke fails?
-      //  invoke condition could become valid at much later time?
-      require(success, 'Invoke Failed');
-    }
+    emit ElectionProcessed(key);
+    group.invokeMany(invokeData[key]);
   }
+
   function requireAuth() internal view {
     require(group.isRegistered(msg.sender), 'Not Registered');
     require(group.isVerified(msg.sender), 'Not Verified');

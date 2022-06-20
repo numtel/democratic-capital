@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.13;
 
+import "./IVerifiedGroupFactory.sol";
 import "./ChildBase.sol";
 import "./AddressSet.sol";
 using AddressSet for AddressSet.Set;
@@ -46,9 +47,6 @@ using AddressSet for AddressSet.Set;
     },
     "setVerifications": {
       "onlyAllowed": true
-    },
-    "invoke": {
-      "onlyAllowed": true
     }
   },
   "display": {
@@ -59,6 +57,7 @@ using AddressSet for AddressSet.Set;
 }*/
 contract VerifiedGroup is ChildBase {
   IVerification public verifications;
+  address public factory;
   uint public registeredCount;
   mapping(address => uint) public joinedTimestamps;
   mapping(bytes32 => uint) public activeBans;
@@ -92,6 +91,7 @@ contract VerifiedGroup is ChildBase {
     address _meta,
     address _verifications,
     address _firstAccount,
+    address _factory,
     string memory _name
   ) ChildBase(
     _meta,
@@ -100,6 +100,7 @@ contract VerifiedGroup is ChildBase {
   ){
     require(_verifications != address(0), 'Verifications cannot be 0 address');
     verifications = IVerification(_verifications);
+    factory = _factory;
 
     allowedContracts.insert(address(this));
 
@@ -241,10 +242,15 @@ contract VerifiedGroup is ChildBase {
     }
   }
 
-  function invoke(address to, bytes memory data) external onlyAllowed {
-    (bool success, bytes memory returned) = to.call(data);
-    emit TxSent(to, data, returned);
-    require(success, 'Invoke Failed');
+  function invokeMany(bytes[] memory data) external onlyAllowed {
+    IVerifiedGroupFactory origin = IVerifiedGroupFactory(factory);
+    uint startChildCount = origin.childCount(address(this));
+    for(uint d = 0; d < data.length; d++) {
+      (address to, bytes memory txData) = IInvokeRewriter(origin.rewriter()).rewrite(data[d], factory, address(this), startChildCount);
+      (bool success, bytes memory returned) = to.call(txData);
+      emit TxSent(to, txData, returned);
+      require(success, 'Invoke Failed');
+    }
   }
 
   modifier onlyAllowed() {
@@ -258,4 +264,8 @@ interface IVerification {
   function addressActive(address toCheck) external view returns (bool);
   function addressExpiration(address toCheck) external view returns (uint);
   function addressIdHash(address toCheck) external view returns(bytes32);
+}
+
+interface IInvokeRewriter {
+  function rewrite(bytes memory data, address parentFactory, address group, uint startChildCount) external view returns(address, bytes memory);
 }

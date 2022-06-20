@@ -28,5 +28,6 @@ interface IVerifiedGroup {
   function hookUnregister(bytes4 selector) external;
   function disallowContract(address contractToDisallow) external;
   function invoke(address to, bytes memory data) external;
+  function invokeMany(bytes[] memory data) external;
 }
 

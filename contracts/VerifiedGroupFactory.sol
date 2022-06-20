@@ -24,17 +24,20 @@ contract VerifiedGroupFactory is ChildFactory {
     address item;
     uint created;
   }
+  address public rewriter;
   mapping(address => GroupChild[]) public groupChildren;
   event NewChild(address indexed group, address indexed meta, address indexed deployed);
 
-  constructor(address factoryMeta, address _childMeta)
-    ChildFactory(factoryMeta, _childMeta, IVerifiedGroupFactory(address(0))) {}
+  constructor(address factoryMeta, address _childMeta, address _rewriter)
+    ChildFactory(factoryMeta, _childMeta, IVerifiedGroupFactory(address(0))) {
+    rewriter = _rewriter;
+  }
 
   function deployNew(
     address verifications,
     string memory name
   ) external {
-    VerifiedGroup newContract = new VerifiedGroup(childMeta, verifications, msg.sender, name);
+    VerifiedGroup newContract = new VerifiedGroup(childMeta, verifications, msg.sender, address(this), name);
     groupChildren[address(0)].push(GroupChild(childMeta, address(newContract), block.timestamp));
     emit NewChild(address(0), childMeta, address(newContract));
   }

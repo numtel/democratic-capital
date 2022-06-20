@@ -9,7 +9,7 @@ exports.succeeds = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   const token = await deployContract(accounts[0], 'TestERC20');
   const registrations = await deployContract(accounts[0], 'RegistrationsByFee',
     BURN_ACCOUNT, group.options.address, token.options.address, FEE, '');

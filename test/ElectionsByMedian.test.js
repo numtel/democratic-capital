@@ -10,7 +10,7 @@ exports.configAndUnregistrationHook = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
     BURN_ACCOUNT, group.options.address, [], '');
 
@@ -55,8 +55,11 @@ exports.proposeWithFilter = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
+  const rewriter = await deployContract(accounts[0], 'InvokeRewriter');
+  const groupFactory = await deployContract(accounts[0], 'VerifiedGroupFactory',
+    BURN_ACCOUNT, BURN_ACCOUNT, rewriter.options.address);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], groupFactory.options.address, '');
   // XXX Is there a simpler way to get the function selector?
   const unregisterSelector = group.methods.unregister(accounts[0]).encodeABI().slice(2, 10);
   // These elections can only call the unregister method
@@ -101,8 +104,11 @@ exports.proposeWithoutFilter = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
+  const rewriter = await deployContract(accounts[0], 'InvokeRewriter');
+  const groupFactory = await deployContract(accounts[0], 'VerifiedGroupFactory',
+    BURN_ACCOUNT, BURN_ACCOUNT, rewriter.options.address);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], groupFactory.options.address, '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
     BURN_ACCOUNT, group.options.address, [], '');
@@ -138,7 +144,7 @@ exports.proposeMinThresholdFails = async function({
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[1], 0);
   await mockVerification.sendFrom(accounts[1]).setStatus(accounts[2], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   // These elections can only call any method
   const elections = await deployContract(accounts[0], 'ElectionsByMedian',
     BURN_ACCOUNT, group.options.address, [], '');

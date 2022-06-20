@@ -63,11 +63,11 @@ exports.swapRouter = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
   const groupFactory = await deployContract(accounts[0], 'VerifiedGroupFactory',
-    BURN_ACCOUNT, BURN_ACCOUNT);
+    BURN_ACCOUNT, BURN_ACCOUNT, BURN_ACCOUNT);
 
   for(let params of cases) {
     const factory = await deployContract(accounts[0], 'ERC20LiquidityPoolFactory',

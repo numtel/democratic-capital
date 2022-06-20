@@ -10,7 +10,7 @@ exports.comments = async function({
   // Contract constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   const browser = await deployContract(accounts[0], 'FactoryBrowser',
     BURN_ACCOUNT);
   await group.sendFrom(accounts[0]).postComment(group.options.address, TEXT);
@@ -27,7 +27,7 @@ exports.requiresVerified = async function({
   // Contract constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -63,7 +63,7 @@ exports.ban = async function({
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);
@@ -94,8 +94,11 @@ exports.childContractInvokeAndHooks = async function({
   const mockVerification = await deployContract(accounts[0], 'MockVerification');
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[1], 0);
+  const rewriter = await deployContract(accounts[0], 'InvokeRewriter');
+  const groupFactory = await deployContract(accounts[0], 'VerifiedGroupFactory',
+    BURN_ACCOUNT, BURN_ACCOUNT, rewriter.options.address);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], groupFactory.options.address, '');
   const testChild = await deployContract(accounts[0], 'TestChild',
     group.options.address);
 
@@ -108,10 +111,10 @@ exports.childContractInvokeAndHooks = async function({
   await group.sendFrom(accounts[0]).register(accounts[1]);
 
   assert.strictEqual(Number(await group.methods.registeredCount().call()), 2);
-  // Unregister second user using invoke from child contract
-  await group.sendFrom(accounts[0]).invoke(
-    testChild.options.address,
-    testChild.methods.invokeUnregister(accounts[1]).encodeABI());
+  // Unregister second user using invoke
+  await group.sendFrom(accounts[0]).invokeMany([
+    testChild.options.address + testChild.methods.unregister(accounts[1]).encodeABI().slice(2)
+  ]);
   assert.strictEqual(Number(await group.methods.registeredCount().call()), 1);
 
   // Register second user
@@ -119,10 +122,10 @@ exports.childContractInvokeAndHooks = async function({
   assert.strictEqual(Number(await testChild.methods.registeredCounter().call()), 2);
 
   assert.strictEqual(Number(await group.methods.registeredCount().call()), 2);
-  // Unregister second user directly from child contract
-  await group.sendFrom(accounts[0]).invoke(
-    testChild.options.address,
-    testChild.methods.unregister(accounts[1]).encodeABI());
+  // Unregister second user using invoke again
+  await group.sendFrom(accounts[0]).invokeMany([
+    testChild.options.address + testChild.methods.unregister(accounts[1]).encodeABI().slice(2)
+  ]);
   assert.strictEqual(Number(await group.methods.registeredCount().call()), 1);
   assert.strictEqual(Number(await testChild.methods.unregisteredCounter().call()), 2);
 
@@ -146,7 +149,7 @@ exports.changeVerificationContract = async function({
   const mockVerification2 = await deployContract(accounts[0], 'MockVerification');
   await mockVerification1.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification1.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification1.options.address, accounts[0], BURN_ACCOUNT, '');
 
   // accounts[0] is adminstrator of group
   await group.sendFrom(accounts[0]).allowContract(accounts[0]);

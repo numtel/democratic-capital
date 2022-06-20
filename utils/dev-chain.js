@@ -27,6 +27,7 @@ const web3 = new Web3(ganacheServer.provider);
 
 const contracts = {
   MockVerification: {},
+  InvokeRewriter: {},
   FactoryBrowser_meta: {},
   FactoryBrowser: { constructorArgs: [
     () => contracts.FactoryBrowser_meta.instance.options.address,
@@ -53,6 +54,9 @@ function factory(childName) {
   if(childName !== 'VerifiedGroup') {
     factoryArgs.push(
       () => contracts['VerifiedGroupFactory'].instance.options.address);
+  } else {
+    factoryArgs.push(
+      () => contracts['InvokeRewriter'].instance.options.address);
   }
   return {
     [childName + '_meta']: {},

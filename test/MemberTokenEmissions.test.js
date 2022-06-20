@@ -8,7 +8,7 @@ exports.collectAvailable = async function({
   // VerifiedGroup constructor requires verified user
   await mockVerification.sendFrom(accounts[0]).setStatus(accounts[0], 0);
   const group = await deployContract(accounts[0], 'VerifiedGroup',
-    BURN_ACCOUNT, mockVerification.options.address, accounts[0], '');
+    BURN_ACCOUNT, mockVerification.options.address, accounts[0], BURN_ACCOUNT, '');
   const token = await deployContract(accounts[0], 'ERC20Mintable',
     BURN_ACCOUNT, group.options.address, 'Test Token', 'TEST', DECIMALS);
   const emissions = await deployContract(accounts[0], 'MemberTokenEmissions',
