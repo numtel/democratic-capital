@@ -8,7 +8,7 @@ import "./safeTransfer.sol";
   "name": "Registrations By Fee",
   "overview": {
     "feeToken": { "display": ["token"] },
-    "amount": {}
+    "amount": {"decimals": "feeToken"}
   },
   "methods": {
     "setText": {
@@ -24,7 +24,10 @@ import "./safeTransfer.sol";
       ]
     },
     "setAmount": {
-      "onlyAllowed": true
+      "onlyAllowed": true,
+      "fields": [
+        {"decimals": "feeToken"}
+      ]
     },
     "register": {
       "approve": ["feeToken"],

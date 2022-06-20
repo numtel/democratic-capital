@@ -12,7 +12,7 @@ import "./ChildFactory.sol";
       "fields": [
         {"hidden":"parent"},
         {"select":["Children"], "preview":"token"},
-        {"hint":"Must account for all token decimals"},
+        {"decimals": 1},
         {"preview":"seconds"}
       ]
     }

@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract, remaining, explorer, ellipseAddress} from '/utils/index.js';
+import {selfDescribingContract, remaining, explorer, ellipseAddress, applyDecimals, reverseDecimals} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import ERC20 from '/utils/ERC20.js';
 import TopMenu from '/components/TopMenu.js';
@@ -42,6 +42,7 @@ export default class Proposal extends AsyncTemplate {
     if('voteQuadratic' in this.contract.methods) {
       this.set('isQuadratic', true);
       this.set('quadraticToken', new ERC20(await this.contract.methods.quadraticToken().call()));
+      this.set('decimals', await this.quadraticToken.decimals());
       this.set('quadraticMultiplier', await this.contract.methods.quadraticMultiplier().call());
       this.set('myBalance', await this.quadraticToken.balanceOf(accounts[0]));
       this.set('allowance', await this.quadraticToken.allowance(accounts[0], this.elections));
@@ -130,9 +131,9 @@ export default class Proposal extends AsyncTemplate {
             <dt>Quadratic Token</dt>
             <dd>${new PreviewToken(this.quadraticToken.address)}</dd>
             <dt>Quadratic Multiplier</dt>
-            <dd>${this.quadraticMultiplier}</dd>
+            <dd>${applyDecimals(this.quadraticMultiplier, this.decimals)}</dd>
             <dt>My Balance</dt>
-            <dd>${this.myBalance}</dd>
+            <dd>${applyDecimals(this.myBalance, this.decimals)}</dd>
           `}
         </dl>
         ${timeLeft > 0 && proposal.myVote === '0' ? html`
@@ -145,9 +146,10 @@ export default class Proposal extends AsyncTemplate {
                 token: this.quadraticToken,
                 multiplier: this.quadraticMultiplier,
                 balance: this.myBalance,
+                decimals: this.decimals,
               }, 'quad_payment', this.group, (value) => {
-                this.set('quadPayment', value);
-              }, this.quadPayment || '0')}
+                this.set('quadPayment', reverseDecimals(value, this.decimals));
+              }, applyDecimals(this.quadPayment || '0', this.decimals))}
             </fieldset>
             ${(new BN(this.quadPayment)).gt(new BN(this.allowance)) ? html`
               <div class="commands">

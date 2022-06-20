@@ -8,7 +8,7 @@ import "./IERC20.sol";
 /*{
   "name": "ERC20 Liquidity Pool",
   "overview": {
-    "totalSupply": {},
+    "totalSupply": {"decimals":"this"},
     "Token 0": {
       "function": "tokens",
       "args": ["0"],
@@ -16,7 +16,8 @@ import "./IERC20.sol";
     },
     "Reserves 0": {
       "function": "reserves",
-      "args": ["0"]
+      "args": ["0"],
+      "decimals": ["tokens", "0"]
     },
     "Token 1": {
       "function": "tokens",
@@ -25,12 +26,14 @@ import "./IERC20.sol";
     },
     "Reserves 1": {
       "function": "reserves",
-      "args": ["1"]
+      "args": ["1"],
+      "decimals": ["tokens", "1"]
     },
     "swapFee": { "display": ["percentage"] },
     "My Liqudity Balance": {
       "function": "balanceOf",
-      "args": ["account"]
+      "args": ["account"],
+      "decimals": "this"
     }
   },
   "methods": {
@@ -57,7 +60,11 @@ import "./IERC20.sol";
       ]
     },
     "mint": {
-      "onlyAllowed": true
+      "onlyAllowed": true,
+      "fields": [
+        {},
+        {"decimals":"this"}
+      ]
     }
   }
 }*/

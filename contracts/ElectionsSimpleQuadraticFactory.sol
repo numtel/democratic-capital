@@ -16,7 +16,8 @@ import "./ChildFactory.sol";
         {"input":"percentage"},
         {"input":"percentage"},
         {"select":["Children"], "preview":"token"},
-        {"hint":"Must account for all token decimals"}
+        {"hint":"Number of tokens per vote (square root)",
+         "decimals": 5}
       ]
     }
   }

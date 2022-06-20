@@ -14,7 +14,7 @@ import "./ChildFactory.sol";
         {"select":["Children"], "preview":"token"},
         {"preview":"seconds",
          "hint": "Each member will be eligible to collect emissionAmount after each period."},
-        {"hint":"Must account for all token decimals"}
+        {"decimals":1}
       ]
     }
   }

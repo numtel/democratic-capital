@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract} from '/utils/index.js';
+import {selfDescribingContract, applyDecimals, reverseDecimals} from '/utils/index.js';
 import ERC20 from '/utils/ERC20.js';
 import PreviewToken from '/components/input/PreviewToken.js';
 
@@ -105,21 +105,20 @@ export default class Swap extends AsyncTemplate {
               </div>
               <div class="field">
                 <label>
-                  <span>Amount (Balance: ${this.tokens[this.from].balance} ${this.tokens[this.from].symbol})</span>
-                  <input onchange="tpl(this).setAmount(this.value)" value="${this.amount || 0}">
-                  <span class="hint">Must include all trailing zeros for number of decimals</span>
+                  <span>Amount (Balance: ${applyDecimals(this.tokens[this.from].balance, this.tokens[this.from].decimals)} ${this.tokens[this.from].symbol})</span>
+                  <input onchange="tpl(this).setAmount(this.value)" value="${applyDecimals(this.amount || 0, this.tokens[this.from].decimals)}">
                 </label>
               </div>
               <div class="received">
-                Receive: ${this.received} ${this.tokens[this.to].symbol}
+                Receive: ${applyDecimals(this.received, this.tokens[this.to].decimals)} ${this.tokens[this.to].symbol}
                 <br />
-                Minimum Received: ${this.minReceived} ${this.tokens[this.to].symbol}
+                Minimum Received: ${applyDecimals(this.minReceived, this.tokens[this.to].decimals)} ${this.tokens[this.to].symbol}
               </div>
               <div class="commands">
-                ${this.needsApproval ? html`
-                  <button type="submit">Approve Spend</button>
-                ` : this.insufficientBalance ? html`
+                ${this.insufficientBalance ? html`
                   <button type="submit">Insufficient Balance</button>
+                ` : this.needsApproval ? html`
+                  <button type="submit">Approve Spend</button>
                 ` : html`
                   <button type="submit">Swap</button>
                 `}
@@ -166,15 +165,16 @@ export default class Swap extends AsyncTemplate {
     }
     this.set('bestRate', bestRate);
     this.set('bestRoute', bestRoute);
-    this.setAmount(this.amount || 0);
+    this.setAmount(applyDecimals(this.amount || 0, this.tokens[this.from].decimals));
   }
   async setAmount(value) {
     const BN = app.web3.utils.BN;
-    this.set('amount', value);
+    this.set('amount', reverseDecimals(value, this.tokens[this.from].decimals));
     this.set('needsApproval', new BN(this.tokens[this.from].allowance).lt(new BN(this.amount)));
     this.set('insufficientBalance', new BN(this.tokens[this.from].balance).lt(new BN(this.amount)));
     if(this.bestRate > 0) {
-      this.set('received', this.findRate(this.bestRoute, value));
+      // TODO adjust best route if dependent on liquidity reserves
+      this.set('received', this.findRate(this.bestRoute, this.amount));
       this.set('minReceived', Math.floor(this.received * (1-this.slippage)));
     }
   }
@@ -221,14 +221,16 @@ export default class Swap extends AsyncTemplate {
     let out = 1;
     for(let i = 0; i<route.length-1; i++) {
       const token = this.tokens[route[i]];
+      const fromDecimals = new BN(10).pow(new BN(token.decimals));
+      const toDecimals = new BN(10).pow(new BN(this.tokens[route[i+1]].decimals));
       const pool = this.pools[token.siblings[route[i+1]].pool];
       const reserveFrom = route[i] === pool.token0 ? pool.reserve0 : pool.reserve1;
       const reserveTo = route[i] === pool.token0 ? pool.reserve1 : pool.reserve0;
       if(reserveFrom === '0' || reserveTo === '0') return 0;
-      const rate = new BN(reserveTo).mul(decimals).div((new BN(reserveFrom)).add(input)).div(antiDecimals).toNumber() / display;
+      const rate = new BN(reserveTo).mul(decimals).mul(fromDecimals).div((new BN(reserveFrom)).add(input)).div(toDecimals).div(antiDecimals).toNumber() / display;
       const fee = Number(pool.swapFee) / 0xffffffff;
       if(typeof inputRaw !== 'undefined') {
-        input = input.mul(decimals).mul(new BN(display * rate * (1-fee))).div(new BN(display)).div(decimals);
+        input = input.mul(decimals).mul(toDecimals).mul(new BN(display * rate * (1-fee))).div(fromDecimals).div(new BN(display)).div(decimals);
       } else {
         out *= rate * (1-fee);
       }

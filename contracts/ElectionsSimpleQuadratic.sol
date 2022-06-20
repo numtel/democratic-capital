@@ -12,7 +12,7 @@ import "./safeTransfer.sol";
     "threshold": { "display": ["percentage"] },
     "minParticipation": { "display": ["percentage"] },
     "quadraticToken": { "display": ["token"] },
-    "quadraticMultiplier": {}
+    "quadraticMultiplier": {"decimals":"quadraticToken"}
   },
   "methods": {
     "propose": {
@@ -54,7 +54,8 @@ import "./safeTransfer.sol";
     "setQuadraticMultiplier": {
       "onlyAllowed": true,
       "fields": [
-        {"hint":"Must account for all token decimals"}
+        {"hint":"Number of tokens per vote (square root)",
+         "decimals": "quadraticToken"}
       ]
     }
   },

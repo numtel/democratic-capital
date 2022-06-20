@@ -7,10 +7,11 @@ import "./ChildBase.sol";
 /*{
   "name": "ERC20 Token",
   "overview": {
-    "totalSupply": {},
+    "totalSupply": {"decimals": "this"},
     "My Balance": {
       "function": "balanceOf",
-      "args": ["account"]
+      "args": ["account"],
+      "decimals": "this"
     }
   },
   "methods": {
@@ -24,7 +25,11 @@ import "./ChildBase.sol";
       "onlyAllowed": true
     },
     "mint": {
-      "onlyAllowed": true
+      "onlyAllowed": true,
+      "fields": [
+        {},
+        {"decimals":"this"}
+      ]
     }
   }
 }*/

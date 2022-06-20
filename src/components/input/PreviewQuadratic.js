@@ -1,4 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
+import {reverseDecimals} from '/utils/index.js';
 
 export default class PreviewQuadratic extends AsyncTemplate {
   constructor(value, input) {
@@ -9,7 +10,7 @@ export default class PreviewQuadratic extends AsyncTemplate {
   async init() {
     const BN = app.web3.utils.BN;
     const balance = new BN(this.input.balance);
-    const amount = new BN(this.value);
+    const amount = new BN(reverseDecimals(this.value, this.input.decimals));
     const multiplier = new BN(this.input.multiplier);
     this.exceedsBalance = balance.lt(amount);
     this.power = Math.floor(Math.sqrt(amount.div(multiplier).add(new BN(1)).toNumber()));

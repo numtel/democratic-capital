@@ -9,14 +9,15 @@ import "./ChildBase.sol";
   "overview": {
     "tokenAddress": { "display": ["token"] },
     "emissionPeriodSeconds": {"display":["seconds"] },
-    "emissionAmount": {},
+    "emissionAmount": {"decimals": "tokenAddress"},
     "beginEmissions": {"display": ["timestamp"]},
     "lastCollected": {
       "display": ["timestamp"],
       "args": ["account"]
     },
     "availableEmissions": {
-      "args": ["account"]
+      "args": ["account"],
+      "decimals": "tokenAddress"
     }
   },
   "methods": {
@@ -36,7 +37,10 @@ import "./ChildBase.sol";
       "onlyAllowed": true
     },
     "setEmissionAmount": {
-      "onlyAllowed": true
+      "onlyAllowed": true,
+      "fields": [
+        {"decimals": "tokenAddress"}
+      ]
     },
     "collectEmissions": {
       "onlyMember": true

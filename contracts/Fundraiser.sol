@@ -9,12 +9,13 @@ import "./IERC20.sol";
   "name": "Fundraiser",
   "overview": {
     "token": { "display": ["token"] },
-    "goalAmount": {},
+    "goalAmount": {"decimals":"token"},
     "endTime": {"display":["timestamp"] },
     "finished": {},
     "My Deposits": {
       "function": "deposited",
-      "args": ["account"]
+      "args": ["account"],
+      "decimals": "token"
     },
     "collected": {},
     "Withdrawn": {
@@ -56,6 +57,7 @@ contract Fundraiser is ChildBase {
       ChildBase(_meta, _group, _name) {
     require(_amount > 0, 'Invalid Amount');
     require(_duration > 0, 'Invalid Duration');
+    require(_token != address(0), 'Invalid Token');
     token = _token;
     goalAmount = _amount;
     endTime = block.timestamp + _duration;

@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract, explorer, ZERO_ACCOUNT} from '/utils/index.js';
+import {selfDescribingContract, explorer, applyDecimals, ZERO_ACCOUNT} from '/utils/index.js';
 import FactoryBrowser from '/components/FactoryBrowser.js';
 import AllowedContracts from '/components/AllowedContracts.js';
 import Proposals from '/components/Proposals.js';
@@ -7,6 +7,7 @@ import TopMenu from '/components/TopMenu.js';
 import Overview from '/components/Overview.js';
 import Swap from '/components/Swap.js';
 import Comments from '/components/Comments.js';
+import ERC20 from '/utils/ERC20.js';
 
 export default class Details extends AsyncTemplate {
   constructor(address, parent) {
@@ -53,6 +54,25 @@ export default class Details extends AsyncTemplate {
             : arg);
         }
         this.overview[key].result = await this.contract.methods[funName](...args).call();
+
+        if('decimals' in this.overview[key]) {
+          const tokenMethod = this.overview[key].decimals;
+          let decimals;
+          if(tokenMethod === 'this') {
+            decimals = await this.contract.methods.decimals().call();
+          } else if(Array.isArray(tokenMethod)) {
+            const tokenAddress = await this.contract.methods[tokenMethod[0]](...tokenMethod.slice(1)).call();
+            const token = new ERC20(tokenAddress);
+            decimals = await token.decimals();
+          } else {
+            const tokenAddress = await this.contract.methods[tokenMethod]().call();
+            const token = new ERC20(tokenAddress);
+            decimals = await token.decimals();
+          }
+          if(decimals) {
+            this.overview[key].result = applyDecimals(this.overview[key].result, decimals);
+          }
+        }
         if(typeof this.overview[key].result !== 'object') {
           this.overview[key].result = [this.overview[key].result];
         }
