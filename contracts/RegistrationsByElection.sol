@@ -20,12 +20,15 @@ using BytesLib for bytes;
     "setElections": {
       "onlyAllowed": true
     },
-    "register": {}
+    "register": {
+      "fields": [{"hint":"Add a message to your registration proposal"}]
+    }
   }
 }*/
 contract RegistrationsByElection is ChildBase {
   address public elections;
-  bytes4 private constant SELECTOR = bytes4(keccak256(bytes('register(address)')));
+  bytes4 private constant SELECTOR_REGISTER = bytes4(keccak256(bytes('register(address)')));
+  bytes4 private constant SELECTOR_TEXT = bytes4(keccak256(bytes('proposalText(string)')));
 
   event ElectionsChanged(address indexed oldElections, address indexed newElections);
 
@@ -40,13 +43,15 @@ contract RegistrationsByElection is ChildBase {
     elections = _elections;
   }
 
-  function register() external {
+  function register(string calldata text) external {
     require(group.isVerified(msg.sender), 'Not Verified');
     require(!group.isRegistered(msg.sender), 'Already Registered');
     IElection electionContract = IElection(elections);
     bytes memory groupAddress = abi.encode(address(group)).slice(12, 20);
-    bytes[] memory txs = new bytes[](1);
-    txs[0] = groupAddress.concat(abi.encodeWithSelector(SELECTOR, msg.sender));
+    bytes memory electionsAddress = abi.encode(elections).slice(12, 20);
+    bytes[] memory txs = new bytes[](2);
+    txs[0] = groupAddress.concat(abi.encodeWithSelector(SELECTOR_REGISTER, msg.sender));
+    txs[1] = electionsAddress.concat(abi.encodeWithSelector(SELECTOR_TEXT, text));
     electionContract.propose(txs);
   }
 }
