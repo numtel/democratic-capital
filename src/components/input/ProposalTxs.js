@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract, isAddress, isFunSig} from '/utils/index.js';
+import {selfDescribingContract, contractFromMeta, isAddress, isFunSig, newlyDeployed} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import Input from '/components/Input.js';
 
@@ -17,14 +17,15 @@ export default class ProposalTxs extends AsyncTemplate {
 
     this.set('contractInput', new Input({
       name: 'Contract',
-      select: [ 'Allowed', 'Children' ],
+      select: [ 'Allowed', 'Children', 'NewlyDeployed' ],
       filter: this.allowedPrefixes.map(x => x.slice(0,42).toLowerCase()),
     }, 'invoke_to', this.groupAddress, (value) => {
       this.set('addTxTo', isAddress(value) ? value : undefined);
     }));
   }
   async render() {
-    const addInputs = await this.fetchInputs();
+    const deployed = await newDeploys(this.addTxTo, this.entries);
+    const addInputs = await this.fetchInputs(deployed);
     let methodFilter;
     if(this.addTxTo) {
       methodFilter = this.allowedPrefixes
@@ -44,17 +45,18 @@ export default class ProposalTxs extends AsyncTemplate {
         }, this.addTxData)}
         ${this.addTxTo && new Input({
           name: 'Method',
+          deployed,
           contract:  this.addTxTo,
           select: [ 'Methods' ],
           filter: methodFilter,
         }, 'invoke_method', this.groupAddress, (value) => {
           this.set('addTxMethod', isFunSig(value) ? value : undefined);
-          this.updateTxData();
+          this.updateTxData(deployed);
         }, this.addTxMethod)}
         ${addInputs && addInputs.map((input, index) => html`
           ${new Input(input, 'addArg_' + index, this.groupAddress, (value) => {
             this.set('addArg_' + index, value);
-            this.updateTxData();
+            this.updateTxData(deployed);
           }, this['addArg_' + index])}
         `)}
         <div class="commands">
@@ -115,10 +117,10 @@ export default class ProposalTxs extends AsyncTemplate {
       `}
     `;
   }
-  async fetchInputs() {
+  async fetchInputs(deployed) {
     if(!isAddress(this.addTxTo) || !isFunSig(this.addTxMethod)) return [];
     try {
-      const contract = await selfDescribingContract(this.addTxTo);
+      const contract = deployed ? deployed : await selfDescribingContract(this.addTxTo);
       const method = contract.options.jsonInterface
         .filter(x => x.signature === this.addTxMethod)[0];
       const inputs = method.inputs;
@@ -136,10 +138,10 @@ export default class ProposalTxs extends AsyncTemplate {
       return null;
     }
   }
-  async updateTxData() {
+  async updateTxData(deployed) {
     if(!isAddress(this.addTxTo) || !isFunSig(this.addTxMethod)) return;
     try {
-      const contract = await selfDescribingContract(this.addTxTo);
+      const contract = deployed ? deployed : await selfDescribingContract(this.addTxTo);
       const method = contract.options.jsonInterface
         .filter(x => x.signature === this.addTxMethod)[0];
       const values = method.inputs.map((input, index) => this['addArg_' + index] || "");
@@ -148,7 +150,6 @@ export default class ProposalTxs extends AsyncTemplate {
     } catch(error) {
       console.error(error);
       this.set('addTxData', '');
-      alert('Invalid transaction data!');
     }
   }
   async addTx() {
@@ -161,7 +162,8 @@ export default class ProposalTxs extends AsyncTemplate {
     } else {
       let decoded = null;
       try {
-        const contract = await selfDescribingContract(this.addTxTo);
+        const deployed = await newDeploys(this.addTxTo, this.entries);
+        const contract = deployed ? deployed : await selfDescribingContract(this.addTxTo);
         const decoder = new ABIDecoder(contract.options.jsonInterface);
         decoded = decoder.decodeMethod(this.addTxData);
       } catch(error) {
@@ -179,4 +181,26 @@ export default class ProposalTxs extends AsyncTemplate {
     this.onChange(this.entries.map(entry => entry.to + entry.data.slice(2)));
     this.set();
   }
+}
+
+export async function newDeploys(address, entries) {
+  const whichNew = newlyDeployed().indexOf(address);
+  if(whichNew === -1) return null;
+  let deployNum = 0;
+  for(let i = 0; i<entries.length; i++) {
+    const entry = entries[i];
+    if(!entry.decoded) continue;
+    if(!entry.decoded.name === 'deployNew') continue;
+    if(whichNew < deployNum) {
+      deployNum++;
+      continue;
+    }
+    const factory = await selfDescribingContract(entry.to);
+    if(!('childMeta' in factory.methods)) return null;
+    const childMeta = await factory.methods.childMeta().call();
+    // Contract address doesn't matter since only used for ABI details
+    const contract = await contractFromMeta(childMeta, childMeta);
+    return contract;
+  }
+  return null;
 }

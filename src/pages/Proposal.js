@@ -6,6 +6,7 @@ import TopMenu from '/components/TopMenu.js';
 import Comments from '/components/Comments.js';
 import PreviewToken from '/components/input/PreviewToken.js';
 import Input from '/components/Input.js';
+import {newDeploys} from '/components/input/ProposalTxs.js';
 
 
 export default class Proposal extends AsyncTemplate {
@@ -29,7 +30,8 @@ export default class Proposal extends AsyncTemplate {
       const data = '0x' + tx.slice(42);
       let decoded = null;
       try {
-        const contract = await selfDescribingContract(to);
+        const deployed = await newDeploys(to, proposal.tx);
+        const contract = deployed ? deployed : await selfDescribingContract(to);
         const decoder = new ABIDecoder(contract.options.jsonInterface);
         decoded = decoder.decodeMethod(data);
       } catch(error) {

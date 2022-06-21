@@ -5,7 +5,7 @@ import Range from '/components/input/Range.js';
 import PreviewToken from '/components/input/PreviewToken.js';
 import PreviewQuadratic from '/components/input/PreviewQuadratic.js';
 import ProposalTxs from '/components/input/ProposalTxs.js';
-import {selfDescribingContract, remaining} from '/utils/index.js';
+import {selfDescribingContract, remaining, newlyDeployed} from '/utils/index.js';
 
 export default class Input extends AsyncTemplate {
   constructor(input, name, parent, onChange, value, item) {
@@ -114,7 +114,11 @@ export default class Input extends AsyncTemplate {
           }, []);
       case 'Methods':
         try {
-          contract = await selfDescribingContract(this.input.contract);
+          if(this.input.deployed) {
+            contract = this.input.deployed;
+          } else {
+            contract = await selfDescribingContract(this.input.contract);
+          }
         } catch(error) {
           return [ ['Not a self-describing contract!', ''] ];
         }
@@ -129,7 +133,7 @@ export default class Input extends AsyncTemplate {
         count = Number(await rootFactory.methods.childCount(this.parent).call());
         if(count > 0) {
           if(!this.children) {
-            // TODO what to do with more than 100 children?
+            // TODO create paginated interface for showing >100 contracts
             this.children = browser.methods.detailsMany(
               config.contracts.VerifiedGroupFactory.address, this.parent, 0, 100
             ).call();
@@ -148,7 +152,7 @@ export default class Input extends AsyncTemplate {
         count = Number(await contract.methods.allowedContractCount().call());
         if(count > 0) {
           if(!this.allowed) {
-            // TODO what to do with more than 100 allowed?
+            // TODO create paginated interface for showing >100 contracts
             this.allowed = browser.methods.allowedMany(
               this.parent, 0, 100
             ).call();
@@ -160,6 +164,11 @@ export default class Input extends AsyncTemplate {
         return allowed.map(item => [
           `${item.name} ${item.metaname} ${item.item}`,
           item.item
+        ]);
+      case 'NewlyDeployed':
+        return newlyDeployed().map(addr => [
+          'deployNew #' + addr.slice(-1),
+          addr
         ]);
     }
     return '';

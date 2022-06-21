@@ -12,7 +12,7 @@ export default class InvokeFilter extends AsyncTemplate {
   async init() {
     this.set('contractInput', new Input({
       name: 'Contract',
-      select: [ 'Allowed', 'Children' ],
+      select: [ 'Allowed', 'Children', 'NewlyDeployed' ],
     }, 'invoke_to', this.groupAddress, (value) => {
       this.set('addFilterContract', isAddress(value) ? value : undefined);
     }));

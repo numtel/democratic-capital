@@ -10,6 +10,11 @@ export async function selfDescribingContract(address) {
     to: address,
     data: web3.eth.abi.encodeFunctionSignature('meta()'),
   });
+  return contractFromMeta(metaAddress, address);
+}
+
+export async function contractFromMeta(metaAddress, address) {
+  const web3 = app.web3;
   if(app.cacheABI && localStorage.hasOwnProperty(metaAddress)) {
     const cached = JSON.parse(localStorage.getItem(metaAddress));
     const contract = new web3.eth.Contract(cached.abi, address);
@@ -139,4 +144,16 @@ function zeroStr(length) {
 function decimalSeparator() {
   const n = 1.1;
   return n.toLocaleString().substring(1, 2);
+}
+
+export function newlyDeployed() {
+  const out = [];
+  for(let i = 1; i<10; i++) {
+    let str = '0x';
+    while(str.length < 42) {
+      str += String(i);
+    }
+    out.push(str);
+  }
+  return out;
 }

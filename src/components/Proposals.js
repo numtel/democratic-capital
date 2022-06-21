@@ -2,6 +2,7 @@ import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, remaining, explorer, ellipseAddress} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import Paging from '/components/Paging.js';
+import {newDeploys} from '/components/input/ProposalTxs.js';
 
 export default class Proposals extends AsyncTemplate {
   constructor(address, parent) {
@@ -31,7 +32,8 @@ export default class Proposals extends AsyncTemplate {
         const data = '0x' + tx.slice(42);
         let decoded = null;
         try {
-          const contract = await selfDescribingContract(to);
+          const deployed = await newDeploys(to, proposal.tx);
+          const contract = deployed ? deployed : await selfDescribingContract(to);
           const decoder = new ABIDecoder(contract.options.jsonInterface);
           decoded = decoder.decodeMethod(data);
         } catch(error) {
