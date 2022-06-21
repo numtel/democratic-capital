@@ -25,7 +25,7 @@ $ chmod +x solc
 
 The development chain script runs Ganache on port 8545 as well as aiding in managing mocked verifications and block timing while developing the application locally.
 
-It also deploys the relevant factory contracts to the development chain and outputs their addresses to `build/config.json` for consumption by the frontend.
+It also deploys the relevant factory contracts to the development chain and outputs their addresses to `build/config.js` for consumption by the frontend. For the frontend to read this file, the other configuration file at `src/config.js` must be removed.
 
 ```
 # Contracts must be built before running the development chain

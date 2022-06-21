@@ -49,7 +49,13 @@ The custom metadata determines how a contract is displayed and which methods are
       // invokeFilter: Decode election allowed invoke prefixes
       // seconds: Convert a number of seconds into days, hours, minutes
       // percentage: Value is used as percentage of max value for the given type
-      "display": "<invokeFilter|seconds|percentage>"
+      // token: Display token name, symbol, decimals
+      // timestamp: Convert timestamp to human-readable date time
+      "display": "<invokeFilter|seconds|percentage|token|timestamp>",
+      // Optionally, apply decimals to the result
+      // this: Read the decimal number from this contract
+      // method: The ERC20 address for this value is at this method on this contract
+      "decimals": <"this"|["method",...args]|"method">
     }
   },
   // Methods described in this section will be given buttons underneath the overview
@@ -67,14 +73,27 @@ The custom metadata determines how a contract is displayed and which methods are
           // txs: Transaction builder for new proposals
           // invokeFilter: Allowed invoke prefix builder for new election contracts
           // percentage: Show a range slider with percentage of max value for type
-          "input": "<txs|invokeFilter|percentage>",
+          // range: Show a range slider
+          "input": "<txs|invokeFilter|percentage|range>",
+          // Optional for percentage/range inputs, instead of 0
+          "min": <number>,
+          // Optional for percentage/range inputs, instead of max of uint type
+          "max": <number>,
+          // Optional for percentage input, percent value at min
+          "minPercent": <number>,
+          // Optional for percentage input, percent value at max
+          "maxPercent": <number>,
           // Optionally, make this input hidden and fill it with a fixed value
           // parent: the parent contract, i.e. the group address
           // Verification: the Coinpassport verification contract address
           "hidden": "<parent|Verification>",
           // Optionally, display a input-sensitive preview of the value
           // seconds: Preview seconds input as days, hours, minutes
-          "preview": "<seconds>",
+          // token: Preview ERC20 name, symbol, decimals from address input
+          // quadratic: Preview vote power from amount input
+          "preview": "<seconds|token|quadratic>",
+          // Display a select element to aid filling input
+          "select": ["<Factories|Children|Allowed>"]
           // Optionally, display a help text string below the input
           "hint": "<value>"
         }
@@ -89,6 +108,8 @@ The custom metadata determines how a contract is displayed and which methods are
     "FactoryBrowser": {
       "root": boolean
     },
+    // Only on VerifiedGroup to enable token swaps within child ERC20LiquidityPool contracts
+    "Swap": {}
   }
 }
 ```

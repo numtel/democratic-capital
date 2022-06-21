@@ -22,6 +22,8 @@ It is up to the group to determine how to balance their electoral power.
 
 Each proposal contains a set of transactions that will be invoked if the proposal passes.
 
+Proposals can reference up to 9 contracts deployed within the proposal with special addresses that are replaced by the deployed instance address when the proposal is invoked. e.g. 0x1111111111111111111111111111111111111111 refers to the first deployed contract.
+
 ### ElectionsSimple
 
 The simplest type of elections which specify the proposal duration, passing threshold, and minimum participation percentage at deployment time.
