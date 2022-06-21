@@ -197,7 +197,7 @@ export default class Details extends AsyncTemplate {
         app.router.goto(parentUrl);
       }
     } catch(error) {
-      alert(error);
+      alert(error.message || error.reason || error);
     }
   }
 }

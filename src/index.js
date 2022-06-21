@@ -6,6 +6,7 @@ import ErrorWindow from '/components/ErrorWindow.js';
 
 window.app = {
   cacheABI: config.cacheABI,
+  selfDescribingContract,
   web3: new Web3(config.rpc),
   wallet: new Wallet,
   router: new Router({

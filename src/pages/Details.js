@@ -53,7 +53,12 @@ export default class Details extends AsyncTemplate {
             arg === 'account' ? accounts[0]
             : arg);
         }
-        this.overview[key].result = await this.contract.methods[funName](...args).call();
+        try {
+          this.overview[key].result = await this.contract.methods[funName](...args).call();
+        } catch(error) {
+          this.overview[key].result = null;
+          console.error(error);
+        }
 
         if('decimals' in this.overview[key]) {
           const tokenMethod = this.overview[key].decimals;
