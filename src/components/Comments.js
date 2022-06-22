@@ -1,4 +1,4 @@
-import {AsyncTemplate, html} from '/utils/Template.js';
+import {AsyncTemplate, html, userInput} from '/utils/Template.js';
 import {selfDescribingContract, explorer, ellipseAddress} from '/utils/index.js';
 import Paging from '/components/Paging.js';
 
@@ -46,7 +46,7 @@ export default class Comments extends AsyncTemplate {
                   </span>
                 </div>
                 <div class="body">
-                  ${comment.text}
+                  ${userInput(comment.text)}
                 </div>
               </li>
             `)}

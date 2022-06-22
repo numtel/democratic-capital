@@ -1,5 +1,5 @@
 import {AsyncTemplate, html} from '/utils/Template.js';
-import {selfDescribingContract, applyDecimals, reverseDecimals} from '/utils/index.js';
+import {selfDescribingContract, applyDecimals, reverseDecimals, isAddress} from '/utils/index.js';
 import ERC20 from '/utils/ERC20.js';
 import PreviewToken from '/components/input/PreviewToken.js';
 
@@ -163,6 +163,7 @@ export default class Swap extends AsyncTemplate {
     }
   }
   async setFrom(value) {
+    if(!isAddress(value)) return;
     this.set('from', value);
     this.set('previewFrom', new PreviewToken(this.from));
     this.set('linked', this.findLinkedTokens(value).filter(x => x!==value));

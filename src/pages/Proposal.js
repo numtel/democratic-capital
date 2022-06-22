@@ -1,4 +1,4 @@
-import {AsyncTemplate, html} from '/utils/Template.js';
+import {AsyncTemplate, html, userInput} from '/utils/Template.js';
 import {selfDescribingContract, remaining, explorer, ellipseAddress, applyDecimals, reverseDecimals} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import ERC20 from '/utils/ERC20.js';
@@ -89,7 +89,7 @@ export default class Proposal extends AsyncTemplate {
                             ${ellipseAddress(param.value)}
                           </a>
                         ` : html`
-                          <span class="invoke-value wrap">${param.value}</span>
+                          <span class="invoke-value wrap">${userInput(param.value)}</span>
                         `}
                     `)}
                   ` : html`

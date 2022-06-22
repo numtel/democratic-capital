@@ -35,7 +35,7 @@ export class Template {
     return '';
   }
   get link() {
-    return 'onclick="return tpl(this).route(this)"';
+    return LINK_HANDLER;
   }
   route(element) {
     const newPath = element.attributes.href.value;
@@ -141,6 +141,31 @@ function htmlEscape(str) {
 }
 
 // Helper for event handlers
+const LINK_HANDLER = 'onclick="return tpl(this).route(this)"';
 window.tpl = function(el) {
   return el.closest('tpl').tpl;
+}
+
+export function userInput(text) {
+  const parts = text.split('https://');
+  parts[0] = nl2br(parts[0]);
+  for(let i = 1; i< parts.length; i+=2) {
+    const firstSpace = parts[i].indexOf(' ');
+    const url = parts[i].slice(0, firstSpace !== -1 ? firstSpace : parts[i].length);
+    const text = parts[i].slice(url.length);
+    parts[i] = html`<a $${LINK_HANDLER} href="https://${url}">https://${url}</a>${nl2br(text)}`;
+  }
+  return parts;
+}
+
+export function nl2br(text) {
+  const parts = text.split('\n');
+  const literals = [];
+  const subst = [];
+  for(let i = 0; i<parts.length; i++) {
+    literals.push(parts[i]);
+    if(i+1 < parts.length) subst.push(html`<br />`);
+  }
+  return html({raw: literals}, ...subst);
+
 }

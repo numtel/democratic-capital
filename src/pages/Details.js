@@ -1,4 +1,4 @@
-import {AsyncTemplate, html} from '/utils/Template.js';
+import {AsyncTemplate, html, userInput} from '/utils/Template.js';
 import {selfDescribingContract, explorer, applyDecimals, ZERO_ACCOUNT} from '/utils/index.js';
 import FactoryBrowser from '/components/FactoryBrowser.js';
 import AllowedContracts from '/components/AllowedContracts.js';
@@ -123,10 +123,10 @@ export default class Details extends AsyncTemplate {
         `}
       `)}
       <div class="blue window">
-        <h2>${this.name}</h2>
+        <h2>${userInput(this.name)}</h2>
         <p>Type: ${this.contract.metadata.name || this.contract.metaname}</p>
         <p><a href="${explorer(this.address)}" $${this.link}>${this.address}</a> ${this.contract.metaname}</p>
-        ${this.text && html`<p>${this.text}</p>`}
+        ${this.text && html`<p>${userInput(this.text)}</p>`}
         ${this.overview && new Overview(this.overview)}
         ${'methods' in this.contract.metadata && html`
           <menu>
