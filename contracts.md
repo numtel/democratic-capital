@@ -22,6 +22,8 @@ interface IMeta {
 
 With this metadata available for each contract, there is no need to verify contract bytecode as is required on other explorers. New contracts can be read by the interface immediately, without The one-time gas overhead of deploying the meta contract is a small fraction of the cost of deploying the base contract.
 
+Related: [github.com/rebeccajae/SelfDescribing](https://github.com/rebeccajae/SelfDescribing)
+
 ## How Metadata Contracts are Generated
 
 Democratic Capital includes a script for generating meta contracts for all contracts in the `build` directory:
