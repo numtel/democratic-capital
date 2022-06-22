@@ -112,6 +112,11 @@ export default class Wallet {
     this.connected = true;
 
     await this.init();
+    if(app.router.element.children.length > 0
+        && app.router.element.children[0].tpl.superInit
+    ) {
+      await app.router.element.children[0].tpl.superInit();
+    }
   }
 
   async disconnect() {
