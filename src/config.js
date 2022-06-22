@@ -1,6 +1,6 @@
 window.config = {
   cacheABI: true,
-  "rpc": "https://mainnet.optimism.io",
+  "rpc": "https://rpc.ankr.com/optimism",
   "blockExplorer": "https://optimistic.etherscan.io",
   "name": "Optimism",
   "nativeCurrency": {

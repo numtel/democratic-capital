@@ -17,27 +17,47 @@ export default class Details extends AsyncTemplate {
     document.title = 'Item Details';
   }
   async init() {
-    const accounts = await app.wallet.accounts;
-    this.contract = await selfDescribingContract(this.address);
-    if(this.parent) {
-      this.parentContract = await selfDescribingContract(this.parent);
+    let accounts;
+    // Instantiate contracts in first frame
+    await Promise.all([
+      (async () => accounts = await app.wallet.accounts)(),
+      (async () => this.contract = await selfDescribingContract(this.address))(),
+      (async () => this.parentContract = this.parent && await selfDescribingContract(this.parent))(),
+    ]);
+
+    // Load all other content in second frame
+    this.display = [];
+    if('display' in this.contract.metadata) {
+      this.display =  Object.keys(this.contract.metadata.display).map(key => {
+        const item = this.contract.metadata.display[key];
+        return (
+          key === 'FactoryBrowser' ?
+            new FactoryBrowser(item.root
+              ? ZERO_ACCOUNT
+              : this.address) :
+          key === 'Allowed' ? new AllowedContracts(this.address, this.parent) :
+          key === 'Proposals' ? new Proposals(this.address, this.parent) :
+          key === 'Swap' ? new Swap(this.address) :
+          '');
+      })
+    }
+    if(this.contract.metaname === 'VerifiedGroup') {
+      this.display.push(new Comments(this.address, this.address));
+    } else if(this.parent) {
+      this.display.push(new Comments(this.address, this.parent));
     }
     const group = this.parent ? this.parentContract : this.contract;
-    if('contractAllowed' in group.methods) {
-      this.set('isAllowed', await group.methods.contractAllowed(accounts[0]).call());
-    }
-    if('isRegistered' in group.methods) {
-      this.set('isMember', await group.methods.isRegistered(accounts[0]).call());
-    }
-    if('name' in this.contract.methods) {
-      this.set('name', await this.contract.methods.name().call());
-    } else {
-      this.set('name', this.contract.metaname);
-    }
-    if('text' in this.contract.methods) {
-      this.set('text', await this.contract.methods.text().call());
-    }
     this.overview = this.contract.metadata.overview;
+    const detailsTxs = [
+      (async () => this.set('isAllowed', 'contractAllowed' in group.methods &&
+        await group.methods.contractAllowed(accounts[0]).call()))(),
+      (async () => this.set('isMember', 'isRegistered' in group.methods &&
+        await group.methods.isRegistered(accounts[0]).call()))(),
+      (async () => this.set('name', ('name' in this.contract.methods &&
+        await this.contract.methods.name().call()) || this.contract.metaname))(),
+      (async () => this.set('text', 'text' in this.contract.methods &&
+        await this.contract.methods.text().call()))(),
+    ];
     if(this.overview) {
       for(let key of Object.keys(this.overview)) {
         let funName = key;
@@ -53,32 +73,42 @@ export default class Details extends AsyncTemplate {
             arg === 'account' ? accounts[0]
             : arg);
         }
-        try {
-          this.overview[key].result = await this.contract.methods[funName](...args).call();
-        } catch(error) {
-          this.overview[key].result = null;
-          console.error(error);
-        }
+        detailsTxs.push((async () => {
+          try {
+            this.overview[key].result = await this.contract.methods[funName](...args).call();
+          } catch(error) {
+            this.overview[key].result = null;
+            console.error(error);
+          }
+        })());
 
         if('decimals' in this.overview[key]) {
           const tokenMethod = this.overview[key].decimals;
-          let decimals;
-          if(tokenMethod === 'this') {
-            decimals = await this.contract.methods.decimals().call();
-          } else if(Array.isArray(tokenMethod)) {
-            const tokenAddress = await this.contract.methods[tokenMethod[0]](...tokenMethod.slice(1)).call();
-            const token = new ERC20(tokenAddress);
-            decimals = await token.decimals();
-          } else {
-            const tokenAddress = await this.contract.methods[tokenMethod]().call();
-            const token = new ERC20(tokenAddress);
-            decimals = await token.decimals();
-          }
-          if(decimals) {
-            this.overview[key].result = applyDecimals(this.overview[key].result, decimals);
-          }
+          detailsTxs.push((async () => {
+            let decimals;
+            if(tokenMethod === 'this') {
+              this.overview[key].decimals = await this.contract.methods.decimals().call();
+            } else if(Array.isArray(tokenMethod)) {
+              const tokenAddress = await this.contract.methods[tokenMethod[0]](...tokenMethod.slice(1)).call();
+              const token = new ERC20(tokenAddress);
+              this.overview[key].decimals = await token.decimals();
+            } else {
+              const tokenAddress = await this.contract.methods[tokenMethod]().call();
+              const token = new ERC20(tokenAddress);
+              this.overview[key].decimals = await token.decimals();
+            }
+          })());
         }
-        if(typeof this.overview[key].result !== 'object') {
+      }
+    }
+    // Request second frame of RPC calls
+    await Promise.all(detailsTxs);
+    if(this.overview) {
+      for(let key of Object.keys(this.overview)) {
+        if('decimals' in this.overview[key] && this.overview[key].result !== null) {
+          this.overview[key].result = applyDecimals(this.overview[key].result, this.overview[key].decimals);
+        }
+        if(typeof this.overview[key].result !== 'object' || this.overview[key].result === null) {
           this.overview[key].result = [this.overview[key].result];
         }
       }
@@ -108,21 +138,7 @@ export default class Details extends AsyncTemplate {
           </menu>
         `}
       </div>
-      ${'display' in this.contract.metadata && Object.keys(this.contract.metadata.display).map(key => {
-        const item = this.contract.metadata.display[key];
-        return (
-          key === 'FactoryBrowser' ?
-            new FactoryBrowser(item.root
-              ? ZERO_ACCOUNT
-              : this.address) :
-          key === 'Allowed' ? new AllowedContracts(this.address, this.parent) :
-          key === 'Proposals' ? new Proposals(this.address, this.parent) :
-          key === 'Swap' ? new Swap(this.address) :
-          '');
-      })}
-      ${this.contract.metaname === 'VerifiedGroup'
-        ? new Comments(this.address, this.address)
-        : this.parent ? new Comments(this.address, this.parent) : ''}
+      ${this.display}
     `;
   }
 }

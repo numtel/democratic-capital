@@ -21,6 +21,14 @@ $ curl -o solc https://binaries.soliditylang.org/linux-amd64/solc-linux-amd64-v0
 $ chmod +x solc
 ```
 
+## Development Frontend
+
+Start the development frontend server, connecting to the contracts on Optimism using the settings in `src/config.js` with the following command:
+
+```
+$ npm run dev
+```
+
 ## Development Chain
 
 The development chain script runs Ganache on port 8545 as well as aiding in managing mocked verifications and block timing while developing the application locally.
@@ -52,14 +60,6 @@ nextday
 # Verify account number 0 for the next year
 > nextday
 # Increment block timestamp by 24 hours (useful for testing proposals)
-```
-
-## Development Frontend
-
-Start the development frontend server with the following command:
-
-```
-$ npm run dev
 ```
 
 ## Testing Contracts

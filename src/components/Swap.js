@@ -12,40 +12,58 @@ export default class Swap extends AsyncTemplate {
     this.set('slippage', 0.005);
   }
   async init() {
-    this.factory = await selfDescribingContract(config.contracts.ERC20LiquidityPoolFactory.address);
-    this.set('count', Number(await this.factory.methods.groupPoolCount(this.group).call()));
-    const accounts = await app.wallet.accounts;
-    if(this.count > 0) {
-      this.set('pools', await this.factory.methods.groupPools(this.group, 0, this.count).call());
-      const tokens = {};
-      for(let i = 0; i < this.pools.length; i++) {
-        const pool = this.pools[i];
-        for(let which of ['0', '1']) {
-          const tokenAddress = pool['token' + which];
-          const otherToken = pool['token' + (which === '0' ? '1' : '0')];
-          const reserves = pool['reserve' + which];
-          if(!(tokenAddress in tokens)) {
-            const erc20 = new ERC20(tokenAddress);
-            tokens[tokenAddress] = {
-              address: tokenAddress,
-              token: erc20,
-              name: await erc20.name(),
-              symbol: await erc20.symbol(),
-              decimals: await erc20.decimals(),
-              balance: await erc20.balanceOf(accounts[0]),
-              allowance: await erc20.allowance(accounts[0], config.contracts.ERC20LiquidityPoolFactory.address),
-              siblings: {
-                [otherToken]: { pool: i }
-              }
-            };
-          } else {
-            tokens[tokenAddress].siblings[otherToken] = { pool: i };
-          }
+    let accounts;
+    await Promise.all([
+      (async () => {
+        this.factory = await selfDescribingContract(config.contracts.ERC20LiquidityPoolFactory.address);
+        this.set('count', Number(await this.factory.methods.groupPoolCount(this.group).call()));
+        this.set('pools', this.count === 0 ? [] : await this.factory.methods.groupPools(this.group, 0, this.count).call());
+      })(),
+      (async () => {
+        accounts = await app.wallet.accounts;
+      })(),
+    ]);
+    let tokenTxs = []
+    const tokens = {};
+    for(let i = 0; i < this.pools.length; i++) {
+      const pool = this.pools[i];
+      for(let which of ['0', '1']) {
+        const tokenAddress = pool['token' + which];
+        const otherToken = pool['token' + (which === '0' ? '1' : '0')];
+        const reserves = pool['reserve' + which];
+        if(!(tokenAddress in tokens)) {
+          const erc20 = new ERC20(tokenAddress);
+          tokens[tokenAddress] = {
+            address: tokenAddress,
+            token: erc20,
+            siblings: {
+              [otherToken]: { pool: i }
+            }
+          };
+
+          tokenTxs.push((async() => {
+            tokens[tokenAddress].name = await erc20.name();
+          })());
+          tokenTxs.push((async() => {
+            tokens[tokenAddress].symbol = await erc20.symbol();
+          })());
+          tokenTxs.push((async() => {
+            tokens[tokenAddress].decimals = await erc20.decimals();
+          })());
+          tokenTxs.push((async() => {
+            tokens[tokenAddress].balance = await erc20.balanceOf(accounts[0]);
+          })());
+          tokenTxs.push((async() => {
+            tokens[tokenAddress].allowance = await erc20.allowance(accounts[0], config.contracts.ERC20LiquidityPoolFactory.address);
+          })());
+        } else {
+          tokens[tokenAddress].siblings[otherToken] = { pool: i };
         }
       }
-      this.set('tokens', tokens);
-      this.setFrom(this.from || Object.keys(tokens)[0]);
     }
+    await Promise.all(tokenTxs);
+    this.set('tokens', tokens);
+    this.setFrom(this.from || Object.keys(tokens)[0]);
   }
   async render() {
     if(this.count === 0) return html``;

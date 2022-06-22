@@ -49,7 +49,9 @@ export default class Input extends AsyncTemplate {
                 && input.filter.indexOf(opt[1].toLowerCase()) === -1)
               continue;
             options.push(html`
-              <option value="${opt[1]}">${opt[0]}</option>
+              <option value="${opt[1]}"
+                $${this.value === opt[1] ? 'selected' : ''}
+              >${opt[0]}</option>
             `)
           }
           optgroups.push(html`

@@ -44,7 +44,9 @@ export default class Wallet {
   async send(method) {
     if(!this.connected) {
       await this.connect();
-      throw new Error('Please refresh to submit transaction.');
+      if(this.connected)
+        throw new Error('Please refresh to submit transaction.');
+      else throw new Error('Wallet connection declined.');;
     }
     let retval;
     const accounts = await this.accounts;

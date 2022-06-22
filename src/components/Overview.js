@@ -19,7 +19,10 @@ export default class Overview extends Template {
           <tr>
             <td>${key}</td>
             <td>
-              ${!item.display ? item.result[0] : item.display.map((display, index) => {
+              ${!item.display ?
+                  item.result[0] === false ? 'false' :
+                  item.result[0] === null? 'null' : item.result[0]
+              : item.display.map((display, index) => {
                 let result = item.result[index];
                 // Shorthand version
                 if(typeof display === 'string') display = { type: display };
@@ -46,7 +49,7 @@ export default class Overview extends Template {
                     ? new PreviewToken(result)
                   : display.type === 'timestamp'
                     ? result === '0' ? '0' : (new Date(result * 1000)).toLocaleString()
-                  : result}
+                  :  result}
                   </div>
                   `;
               })}
