@@ -2,7 +2,10 @@
 body { margin:0; padding: 0; min-height: 100vh;}
 body.wait,
 body.wait * { cursor:wait; }
-a[href*="/address/"] { word-wrap:anywhere;}
+a[href*="/address/"],
+ul.comments a,
+p.contract-text,
+h2 a { word-wrap:anywhere;}
 .top-menu-bar { display: flex; flex-direction:row; align-items:center; flex-wrap:wrap; justify-content: space-around;}
 .top-menu-bar a {margin: 3px 2em; text-align:center; }
 .top-menu-bar a:first-child { flex: 1 0 100%; }

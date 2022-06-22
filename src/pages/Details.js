@@ -126,7 +126,7 @@ export default class Details extends AsyncTemplate {
         <h2>${userInput(this.name)}</h2>
         <p>Type: ${this.contract.metadata.name || this.contract.metaname}</p>
         <p><a href="${explorer(this.address)}" $${this.link}>${this.address}</a> ${this.contract.metaname}</p>
-        ${this.text && html`<p>${userInput(this.text)}</p>`}
+        ${this.text && html`<p class="contract-text">${userInput(this.text)}</p>`}
         ${this.overview && new Overview(this.overview)}
         ${'methods' in this.contract.metadata && html`
           <menu>
