@@ -14,7 +14,7 @@ export default class TopMenu extends Template {
         <a href="/" $${this.link}>Democratic Capital</a>
         <a href="/${config.contracts.VerifiedGroupFactory.address}" $${this.link}>All Groups</a>
         ${this.slot}
-        <a href="https://github.com/numtel/democratic-capital" $${this.link}>Github</a>
+        <a href="/docs.html">Documentation</a>
         <a href="javascript:void 0" onclick="tpl(this).toggleWallet()" class="wallet">${app.wallet.connected ? html`
           <span class="address">${ellipseAddress(this.account)}</span>
           <span class="hover">Disconnect</span>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Creating a Group - Democratic Capital</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="manifest" href="/manifest.json">
+    <link href="/tvision.css" rel="stylesheet">
+    <link href="/styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app">
+      <div class="top-menu-bar">
+        <a href="/">Democratic Capital</a>
+        <a href="/docs.html">Documentation</a>
+      </div>
+      <div class="white window">
+        <h2>Creating a group</h2>
+        <p>Anybody can make a new group on Democratic Capital. Immediately after deploying a new group, your account becomes the first member. When there is one member in a group, that member is an administrator and can immediately perform any actions without waiting for a proposal to pass.</p>
+        <p>It is during this initial administration period, that the group creator should allow at least one election contract, and one registration contract.</p>
+        <h3>Allowing an election contract</h3>
+        <p>As soon as a second member joins the group, the first member is no longer an administrator (except if they added their account address as an allowed contract) so it is very important to create an election contract that can perform administrative transactions on behal of the group.</p>
+        <p>First the factory for the contract type must be allowed. Click on the 'allowContract' button on your group details page.</p>
+        <p>Select the factory for the election contract you choose and submit the form.</p>
+        <h4>Election Types</h4>
+        <table>
+          <tr>
+            <td>ElectionsSimple</td>
+            <td><p>The simplest type of elections which specify the proposal duration, passing threshold, and minimum participation percentage at deployment time.</p></td>
+          </tr>
+          <tr>
+            <td>ElectionsSimpleQuadratic</td>
+            <td><p>Like the previous, except votes can include a payment in a specified token that increases the power of the vote by the square root of the payment amount.</p></td>
+          </tr>
+          <tr>
+            <td>ElectionsByMedian</td>
+            <td><p>Proposal duration, passing threshold, and minimum participation are set by calculating the median value of member-submitted ballots, giving more democratic power to how the elections proceed.</p></td>
+          </tr>
+        </table>
+        <p>After allowing the factory, browse to the factory's details page from the link in the 'Allowed Contracts' section of your group details page and click on the button to 'deployNew'.</p>
+        <p>All election types allow a filter to be set when creating the election contract. This filter provides a list of allowed contracts (and optionally methods too) that can be invoked by proposals created within the contract.</p>
+        <p>If no filter is specified, the elections contract will accept proposals for any contract and method. In most groups, it is a good idea to have at least one unfiltered elections contract but its duration, passing threshold, and minimum participation values should reflect the immense power of the ability to invoke anything.</p>
+        <p>For more narrow election contracts filtered to more trivial tasks like setting names and texts, shorter duration, lower passing threshold, and/or lower minimum participation values make sense.</p>
+        <p>After creating the elections contract, it must be allowed by the group before its successful proposals may invoke their transactions.</p>
+        <h3>Creating a registrations contract</h3>
+        <p>Now that your group has an elections contract, you need a way for other people to join the group. If you're an administator, you can manually add members from the group details page but for all other cases, you'll want to choose one of the registrations contracts to make things simpler.</p>
+        <table>
+          <tr>
+            <td>OpenRegistrations</td>
+            <td><p>Allow any account to become a member simply by clicking a button.</p></td>
+          </tr>
+          <tr>
+            <td>RegistrationsByFee</td>
+            <td><p>Allow any account to become a member by paying a fee in a specified token.</p></td>
+          </tr>
+          <tr>
+            <td>RegistrationsByElection</td>
+            <td><p>Wishful new members submit a proposal under a given election contract with the hope that existing members will approve their membership.</p></td>
+          </tr>
+        </table>
+        <p>As with the elections contract, you'll first need to allow a factory for one of these registration types, then deploy the contract from the factory details page, then finally allow the new registration contract to invoke on behalf of the group.</p>
+        <p>It is a also good idea to allow an OpenUnregistrations contract so that members can leave the group if they choose.</p>
+        <p><a href="/docs.html">Return to Documentation Index...</a></p>
+      </div>
+    </div>
+  </body>
+</html>
+
+
