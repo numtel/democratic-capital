@@ -1,9 +1,11 @@
+import {isAddress} from '/utils/index.js';
 
 export default class ERC20 {
   constructor(address) {
     this.address = address;
   }
   async name() {
+    if(!isAddress(this.address)) return null;
     try {
       return app.web3.eth.abi.decodeParameter('string',
         await app.web3.eth.call({
@@ -13,6 +15,7 @@ export default class ERC20 {
     } catch(error) { return null; }
   }
   async symbol() {
+    if(!isAddress(this.address)) return null;
     try {
       return app.web3.eth.abi.decodeParameter('string',
         await app.web3.eth.call({
@@ -22,6 +25,7 @@ export default class ERC20 {
     } catch(error) { return null; }
   }
   async decimals() {
+    if(!isAddress(this.address)) return null;
     try {
       return app.web3.eth.abi.decodeParameter('uint256',
         await app.web3.eth.call({

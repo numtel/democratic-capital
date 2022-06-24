@@ -2,16 +2,26 @@ import {AsyncTemplate, html} from '/utils/Template.js';
 import {selfDescribingContract, contractFromMeta, isAddress, isFunSig, newlyDeployed} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import Input from '/components/Input.js';
+import {SubProposal} from '/pages/Proposal.js';
 
 export default class ProposalTxs extends AsyncTemplate {
-  constructor(group, item, onChange) {
+  constructor(group, item, onChange, value) {
     super();
     this.set('groupAddress', group);
     this.set('itemAddress', item);
     this.set('onChange', onChange);
+    this.set('initValue', value);
     this.set('entries', []);
   }
   async init() {
+    if(this.initValue) {
+      for(let entry of this.initValue) {
+        const to = entry.slice(0,42);
+        const data = '0x' + entry.slice(42);
+        const decoded = await decodeTx(to, data, this.entries);
+        this.entries.push({ to, data, decoded });
+      }
+    }
     const elections = await selfDescribingContract(this.itemAddress);
     this.set('allowedPrefixes', await elections.methods.invokePrefixes().call());
 
@@ -57,7 +67,7 @@ export default class ProposalTxs extends AsyncTemplate {
           ${new Input(input, 'addArg_' + index, this.groupAddress, (value) => {
             this.set('addArg_' + index, value);
             this.updateTxData(deployed);
-          }, this['addArg_' + index])}
+          }, this['addArg_' + index], this.addTxTo)}
         `)}
         <div class="commands">
           <button onclick="tpl(this).addTx(); return false;">Add to Proposal</button>
@@ -86,14 +96,18 @@ export default class ProposalTxs extends AsyncTemplate {
                       <thead>
                         <th>Name</th>
                         <th>Value</th>
-                        <th>Type</th>
                       </thead>
                       <tbody>
                         ${entry.decoded.params.map(param => html`
                           <tr>
-                            <td>${param.name}</td>
-                            <td class="wrap">${param.value}</td>
-                            <td>${param.type}</td>
+                            <td>${param.name} (${param.type})</td>
+                            ${param.value instanceof SubProposal
+                              ? html`
+                                <td>${param.value}</td>
+                                `
+                              : html`
+                                <td class="wrap">${param.value}</td>
+                              `}
                           </tr>
                         `)}
                       </tbody>
@@ -153,23 +167,16 @@ export default class ProposalTxs extends AsyncTemplate {
     }
   }
   async addTx() {
-    const values = Array.from(this.element.querySelectorAll('input'))
-      .map(input => input.value);
     if(!isAddress(this.addTxTo)
         || !this.addTxData
         || !(this.addTxData.startsWith('0x') && this.addTxData.length > 10)) {
       alert('Invalid contract address or missing transaction data!');
     } else {
-      let decoded = null;
-      try {
-        const deployed = await newDeploys(this.addTxTo, this.entries);
-        const contract = deployed ? deployed : await selfDescribingContract(this.addTxTo);
-        const decoder = new ABIDecoder(contract.options.jsonInterface);
-        decoded = decoder.decodeMethod(this.addTxData);
-      } catch(error) {
-        // This data cannot be decoded
-      }
-      this.entries.push({ to: this.addTxTo, data: this.addTxData, decoded });
+      this.entries.push({
+        to: this.addTxTo,
+        data: this.addTxData,
+        decoded: await decodeTx(this.addTxTo, this.addTxData, this.entries),
+      });
       this.entriesChanged();
     }
   }
@@ -203,4 +210,23 @@ export async function newDeploys(address, entries) {
     return contract;
   }
   return null;
+}
+
+export async function decodeTx(to, data, entries) {
+  let decoded = null;
+  try {
+    const deployed = await newDeploys(to, entries);
+    const contract = deployed ? deployed : await selfDescribingContract(to);
+    const decoder = new ABIDecoder(contract.options.jsonInterface);
+    decoded = decoder.decodeMethod(data);
+    if(decoded.name === 'propose'
+        && decoded.params.length === 1
+        && decoded.params[0].type === 'bytes[]'
+        && decoded.params[0].name === 'data') {
+      decoded.params[0].value = new SubProposal(decoded.params[0].value, entries);
+    }
+  } catch(error) {
+    // This data cannot be decoded
+  }
+  return decoded;
 }

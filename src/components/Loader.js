@@ -8,5 +8,8 @@ export default class Loader extends Template {
       </div>
     `;
   }
+  new() {
+    return new Loader;
+  }
 }
 

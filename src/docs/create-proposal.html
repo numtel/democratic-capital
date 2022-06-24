@@ -18,7 +18,53 @@
       </div>
       <div class="white window">
         <h2>Creating a proposal</h2>
-        <p>TODO</p>
+        <p>Each proposal on Democratic Capital contains a list of transactions to be invoked if the proposal passes.</p>
+        <p>For example, the following psuedo-code describes a set of transactions that allows a factory, deploys a new Elections Simple contract, allows it access to the group, creates a proposal with a specific and finally disallows the factory contract.</p>
+        <p>The following would all be input in the "propose" method form from a group's existing elections contract without writing any actual code.</p>
+        <hr>
+        <pre class="wrap">
+group.allowContract(ElectionsSimpleFactory)
+
+<i>After using a deployNew method, the child contract is referenced by
+a fixed address. Up to 9 contracts may be referenced in this way.</i>
+
+address 0x1111... = ElectionsSimpleFactory.deployNew(
+  address group,
+  bytes[] memory allowedInvokePrefixes =
+    [ group.setName, 0x1111.proposalText ],
+  uint durationSeconds = 10 days,
+  uint16 threshold = 85%,
+  uint16 minParticipation = 60%,
+  string memory name = "For our group's future"
+)
+
+<i>Disallowing the factory after use prevents
+an elections contract with a stricter filter
+the ability to deploy child contracts</i>
+
+group.disallowContract(ElectionsSimpleFactory)
+
+group.allowContract(0x1111...)
+
+<i>Proposals use duration, passing threshold,
+and minimum participation values from the elections
+contract at the time of proposal creation.</i>
+
+(0x1111...).propose([
+  group.setName("Foo for life"),
+  0x1111.proposalText("What better choice for a name?")
+])
+
+<i>Change the new elections contract duration to a very high value
+so that no other proposal can succeed under this elections contract.</i>
+
+(0x1111...).setDuration(1M years)
+        </pre>
+        <hr>
+        <p>Any member registered before the proposal creation will be able to vote on the proposal.</p>
+        <p>This proposal to create a proposal shows an example of multi-stage ballot for such a difficult issue to decide: the group's stated name.</p>
+        <p>One limitation of recursive proposals is that it will be impossible to reference any contracts deployed in the second level due to the rewriting of the addresses occurring on the first proposal step.</p>
+
         <p><a href="/docs.html">Return to Documentation Index...</a></p>
       </div>
     </div>

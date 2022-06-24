@@ -3,11 +3,14 @@ import {selfDescribingContract, isAddress, isFunSig} from '/utils/index.js';
 import Input from '/components/Input.js';
 
 export default class InvokeFilter extends AsyncTemplate {
-  constructor(group, onChange) {
+  constructor(group, onChange, value) {
     super();
     this.set('groupAddress', group);
     this.set('onChange', onChange);
-    this.set('entries', []);
+    this.set('entries', (value || []).map(entry => [
+      entry.slice(0, 42),
+      entry.length > 42 ? '0x' + entry.slice(42) : ''
+    ]));
   }
   async init() {
     this.set('contractInput', new Input({

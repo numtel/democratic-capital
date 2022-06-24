@@ -68,7 +68,7 @@ export class AsyncTemplate extends Template {
   superRender() {
     const errorMessage = html`${app.router.error}`;
     if(this.loading) {
-      return html`${app.router.loader}`;
+      return html`${app.router.loader.new()}`;
     } else if(this.error) {
       return errorMessage;
     }
@@ -78,7 +78,7 @@ export class AsyncTemplate extends Template {
       console.error(error);
       this._render(errorMessage);
     });
-    return html`${app.router.loader}`;
+    return html`${app.router.loader.new()}`;
   }
 }
 

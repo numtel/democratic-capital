@@ -1,4 +1,4 @@
-import {AsyncTemplate, html, userInput} from '/utils/Template.js';
+import {AsyncTemplate, Template, html, userInput} from '/utils/Template.js';
 import {selfDescribingContract, remaining, explorer, ellipseAddress, applyDecimals, reverseDecimals} from '/utils/index.js';
 import ABIDecoder from '/utils/ABIDecoder.js';
 import ERC20 from '/utils/ERC20.js';
@@ -6,7 +6,7 @@ import TopMenu from '/components/TopMenu.js';
 import Comments from '/components/Comments.js';
 import PreviewToken from '/components/input/PreviewToken.js';
 import Input from '/components/Input.js';
-import {newDeploys} from '/components/input/ProposalTxs.js';
+import {newDeploys, decodeTx} from '/components/input/ProposalTxs.js';
 
 
 export default class Proposal extends AsyncTemplate {
@@ -28,16 +28,7 @@ export default class Proposal extends AsyncTemplate {
       const tx = proposal.data[i];
       const to = tx.slice(0, 42);
       const data = '0x' + tx.slice(42);
-      let decoded = null;
-      try {
-        const deployed = await newDeploys(to, proposal.tx);
-        const contract = deployed ? deployed : await selfDescribingContract(to);
-        const decoder = new ABIDecoder(contract.options.jsonInterface);
-        decoded = decoder.decodeMethod(data);
-      } catch(error) {
-        // This data cannot be decoded
-        console.error(error);
-      }
+      const decoded = await decodeTx(to, data, proposal.tx);
       proposal.tx.push({ to, data, decoded });
     }
     this.set('proposal', proposal);
@@ -76,28 +67,7 @@ export default class Proposal extends AsyncTemplate {
           `}
           <dt>Transactions</dt>
           <dd>
-            <ul class="tx">
-              ${proposal.tx.map(tx => html`
-                <li>
-                  <a $${this.link} href="${explorer(tx.to)}" class="to">${ellipseAddress(tx.to)}</a>
-                  ${tx.decoded ? html`
-                    <span class="method">${tx.decoded.name}</span>
-                    ${tx.decoded.params.map(param => html`
-                      <span class="param-name">${param.name}</span>
-                        ${param.type === 'address' ? html`
-                          <a $${this.link} class="invoke-value" href="${explorer(param.value)}">
-                            ${ellipseAddress(param.value)}
-                          </a>
-                        ` : html`
-                          <span class="invoke-value wrap">${userInput(param.value)}</span>
-                        `}
-                    `)}
-                  ` : html`
-                    <span class="raw-data wrap">${tx.data}</span>
-                  `}
-                </li>
-              `)}
-            </ul>
+            ${new ProposalList(proposal.tx)}
           </dd>
           <dt>Status</dt>
           <dd>
@@ -205,5 +175,68 @@ export default class Proposal extends AsyncTemplate {
     } catch(error) {
       alert(error);
     }
+  }
+}
+
+export class SubProposal extends AsyncTemplate {
+  constructor(dataTx, entries) {
+    super();
+    this.set('dataTx', dataTx);
+    this.set('entries', entries);
+  }
+  async init() {
+    const decodedTx = [];
+    for(let i = 0; i < this.dataTx.length; i++) {
+      const tx = this.dataTx[i];
+      const to = tx.slice(0,42);
+      const data = '0x' + tx.slice(42);
+      // TODO cannot deployNew and reference from within SubProposal!
+      const decoded = await decodeTx(to, data, this.entries.concat(decodedTx));
+      decodedTx.push({to, data, decoded});
+    }
+    this.set('decodedTx', decodedTx);
+  }
+  async render() {
+    return html`
+      ${new ProposalList(this.decodedTx)}
+    `;
+  }
+}
+
+export class ProposalList extends Template {
+  constructor(txs) {
+    super();
+    this.set('txs', txs);
+  }
+  render() {
+    return html`
+      <ul class="tx">
+        ${this.txs.map(tx => html`
+          <li>
+            <a $${this.link} href="${explorer(tx.to)}" class="to">${ellipseAddress(tx.to)}</a>
+            ${tx.decoded ? html`
+              <span class="method">${tx.decoded.name}</span>
+              ${tx.decoded.params.map(param => html`
+                <span class="param-name">${param.name}</span>
+                  ${param.type === 'address' ? html`
+                    <a $${this.link} class="invoke-value" href="${explorer(param.value)}">
+                      ${ellipseAddress(param.value)}
+                    </a>
+                  `
+                  : param.value instanceof SubProposal ? param.value
+                  : html`
+                    <span class="invoke-value wrap">${
+                      Array.isArray(param.value)
+                        ? param.value.map(value => userInput(value)).flat()
+                        : userInput(param.value)}</span>
+                    `}
+                `)}
+            ` : html`
+              <span class="raw-data wrap">${tx.data}</span>
+            `}
+          </li>
+        `)}
+      </ul>
+    `;
   }
 }

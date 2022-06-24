@@ -18,11 +18,27 @@ export default class Input extends AsyncTemplate {
     this.set('onChange', onChange || (() => {}));
   }
   async init() {
+    const initTxs = [];
+    if('hidden' in this.input) {
+      initTxs.push((async () => {
+        this.set('hiddenValue', await this.givenValues(this.input.hidden));
+      })());
+    }
+    if('select' in this.input) {
+      initTxs.push((async () => {
+        const optgroups = {};
+        for(let type of this.input.select) {
+          optgroups[type] = await this.givenValues(type);
+        }
+        this.set('optgroups', optgroups);
+      })());
+    }
+    await Promise.all(initTxs);
   }
   async render() {
     const input = this.input, index = this.index;
     if('hidden' in input) {
-      const value = await this.givenValues(input.hidden);
+      const value = this.hiddenValue;
       this.onChange(value);
       return html`
         <input
@@ -31,9 +47,9 @@ export default class Input extends AsyncTemplate {
           value="${value}">
       `;
     } else if(input.input === 'invokeFilter') {
-      return html`${new InvokeFilter(this.parent, this.onChange)}`;
+      return html`${new InvokeFilter(this.parent, this.onChange, this.value)}`;
     } else if(input.input === 'txs') {
-      return html`${new ProposalTxs(this.parent, this.item, this.onChange)}`;
+      return html`${new ProposalTxs(this.parent, this.item, this.onChange, this.value)}`;
     } else if(input.input === 'range') {
       return html`${new Range(input, this.onChange, this.value)}`;
     } else if(input.input === 'percentage') {
@@ -44,7 +60,7 @@ export default class Input extends AsyncTemplate {
         const optgroups = [];
         for(let type of input.select) {
           const options = [];
-          for(let opt of await this.givenValues(type)) {
+          for(let opt of this.optgroups[type]) {
             if(input.filter && input.filter.length
                 && input.filter.indexOf(opt[1].toLowerCase()) === -1)
               continue;
