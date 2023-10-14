@@ -54,7 +54,7 @@ export default class Wallet {
     try {
       const block = await app.web3.eth.getBlock("latest");
       const gas = await method.estimateGas({ from: accounts[0] });
-      retval = await method.send({ from: accounts[0], gas: block.gasLimit });
+      retval = await method.send({ from: accounts[0], gas: gas });
     } catch(error) {
       document.body.classList.toggle('wait', false);
       const internalPrefix = 'Internal JSON-RPC error.\n';
